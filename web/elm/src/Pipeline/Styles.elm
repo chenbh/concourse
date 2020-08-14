@@ -1,44 +1,71 @@
 module Pipeline.Styles exposing
-    ( groupItem
+    ( cliIcon
+    , groupItem
     , groupsBar
-    , groupsList
+    , pauseToggle
     )
 
+import Assets
 import Colors
+import Concourse.Cli as Cli
+import Html
+import Html.Attributes exposing (style)
 
 
-groupsBar : List ( String, String )
+groupsBar : List (Html.Attribute msg)
 groupsBar =
-    [ ( "background-color", Colors.groupsBarBackground )
-    , ( "color", Colors.dashboardText )
-    , ( "margin-top", "54px" )
+    [ style "background-color" Colors.groupsBarBackground
+    , style "color" Colors.dashboardText
+    , style "display" "flex"
+    , style "flex-flow" "row wrap"
+    , style "padding" "5px"
     ]
 
 
-groupsList : List ( String, String )
-groupsList =
-    [ ( "flex-grow", "1" )
-    , ( "display", "flex" )
-    , ( "flex-flow", "row wrap" )
-    , ( "padding", "5px" )
-    , ( "list-style", "none" )
-    ]
-
-
-groupItem : Bool -> List ( String, String )
-groupItem selected =
-    [ ( "font-size", "14px" )
-    , ( "background", "rgba(151, 151, 151, 0.1)" )
-    , ( "margin", "5px" )
-    , ( "padding", "10px" )
+groupItem : { selected : Bool, hovered : Bool } -> List (Html.Attribute msg)
+groupItem { selected, hovered } =
+    [ style "font-size" "14px"
+    , style "background" Colors.groupBackground
+    , style "margin" "5px"
+    , style "padding" "10px"
     ]
         ++ (if selected then
-                [ ( "opacity", "1" )
-                , ( "border", "1px solid #979797" )
+                [ style "opacity" "1"
+                , style "border" <| "1px solid " ++ Colors.groupBorderSelected
+                ]
+
+            else if hovered then
+                [ style "opacity" "0.6"
+                , style "border" <| "1px solid " ++ Colors.groupBorderHovered
                 ]
 
             else
-                [ ( "opacity", "0.6" )
-                , ( "border", "1px solid #2b2a2a" )
+                [ style "opacity" "0.6"
+                , style "border" <| "1px solid " ++ Colors.groupBorderUnselected
                 ]
            )
+
+
+pauseToggle : Bool -> List (Html.Attribute msg)
+pauseToggle isPaused =
+    [ style "border-left" <|
+        if isPaused then
+            "1px solid rgba(255, 255, 255, 0.5)"
+
+        else
+            "1px solid #3d3c3c"
+    ]
+
+
+cliIcon : Cli.Cli -> List (Html.Attribute msg)
+cliIcon cli =
+    [ style "width" "12px"
+    , style "height" "12px"
+    , style "background-image" <|
+        Assets.backgroundImage <|
+            Just (Assets.CliIcon cli)
+    , style "background-repeat" "no-repeat"
+    , style "background-position" "50% 50%"
+    , style "background-size" "contain"
+    , style "display" "inline-block"
+    ]

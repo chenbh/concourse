@@ -2,12 +2,13 @@ package syslog_test
 
 import (
 	"crypto/tls"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io"
 	"net"
 	"sync"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"testing"
 )
@@ -31,7 +32,7 @@ func newTestServer(cert *tls.Certificate) *testServer {
 	server := &testServer{
 		Messages: make(chan string, 20),
 
-		wg:    new(sync.WaitGroup),
+		wg: new(sync.WaitGroup),
 	}
 
 	server.ListenTCP(cert)
@@ -109,4 +110,3 @@ func (server *testServer) Close() {
 	server.ln.Close()
 	server.wg.Wait()
 }
-

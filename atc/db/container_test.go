@@ -251,8 +251,11 @@ var _ = Describe("Container", func() {
 				})
 				Context("when the container dissapears from the db", func() {
 					BeforeEach(func() {
-						_, err := destroyingContainer.Destroy()
-						Expect(err).ToNot(HaveOccurred())
+						_, err := psql.Delete("containers").
+							Where(sq.Eq{"handle": destroyingContainer.Handle()}).
+							RunWith(dbConn).
+							Exec()
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					It("returns an error", func() {
@@ -298,26 +301,6 @@ var _ = Describe("Container", func() {
 						Expect(destroyErr).To(HaveOccurred())
 					})
 				})
-			})
-		})
-	})
-
-	Describe("Discontinue", func() {
-		Context("when the container is already in destroying state", func() {
-			var createdContainer db.CreatedContainer
-
-			BeforeEach(func() {
-				var err error
-				createdContainer, err = creatingContainer.Created()
-				Expect(err).NotTo(HaveOccurred())
-				_, err = createdContainer.Discontinue()
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("returns a discontinued container and no error", func() {
-				destroyingContainer, err := createdContainer.Discontinue()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(destroyingContainer).NotTo(BeNil())
 			})
 		})
 	})

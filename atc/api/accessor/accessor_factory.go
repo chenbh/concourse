@@ -1,55 +1,63 @@
 package accessor
 
 import (
-	"crypto/rsa"
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/concourse/concourse/atc/db"
 )
 
-//go:generate counterfeiter . AccessFactory
+//go:generate counterfeiter . TokenVerifier
 
-type AccessFactory interface {
-	Create(*http.Request, string) Access
+type TokenVerifier interface {
+	Verify(req *http.Request) (map[string]interface{}, error)
+}
+
+//go:generate counterfeiter .  TeamFetcher
+
+type TeamFetcher interface {
+	GetTeams() ([]db.Team, error)
+}
+
+func NewAccessFactory(
+	tokenVerifier TokenVerifier,
+	teamFetcher TeamFetcher,
+	systemClaimKey string,
+	systemClaimValues []string,
+) AccessFactory {
+	return &accessFactory{
+		tokenVerifier:     tokenVerifier,
+		teamFetcher:       teamFetcher,
+		systemClaimKey:    systemClaimKey,
+		systemClaimValues: systemClaimValues,
+	}
 }
 
 type accessFactory struct {
-	publicKey *rsa.PublicKey
+	tokenVerifier     TokenVerifier
+	teamFetcher       TeamFetcher
+	systemClaimKey    string
+	systemClaimValues []string
 }
 
-func NewAccessFactory(key *rsa.PublicKey) AccessFactory {
-	return &accessFactory{
-		publicKey: key,
-	}
-}
-
-func (a *accessFactory) Create(r *http.Request, action string) Access {
-
-	token, err := a.parseToken(r)
+func (a *accessFactory) Create(req *http.Request, role string) (Access, error) {
+	teams, err := a.teamFetcher.GetTeams()
 	if err != nil {
-		token = &jwt.Token{}
+		return nil, fmt.Errorf("fetch teams: %w", err)
 	}
-
-	return &access{token, action}
+	return NewAccessor(a.verifyToken(req), role, a.systemClaimKey, a.systemClaimValues, teams), nil
 }
 
-func (a *accessFactory) parseToken(r *http.Request) (*jwt.Token, error) {
-	fun := func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return a.publicKey, nil
-	}
-
-	if ah := r.Header.Get("Authorization"); ah != "" {
-		// Should be a bearer token
-		if len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
-			return jwt.Parse(ah[7:], fun)
+func (a *accessFactory) verifyToken(req *http.Request) Verification {
+	claims, err := a.tokenVerifier.Verify(req)
+	if err != nil {
+		switch err {
+		case ErrVerificationNoToken:
+			return Verification{HasToken: false, IsTokenValid: false}
+		default:
+			return Verification{HasToken: true, IsTokenValid: false}
 		}
 	}
 
-	return nil, errors.New("unable to parse authorization header")
+	return Verification{HasToken: true, IsTokenValid: true, RawClaims: claims}
 }

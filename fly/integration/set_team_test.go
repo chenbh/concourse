@@ -2,16 +2,16 @@ package integration_test
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os/exec"
-
 	"github.com/concourse/concourse/atc"
+	"github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
+	"io"
+	"net/http"
+	"os/exec"
 )
 
 var _ = Describe("Fly CLI", func() {
@@ -41,10 +41,25 @@ var _ = Describe("Fly CLI", func() {
 						cmdParams = []string{"-c", "fixtures/team_config_no_auth_for_role.yml"}
 					})
 
-					It("returns an error", func() {
-						sess, err := gexec.Start(flyCmd, nil, nil)
+					It("discard role with missing auth", func() {
+						sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(sess.Err).Should(gbytes.Say("You have not provided a list of users and groups for one of the roles in your config yaml."))
+
+						Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+
+						Eventually(sess.Out).Should(gbytes.Say("role member:"))
+						Eventually(sess.Out).Should(gbytes.Say("users:"))
+						Eventually(sess.Out).Should(gbytes.Say("- local:some-user"))
+						Eventually(sess.Out).Should(gbytes.Say("groups:"))
+						Eventually(sess.Out).Should(gbytes.Say("none"))
+						Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+						Eventually(sess.Out).Should(gbytes.Say("users:"))
+						Eventually(sess.Out).Should(gbytes.Say("- local:some-admin"))
+						Eventually(sess.Out).Should(gbytes.Say("groups:"))
+						Eventually(sess.Out).Should(gbytes.Say("none"))
+
+						Eventually(sess.Out).ShouldNot(gbytes.Say("role viewer:"))
+
 						Eventually(sess).Should(gexec.Exit(1))
 					})
 				})
@@ -54,10 +69,19 @@ var _ = Describe("Fly CLI", func() {
 						cmdParams = []string{"-c", "fixtures/team_config_empty_users.yml"}
 					})
 
-					It("returns an error", func() {
-						sess, err := gexec.Start(flyCmd, nil, nil)
+					It("discard role with no user and group", func() {
+						sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(sess.Err).Should(gbytes.Say("You have not provided a list of users and groups for one of the roles in your config yaml."))
+						Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+
+						Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+						Eventually(sess.Out).Should(gbytes.Say("users:"))
+						Eventually(sess.Out).Should(gbytes.Say("- local:some-admin"))
+						Eventually(sess.Out).Should(gbytes.Say("groups:"))
+						Eventually(sess.Out).Should(gbytes.Say("none"))
+
+						Eventually(sess.Out).ShouldNot(gbytes.Say("role viewer:"))
+
 						Eventually(sess).Should(gexec.Exit(1))
 					})
 				})
@@ -71,25 +95,28 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users configured for local auth for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:some-member"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:some-owner"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:some-viewer"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
 					Eventually(sess).Should(gexec.Exit(1))
 				})
@@ -101,24 +128,27 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for github for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:some-user"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:some-other-org"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:some-github-user"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:some-org:some-team"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -131,25 +161,33 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for cf auth for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:some-member"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-space:developer"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:some-admin"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-space:manager"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-guid"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-space"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-other-space"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-space:developer"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-org:some-space:auditor"))
+					Eventually(sess.Out).Should(gbytes.Say("- cf:some-guid"))
 
 					Eventually(sess).Should(gexec.Exit(1))
 				})
@@ -161,24 +199,27 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for ldap auth for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:some-user"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:some-admin"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:some-other-group"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:some-group"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -191,24 +232,27 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the groups configured for generic oauth for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- oauth:some-user"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- oauth:some-admin"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- oauth:some-other-group"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- oauth:some-group"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -221,25 +265,28 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for a given role", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(member\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(member\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role member:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:some-org"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:some-admin"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(viewer\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("role viewer:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:some-viewer"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(viewer\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
 					Eventually(sess).Should(gexec.Exit(1))
 				})
@@ -260,10 +307,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					yes(stdin)
 
 					Eventually(sess).Should(gexec.Exit(0))
@@ -275,10 +322,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					no(stdin)
 
 					Eventually(sess.Err).Should(gbytes.Say("bailing out"))
@@ -331,10 +378,10 @@ var _ = Describe("Fly CLI", func() {
 				stdin, err := flyCmd.StdinPipe()
 				Expect(err).NotTo(HaveOccurred())
 
-				sess, err := gexec.Start(flyCmd, nil, nil)
+				sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 
-				Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+				Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 				yes(stdin)
 
 				Eventually(sess).Should(gexec.Exit(0))
@@ -344,10 +391,10 @@ var _ = Describe("Fly CLI", func() {
 				stdin, err := flyCmd.StdinPipe()
 				Expect(err).NotTo(HaveOccurred())
 
-				sess, err := gexec.Start(flyCmd, nil, nil)
+				sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 
-				Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+				Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 				yes(stdin)
 
 				Eventually(sess.Out).Should(gbytes.Say("team created"))
@@ -400,10 +447,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					yes(stdin)
 
 					Eventually(sess.Err).Should(gbytes.Say("sorry bro"))
@@ -423,9 +470,9 @@ var _ = Describe("Fly CLI", func() {
 					})
 
 					It("returns an error", func() {
-						sess, err := gexec.Start(flyCmd, nil, nil)
+						sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(sess.Err).Should(gbytes.Say("You have not provided a list of users and groups for the specified team."))
+						Eventually(sess.Err).Should(gbytes.Say("auth config for the team does not have users and groups configured"))
 						Eventually(sess).Should(gexec.Exit(1))
 					})
 				})
@@ -436,9 +483,22 @@ var _ = Describe("Fly CLI", func() {
 					})
 
 					It("returns an error", func() {
-						sess, err := gexec.Start(flyCmd, nil, nil)
+						sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 						Expect(err).ToNot(HaveOccurred())
-						Eventually(sess.Err).Should(gbytes.Say("You have not provided a list of users and groups for the specified team."))
+						Eventually(sess.Err).Should(gbytes.Say("auth config for the team does not have users and groups configured"))
+						Eventually(sess).Should(gexec.Exit(1))
+					})
+				})
+
+				Context("empty auth file is provided", func() {
+					BeforeEach(func() {
+						cmdParams = []string{"-c", "fixtures/team_config_empty.yml"}
+					})
+
+					It("returns an error", func() {
+						sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
+						Expect(err).ToNot(HaveOccurred())
+						Eventually(sess.Err).Should(gbytes.Say("auth config for the team must not be empty"))
 						Eventually(sess).Should(gexec.Exit(1))
 					})
 				})
@@ -452,34 +512,15 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users configured for local auth", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- local:brock-samson"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-
-					Eventually(sess).Should(gexec.Exit(1))
-				})
-			})
-
-			Context("Setting github auth", func() {
-				BeforeEach(func() {
-					cmdParams = []string{"--github-org", "my-org", "--github-team", "samson-org:samson-team", "--github-user", "samsonite"}
-				})
-
-				It("shows the users and groups configured for github", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
-					Expect(err).ToNot(HaveOccurred())
-
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- github:samsonite"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- github:my-org"))
-					Eventually(sess.Out).Should(gbytes.Say("- github:samson-org:samson-team"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
 
 					Eventually(sess).Should(gexec.Exit(1))
 				})
@@ -491,13 +532,14 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for cf auth", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:my-username"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:myorg-1"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:myorg-2:myspace"))
 					Eventually(sess.Out).Should(gbytes.Say("- cf:myspace-guid"))
@@ -512,13 +554,14 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the users and groups configured for ldap auth", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:my-username"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- ldap:my-group"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -533,13 +576,14 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("shows the groups configured for generic oauth", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- oauth:cool-scope-name"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -552,13 +596,14 @@ var _ = Describe("Fly CLI", func() {
 				})
 
 				It("ignores empty arguments", func() {
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess.Out).Should(gbytes.Say("Team Name: venture"))
-					Eventually(sess.Out).Should(gbytes.Say("Users \\(owner\\):"))
-					Eventually(sess.Out).Should(gbytes.Say("- none"))
-					Eventually(sess.Out).Should(gbytes.Say("Groups \\(owner\\):"))
+					Eventually(sess.Out).Should(gbytes.Say("setting team: venture"))
+					Eventually(sess.Out).Should(gbytes.Say("role owner:"))
+					Eventually(sess.Out).Should(gbytes.Say("users:"))
+					Eventually(sess.Out).Should(gbytes.Say("none"))
+					Eventually(sess.Out).Should(gbytes.Say("groups:"))
 					Eventually(sess.Out).Should(gbytes.Say("- github:samson-org:samson-team"))
 
 					Eventually(sess).Should(gexec.Exit(1))
@@ -580,10 +625,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					yes(stdin)
 
 					Eventually(sess).Should(gexec.Exit(0))
@@ -595,10 +640,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					no(stdin)
 
 					Eventually(sess.Err).Should(gbytes.Say("bailing out"))
@@ -647,10 +692,10 @@ var _ = Describe("Fly CLI", func() {
 				stdin, err := flyCmd.StdinPipe()
 				Expect(err).NotTo(HaveOccurred())
 
-				sess, err := gexec.Start(flyCmd, nil, nil)
+				sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 
-				Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+				Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 				yes(stdin)
 
 				Eventually(sess).Should(gexec.Exit(0))
@@ -660,10 +705,10 @@ var _ = Describe("Fly CLI", func() {
 				stdin, err := flyCmd.StdinPipe()
 				Expect(err).NotTo(HaveOccurred())
 
-				sess, err := gexec.Start(flyCmd, nil, nil)
+				sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 
-				Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+				Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 				yes(stdin)
 
 				Eventually(sess.Out).Should(gbytes.Say("team created"))
@@ -701,10 +746,10 @@ var _ = Describe("Fly CLI", func() {
 					stdin, err := flyCmd.StdinPipe()
 					Expect(err).NotTo(HaveOccurred())
 
-					sess, err := gexec.Start(flyCmd, nil, nil)
+					sess, err := gexec.Start(flyCmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(sess).Should(gbytes.Say(`apply configuration\? \[yN\]: `))
+					Eventually(sess).Should(gbytes.Say(`apply team configuration\? \[yN\]: `))
 					yes(stdin)
 
 					Eventually(sess.Err).Should(gbytes.Say("sorry bro"))

@@ -1,34 +1,42 @@
 module SubPage.SubPage exposing
     ( Model(..)
     , handleCallback
+    , handleDelivery
     , handleNotFound
     , init
     , subscriptions
+    , tooltip
     , update
     , urlUpdate
     , view
     )
 
+import Application.Models exposing (Session)
 import Build.Build as Build
+import Build.Header.Models
 import Build.Models
-import Build.Msgs
-import Callback exposing (Callback)
-import Concourse
 import Dashboard.Dashboard as Dashboard
-import Effects exposing (Effect)
+import Dashboard.Models
+import EffectTransformer exposing (ET)
 import FlySuccess.FlySuccess as FlySuccess
+import FlySuccess.Models
+import HoverState
 import Html exposing (Html)
-import Html.Styled as HS
 import Job.Job as Job
-import NotFound
+import Login.Login as Login
+import Message.Callback exposing (Callback(..))
+import Message.Effects exposing (Effect(..))
+import Message.Message exposing (Message(..))
+import Message.Subscription exposing (Delivery(..), Interval(..), Subscription)
+import Message.TopLevelMessage exposing (TopLevelMessage(..))
+import NotFound.Model
+import NotFound.NotFound as NotFound
 import Pipeline.Pipeline as Pipeline
 import Resource.Models
 import Resource.Resource as Resource
 import Routes
-import SubPage.Msgs exposing (Msg(..))
-import Subscription exposing (Subscription)
+import Tooltip
 import UpdateMsg exposing (UpdateMsg)
-import UserState exposing (UserState)
 
 
 type Model
@@ -36,35 +44,27 @@ type Model
     | JobModel Job.Model
     | ResourceModel Resource.Models.Model
     | PipelineModel Pipeline.Model
-    | NotFoundModel NotFound.Model
-    | DashboardModel Dashboard.Model
-    | FlySuccessModel FlySuccess.Model
+    | NotFoundModel NotFound.Model.Model
+    | DashboardModel Dashboard.Models.Model
+    | FlySuccessModel FlySuccess.Models.Model
 
 
-type alias Flags =
-    { csrfToken : String
-    , authToken : String
-    , turbulencePath : String
-    , pipelineRunningKeyframes : String
-    }
-
-
-init : Flags -> Routes.Route -> ( Model, List Effect )
-init flags route =
+init : Session -> Routes.Route -> ( Model, List Effect )
+init session route =
     case route of
         Routes.Build { id, highlight } ->
             Build.init
-                { csrfToken = flags.csrfToken
-                , highlight = highlight
-                , pageType = Build.Models.JobBuildPage id
+                { highlight = highlight
+                , pageType = Build.Header.Models.JobBuildPage id
+                , fromBuildPage = Nothing
                 }
                 |> Tuple.mapFirst BuildModel
 
         Routes.OneOffBuild { id, highlight } ->
             Build.init
-                { csrfToken = flags.csrfToken
-                , highlight = highlight
-                , pageType = Build.Models.OneOffBuildPage id
+                { highlight = highlight
+                , pageType = Build.Header.Models.OneOffBuildPage id
+                , fromBuildPage = Nothing
                 }
                 |> Tuple.mapFirst BuildModel
 
@@ -72,7 +72,6 @@ init flags route =
             Resource.init
                 { resourceId = id
                 , paging = page
-                , csrfToken = flags.csrfToken
                 }
                 |> Tuple.mapFirst ResourceModel
 
@@ -80,41 +79,42 @@ init flags route =
             Job.init
                 { jobId = id
                 , paging = page
-                , csrfToken = flags.csrfToken
                 }
                 |> Tuple.mapFirst JobModel
 
         Routes.Pipeline { id, groups } ->
             Pipeline.init
                 { pipelineLocator = id
-                , turbulenceImgSrc = flags.turbulencePath
+                , turbulenceImgSrc = session.turbulenceImgSrc
                 , selectedGroups = groups
                 }
                 |> Tuple.mapFirst PipelineModel
 
-        Routes.Dashboard { searchType } ->
+        Routes.Dashboard { searchType, dashboardView } ->
             Dashboard.init
-                { turbulencePath = flags.turbulencePath
-                , csrfToken = flags.csrfToken
-                , searchType = searchType
-                , pipelineRunningKeyframes = flags.pipelineRunningKeyframes
+                { searchType = searchType
+                , dashboardView = dashboardView
                 }
                 |> Tuple.mapFirst DashboardModel
 
-        Routes.FlySuccess { flyPort } ->
+        Routes.FlySuccess noop flyPort ->
             FlySuccess.init
-                { authToken = flags.authToken
+                { authToken = session.authToken
                 , flyPort = flyPort
+                , noop = noop
                 }
                 |> Tuple.mapFirst FlySuccessModel
 
 
-handleNotFound : String -> Routes.Route -> ( Model, List Effect ) -> ( Model, List Effect )
+handleNotFound : String -> Routes.Route -> ET Model
 handleNotFound notFound route ( model, effects ) =
     case getUpdateMessage model of
         UpdateMsg.NotFound ->
-            NotFound.init { notFoundImgSrc = notFound, route = route }
-                |> Tuple.mapFirst NotFoundModel
+            let
+                ( newModel, newEffects ) =
+                    NotFound.init { notFoundImgSrc = notFound, route = route }
+            in
+            ( NotFoundModel newModel, effects ++ newEffects )
 
         UpdateMsg.AOK ->
             ( model, effects )
@@ -139,207 +139,280 @@ getUpdateMessage model =
             UpdateMsg.AOK
 
 
-handleCallback :
-    Concourse.CSRFToken
-    -> Callback
-    -> Model
-    -> ( Model, List Effect )
-handleCallback csrfToken callback model =
+genericUpdate :
+    ET Build.Models.Model
+    -> ET Job.Model
+    -> ET Resource.Models.Model
+    -> ET Pipeline.Model
+    -> ET Dashboard.Models.Model
+    -> ET NotFound.Model.Model
+    -> ET FlySuccess.Models.Model
+    -> ET Model
+genericUpdate fBuild fJob fRes fPipe fDash fNF fFS ( model, effects ) =
     case model of
         BuildModel buildModel ->
-            Build.handleCallback callback { buildModel | csrfToken = csrfToken }
+            fBuild ( buildModel, effects )
                 |> Tuple.mapFirst BuildModel
 
-        JobModel model ->
-            Job.handleCallback callback { model | csrfToken = csrfToken }
+        JobModel jobModel ->
+            fJob ( jobModel, effects )
                 |> Tuple.mapFirst JobModel
 
-        PipelineModel model ->
-            Pipeline.handleCallback callback model
+        PipelineModel pipelineModel ->
+            fPipe ( pipelineModel, effects )
                 |> Tuple.mapFirst PipelineModel
 
-        ResourceModel model ->
-            Resource.handleCallback callback { model | csrfToken = csrfToken }
+        ResourceModel resourceModel ->
+            fRes ( resourceModel, effects )
                 |> Tuple.mapFirst ResourceModel
 
-        DashboardModel model ->
-            Dashboard.handleCallback callback model
+        DashboardModel dashboardModel ->
+            fDash ( dashboardModel, effects )
                 |> Tuple.mapFirst DashboardModel
 
-        FlySuccessModel model ->
-            FlySuccess.handleCallback callback model
+        FlySuccessModel flySuccessModel ->
+            fFS ( flySuccessModel, effects )
                 |> Tuple.mapFirst FlySuccessModel
 
-        NotFoundModel model ->
-            NotFound.handleCallback callback model
+        NotFoundModel notFoundModel ->
+            fNF ( notFoundModel, effects )
                 |> Tuple.mapFirst NotFoundModel
 
 
-update :
-    String
-    -> String
-    -> Concourse.CSRFToken
-    -> Routes.Route
-    -> Msg
-    -> Model
-    -> ( Model, List Effect )
-update turbulence notFound csrfToken route msg mdl =
-    case ( msg, mdl ) of
-        ( NewCSRFToken c, BuildModel buildModel ) ->
-            Build.update (Build.Msgs.NewCSRFToken c) buildModel
-                |> Tuple.mapFirst BuildModel
+handleCallback : Callback -> Session -> ET Model
+handleCallback callback session =
+    genericUpdate
+        (Build.handleCallback callback)
+        (Job.handleCallback callback)
+        (Resource.handleCallback callback session)
+        (Pipeline.handleCallback callback)
+        (Dashboard.handleCallback callback)
+        identity
+        identity
+        >> (case callback of
+                LoggedOut (Ok ()) ->
+                    genericUpdate
+                        handleLoggedOut
+                        handleLoggedOut
+                        handleLoggedOut
+                        handleLoggedOut
+                        handleLoggedOut
+                        handleLoggedOut
+                        handleLoggedOut
 
-        ( BuildMsg msg, BuildModel buildModel ) ->
-            let
-                model =
-                    { buildModel | csrfToken = csrfToken }
-            in
-            Build.update msg model
-                |> Tuple.mapFirst BuildModel
-                |> handleNotFound notFound route
-
-        ( NewCSRFToken c, JobModel model ) ->
-            ( JobModel { model | csrfToken = c }, [] )
-
-        ( JobMsg message, JobModel model ) ->
-            Job.update message { model | csrfToken = csrfToken }
-                |> Tuple.mapFirst JobModel
-                |> handleNotFound notFound route
-
-        ( PipelineMsg message, PipelineModel model ) ->
-            Pipeline.update message model
-                |> Tuple.mapFirst PipelineModel
-                |> handleNotFound notFound route
-
-        ( NewCSRFToken c, ResourceModel model ) ->
-            ( ResourceModel { model | csrfToken = c }, [] )
-
-        ( ResourceMsg message, ResourceModel model ) ->
-            Resource.update message { model | csrfToken = csrfToken }
-                |> Tuple.mapFirst ResourceModel
-                |> handleNotFound notFound route
-
-        ( NewCSRFToken c, DashboardModel model ) ->
-            ( DashboardModel { model | csrfToken = c }, [] )
-
-        ( DashboardMsg message, DashboardModel model ) ->
-            Dashboard.update message model
-                |> Tuple.mapFirst DashboardModel
-
-        ( FlySuccessMsg message, FlySuccessModel model ) ->
-            FlySuccess.update message model
-                |> Tuple.mapFirst FlySuccessModel
-
-        ( NotFoundMsg message, NotFoundModel model ) ->
-            NotFound.update message model
-                |> Tuple.mapFirst NotFoundModel
-
-        ( NewCSRFToken _, mdl ) ->
-            ( mdl, [] )
-
-        unknown ->
-            flip always (Debug.log "impossible combination" unknown) <|
-                ( mdl, [] )
+                _ ->
+                    identity
+           )
 
 
-urlUpdate : Routes.Route -> Model -> ( Model, List Effect )
-urlUpdate route model =
-    case ( route, model ) of
-        ( Routes.Pipeline { id, groups }, PipelineModel mdl ) ->
-            mdl
-                |> Pipeline.changeToPipelineAndGroups
+handleLoggedOut : ET { a | isUserMenuExpanded : Bool }
+handleLoggedOut ( m, effs ) =
+    ( { m | isUserMenuExpanded = False }
+    , effs
+        ++ [ NavigateTo <|
+                Routes.toString <|
+                    Routes.Dashboard
+                        { searchType = Routes.Normal ""
+                        , dashboardView = Routes.ViewNonArchivedPipelines
+                        }
+           ]
+    )
+
+
+handleDelivery : { a | hovered : HoverState.HoverState } -> Delivery -> ET Model
+handleDelivery session delivery =
+    genericUpdate
+        (Build.handleDelivery session delivery)
+        (Job.handleDelivery delivery)
+        (Resource.handleDelivery delivery)
+        (Pipeline.handleDelivery delivery)
+        (Dashboard.handleDelivery delivery)
+        (NotFound.handleDelivery delivery)
+        (FlySuccess.handleDelivery delivery)
+
+
+update : Session -> Message -> ET Model
+update session msg =
+    genericUpdate
+        (Login.update msg >> Build.update msg)
+        (Login.update msg >> Job.update msg)
+        (Login.update msg >> Resource.update msg)
+        (Login.update msg >> Pipeline.update msg)
+        (Login.update msg >> Dashboard.update session msg)
+        (Login.update msg)
+        (Login.update msg >> FlySuccess.update msg)
+        >> (case msg of
+                GoToRoute route ->
+                    handleGoToRoute route
+
+                _ ->
+                    identity
+           )
+
+
+handleGoToRoute : Routes.Route -> ET a
+handleGoToRoute route ( a, effs ) =
+    ( a, effs ++ [ NavigateTo <| Routes.toString route ] )
+
+
+urlUpdate : Routes.Transition -> ET Model
+urlUpdate routes =
+    genericUpdate
+        (case routes.to of
+            Routes.Build { id, highlight } ->
+                Build.changeToBuild
+                    { pageType = Build.Header.Models.JobBuildPage id
+                    , highlight = highlight
+                    , fromBuildPage =
+                        case routes.from of
+                            Routes.Build params ->
+                                Just <| Build.Header.Models.JobBuildPage params.id
+
+                            _ ->
+                                Nothing
+                    }
+
+            Routes.OneOffBuild { id, highlight } ->
+                Build.changeToBuild
+                    { pageType = Build.Header.Models.OneOffBuildPage id
+                    , highlight = highlight
+                    , fromBuildPage =
+                        case routes.from of
+                            Routes.OneOffBuild params ->
+                                Just <| Build.Header.Models.OneOffBuildPage params.id
+
+                            _ ->
+                                Nothing
+                    }
+
+            _ ->
+                identity
+        )
+        (case routes.to of
+            Routes.Job { id, page } ->
+                Job.changeToJob { jobId = id, paging = page }
+
+            _ ->
+                identity
+        )
+        (case routes.to of
+            Routes.Resource { id, page } ->
+                Resource.changeToResource { resourceId = id, paging = page }
+
+            _ ->
+                identity
+        )
+        (case routes.to of
+            Routes.Pipeline { id, groups } ->
+                Pipeline.changeToPipelineAndGroups
                     { pipelineLocator = id
-                    , turbulenceImgSrc = mdl.turbulenceImgSrc
                     , selectedGroups = groups
                     }
-                |> Tuple.mapFirst PipelineModel
 
-        ( Routes.Resource { id, page }, ResourceModel mdl ) ->
-            mdl
-                |> Resource.changeToResource
-                    { resourceId = id
-                    , paging = page
-                    , csrfToken = mdl.csrfToken
-                    }
-                |> Tuple.mapFirst ResourceModel
+            _ ->
+                identity
+        )
+        (case routes.to of
+            Routes.Dashboard { searchType, dashboardView } ->
+                Tuple.mapFirst
+                    (\dm ->
+                        { dm
+                            | highDensity = searchType == Routes.HighDensity
+                            , dashboardView = dashboardView
+                        }
+                    )
 
-        ( Routes.Job { id, page }, JobModel mdl ) ->
-            mdl
-                |> Job.changeToJob
-                    { jobId = id
-                    , paging = page
-                    , csrfToken = mdl.csrfToken
-                    }
-                |> Tuple.mapFirst JobModel
-
-        ( Routes.Build { id, highlight }, BuildModel buildModel ) ->
-            { buildModel | highlight = highlight }
-                |> Build.changeToBuild (Build.Models.JobBuildPage id)
-                |> Tuple.mapFirst BuildModel
-
-        _ ->
-            ( model, [] )
+            _ ->
+                identity
+        )
+        identity
+        identity
 
 
-view : UserState -> Model -> Html Msg
-view userState mdl =
+view : Session -> Model -> ( String, Html Message )
+view ({ userState } as session) mdl =
     case mdl of
         BuildModel model ->
-            Build.view userState model
-                |> Html.map BuildMsg
+            ( Build.documentTitle model
+            , Build.view session model
+            )
 
         JobModel model ->
-            Job.view userState model
-                |> Html.map JobMsg
+            ( Job.documentTitle model
+            , Job.view session model
+            )
 
         PipelineModel model ->
-            Pipeline.view userState model
-                |> Html.map PipelineMsg
+            ( Pipeline.documentTitle model
+            , Pipeline.view session model
+            )
 
         ResourceModel model ->
-            Resource.view userState model
-                |> HS.toUnstyled
-                |> Html.map ResourceMsg
+            ( Resource.documentTitle model
+            , Resource.view session model
+            )
 
         DashboardModel model ->
-            Dashboard.view userState model
-                |> HS.toUnstyled
-                |> Html.map DashboardMsg
+            ( Dashboard.documentTitle
+            , Dashboard.view session model
+            )
 
         NotFoundModel model ->
-            NotFound.view userState model
-                |> Html.map NotFoundMsg
+            ( NotFound.documentTitle
+            , NotFound.view session model
+            )
 
         FlySuccessModel model ->
-            FlySuccess.view userState model
-                |> Html.map FlySuccessMsg
+            ( FlySuccess.documentTitle
+            , FlySuccess.view userState model
+            )
 
 
-subscriptions : Model -> List (Subscription Msg)
+tooltip : Model -> Session -> Maybe Tooltip.Tooltip
+tooltip mdl =
+    case mdl of
+        BuildModel model ->
+            Build.tooltip model
+
+        JobModel model ->
+            Job.tooltip model
+
+        PipelineModel model ->
+            Pipeline.tooltip model
+
+        ResourceModel model ->
+            Resource.tooltip model
+
+        DashboardModel model ->
+            Dashboard.tooltip model
+
+        NotFoundModel model ->
+            NotFound.tooltip model
+
+        FlySuccessModel model ->
+            FlySuccess.tooltip model
+
+
+subscriptions : Model -> List Subscription
 subscriptions mdl =
     case mdl of
         BuildModel model ->
             Build.subscriptions model
-                |> List.map (Subscription.map BuildMsg)
 
-        JobModel model ->
-            Job.subscriptions model
-                |> List.map (Subscription.map JobMsg)
+        JobModel _ ->
+            Job.subscriptions
 
-        PipelineModel model ->
-            Pipeline.subscriptions model
-                |> List.map (Subscription.map PipelineMsg)
+        PipelineModel _ ->
+            Pipeline.subscriptions
 
-        ResourceModel model ->
-            Resource.subscriptions model
-                |> List.map (Subscription.map ResourceMsg)
+        ResourceModel _ ->
+            Resource.subscriptions
 
-        DashboardModel model ->
-            Dashboard.subscriptions model
-                |> List.map (Subscription.map DashboardMsg)
+        DashboardModel _ ->
+            Dashboard.subscriptions
 
         NotFoundModel _ ->
-            []
+            NotFound.subscriptions
 
         FlySuccessModel _ ->
-            []
+            FlySuccess.subscriptions

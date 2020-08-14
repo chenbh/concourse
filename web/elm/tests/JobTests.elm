@@ -1,28 +1,28 @@
 module JobTests exposing (all)
 
 import Application.Application as Application
-import Application.Msgs as Msgs
-import Callback exposing (Callback(..))
-import Concourse exposing (Build, BuildId, BuildStatus(..), Job)
+import Assets
+import Common exposing (defineHoverBehaviour, queryView)
+import Concourse exposing (Build, BuildId, Job)
+import Concourse.BuildStatus exposing (BuildStatus(..))
 import Concourse.Pagination exposing (Direction(..))
-import DashboardTests
-    exposing
-        ( darkGrey
-        , defineHoverBehaviour
-        , iconSelector
-        , middleGrey
-        )
-import Date
+import DashboardTests exposing (darkGrey, iconSelector, middleGrey)
+import Data
 import Dict
-import Effects
 import Expect exposing (..)
 import Html.Attributes as Attr
 import Http
 import Job.Job as Job exposing (update)
-import Job.Msgs exposing (Msg(..))
+import Message.Callback as Callback exposing (Callback(..))
+import Message.Effects as Effects
+import Message.Message exposing (DomID(..), Message(..))
+import Message.Subscription as Subscription
+    exposing
+        ( Delivery(..)
+        , Interval(..)
+        )
+import Message.TopLevelMessage as Msgs
 import RemoteData
-import Routes
-import SubPage.Msgs
 import Test exposing (..)
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
@@ -34,6 +34,9 @@ import Test.Html.Selector as Selector
         , style
         , text
         )
+import Time
+import Url
+import Views.Styles
 
 
 all : Test
@@ -42,10 +45,13 @@ all =
         [ describe "update" <|
             let
                 someJobInfo =
-                    { jobName = "some-job"
-                    , pipelineName = "some-pipeline"
-                    , teamName = "some-team"
-                    }
+                    Data.jobId
+                        |> Data.withJobName "some-job"
+                        |> Data.withPipelineName "some-pipeline"
+                        |> Data.withTeamName "some-team"
+
+                jobInfo =
+                    Data.jobId
 
                 someBuild : Build
                 someBuild =
@@ -54,10 +60,10 @@ all =
                     , job = Just someJobInfo
                     , status = BuildStatusSucceeded
                     , duration =
-                        { startedAt = Just (Date.fromTime 0)
-                        , finishedAt = Just (Date.fromTime 0)
+                        { startedAt = Just <| Time.millisToPosix 0
+                        , finishedAt = Just <| Time.millisToPosix 0
                         }
-                    , reapTime = Just (Date.fromTime 0)
+                    , reapTime = Just <| Time.millisToPosix 0
                     }
 
                 someJob : Concourse.Job
@@ -65,10 +71,6 @@ all =
                     { name = "some-job"
                     , pipelineName = "some-pipeline"
                     , teamName = "some-team"
-                    , pipeline =
-                        { pipelineName = "some-pipeline"
-                        , teamName = "some-team"
-                        }
                     , nextBuild = Nothing
                     , finishedBuild = Just someBuild
                     , transitionBuild = Nothing
@@ -84,46 +86,34 @@ all =
                     Job.init
                         { jobId = someJobInfo
                         , paging = Nothing
-                        , csrfToken = ""
                         }
                         |> Tuple.first
+
+                csrfToken : String
+                csrfToken =
+                    "csrf_token"
+
+                flags : Application.Flags
+                flags =
+                    { turbulenceImgSrc = ""
+                    , notFoundImgSrc = ""
+                    , csrfToken = csrfToken
+                    , authToken = ""
+                    , pipelineRunningKeyframes = ""
+                    }
 
                 init :
                     { disabled : Bool, paused : Bool }
                     -> ()
                     -> Application.Model
                 init { disabled, paused } _ =
-                    Application.init
-                        { turbulenceImgSrc = ""
-                        , notFoundImgSrc = ""
-                        , csrfToken = ""
-                        , authToken = ""
-                        , pipelineRunningKeyframes = ""
-                        }
-                        { href = ""
-                        , host = ""
-                        , hostname = ""
-                        , protocol = ""
-                        , origin = ""
-                        , port_ = ""
-                        , pathname = "/teams/team/pipelines/pipeline/jobs/job"
-                        , search = ""
-                        , hash = ""
-                        , username = ""
-                        , password = ""
-                        }
-                        |> Tuple.first
+                    Common.init "/teams/team/pipelines/pipeline/jobs/job"
                         |> Application.handleCallback
-                            (Effects.SubPage 1)
                             (JobFetched <|
                                 Ok
                                     { name = "job"
                                     , pipelineName = "pipeline"
                                     , teamName = "team"
-                                    , pipeline =
-                                        { pipelineName = "pipeline"
-                                        , teamName = "team"
-                                        }
                                     , nextBuild = Nothing
                                     , finishedBuild = Just someBuild
                                     , transitionBuild = Nothing
@@ -138,21 +128,39 @@ all =
 
                 loadingIndicatorSelector : List Selector.Selector
                 loadingIndicatorSelector =
-                    [ style [ ( "display", "flex" ) ]
-                    , containing
-                        [ style
-                            [ ( "animation"
-                              , "container-rotate 1568ms linear infinite"
-                              )
-                            , ( "height", "14px" )
-                            , ( "width", "14px" )
-                            , ( "margin", "7px" )
-                            ]
-                        ]
+                    [ style "animation"
+                        "container-rotate 1568ms linear infinite"
+                    , style "height" "14px"
+                    , style "width" "14px"
+                    , style "margin" "7px"
                     ]
             in
             [ describe "while page is loading"
-                [ test "shows two spinners before anything has loaded" <|
+                [ test "title includes job name" <|
+                    \_ ->
+                        Common.init "/teams/team/pipelines/pipeline/jobs/job"
+                            |> Application.view
+                            |> .title
+                            |> Expect.equal "job - Concourse"
+                , test "gets current timezone" <|
+                    \_ ->
+                        Application.init
+                            { turbulenceImgSrc = ""
+                            , notFoundImgSrc = "notfound.svg"
+                            , csrfToken = "csrf_token"
+                            , authToken = ""
+                            , pipelineRunningKeyframes = "pipeline-running"
+                            }
+                            { protocol = Url.Http
+                            , host = ""
+                            , port_ = Nothing
+                            , path = "/teams/team/pipelines/pipeline/jobs/job"
+                            , query = Nothing
+                            , fragment = Nothing
+                            }
+                            |> Tuple.second
+                            |> Common.contains Effects.GetCurrentTimeZone
+                , test "fetches pipelines" <|
                     \_ ->
                         Application.init
                             { turbulenceImgSrc = ""
@@ -161,34 +169,28 @@ all =
                             , authToken = ""
                             , pipelineRunningKeyframes = ""
                             }
-                            { href = ""
+                            { protocol = Url.Http
                             , host = ""
-                            , hostname = ""
-                            , protocol = ""
-                            , origin = ""
-                            , port_ = ""
-                            , pathname = "/teams/team/pipelines/pipeline/jobs/job"
-                            , search = ""
-                            , hash = ""
-                            , username = ""
-                            , password = ""
+                            , port_ = Nothing
+                            , path = "/teams/team/pipelines/pipeline/jobs/job"
+                            , query = Nothing
+                            , fragment = Nothing
                             }
-                            |> Tuple.first
-                            |> Application.view
-                            |> Query.fromHtml
+                            |> Tuple.second
+                            |> Common.contains Effects.FetchAllPipelines
+                , test "shows two spinners before anything has loaded" <|
+                    \_ ->
+                        Common.init "/teams/team/pipelines/pipeline/jobs/job"
+                            |> queryView
                             |> Query.findAll loadingIndicatorSelector
                             |> Query.count (Expect.equal 2)
                 , test "loading build has spinners for inputs and outputs" <|
                     init { disabled = False, paused = False }
                         >> Application.handleCallback
-                            (Effects.SubPage 1)
                             (JobBuildsFetched <|
                                 let
                                     jobId =
-                                        { jobName = "job"
-                                        , pipelineName = "pipeline"
-                                        , teamName = "team"
-                                        }
+                                        Data.jobId
 
                                     status =
                                         BuildStatusSucceeded
@@ -215,8 +217,7 @@ all =
                                     }
                             )
                         >> Tuple.first
-                        >> Application.view
-                        >> Query.fromHtml
+                        >> queryView
                         >> Expect.all
                             [ Query.find [ class "inputs" ]
                                 >> Query.has loadingIndicatorSelector
@@ -226,126 +227,130 @@ all =
                 ]
             , test "build header lays out contents horizontally" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ class "build-header" ]
                     >> Query.has
-                        [ style
-                            [ ( "display", "flex" )
-                            , ( "justify-content", "space-between" )
-                            ]
+                        [ style "display" "flex"
+                        , style "justify-content" "space-between"
                         ]
             , test "header has play/pause button at the left" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ class "build-header" ]
                     >> Query.has [ id "pause-toggle" ]
-            , test "play/pause has grey background" <|
+            , test "play/pause has background of the header color, faded" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ id "pause-toggle" ]
                     >> Query.has
-                        [ style
-                            [ ( "padding", "10px" )
-                            , ( "border", "none" )
-                            , ( "background-color", middleGrey )
-                            , ( "outline", "none" )
-                            ]
+                        [ style "padding" "10px"
+                        , style "border" "none"
+                        , style "background-color" darkGreen
+                        , style "outline" "none"
+                        ]
+            , test "hover play/pause has background of the header color" <|
+                init { disabled = False, paused = False }
+                    >> Application.update
+                        (Msgs.Update <|
+                            Message.Message.Hover <|
+                                Just Message.Message.ToggleJobButton
+                        )
+                    >> Tuple.first
+                    >> queryView
+                    >> Query.find [ id "pause-toggle" ]
+                    >> Query.has
+                        [ style "padding" "10px"
+                        , style "border" "none"
+                        , style "background-color" brightGreen
+                        , style "outline" "none"
                         ]
             , defineHoverBehaviour
                 { name = "play/pause button when job is unpaused"
                 , setup =
                     init { disabled = False, paused = False } ()
                 , query =
-                    Application.view
-                        >> Query.fromHtml
-                        >> Query.find [ id "pause-toggle" ]
-                , updateFunc = \msg -> Application.update msg >> Tuple.first
+                    queryView >> Query.find [ id "pause-toggle" ]
                 , unhoveredSelector =
                     { description = "grey pause icon"
                     , selector =
-                        [ style [ ( "opacity", "0.5" ) ] ]
+                        [ style "opacity" "0.5" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-pause-circle-outline-white.svg"
+                                , image = Assets.PauseCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
                 , hoveredSelector =
                     { description = "white pause icon"
                     , selector =
-                        [ style [ ( "opacity", "1" ) ] ]
+                        [ style "opacity" "1" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-pause-circle-outline-white.svg"
+                                , image = Assets.PauseCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
-                , mouseEnterMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.Toggle
-                , mouseLeaveMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.None
+                , hoverable = Message.Message.ToggleJobButton
                 }
             , defineHoverBehaviour
                 { name = "play/pause button when job is paused"
                 , setup =
                     init { disabled = False, paused = True } ()
                 , query =
-                    Application.view
-                        >> Query.fromHtml
-                        >> Query.find [ id "pause-toggle" ]
-                , updateFunc = \msg -> Application.update msg >> Tuple.first
+                    queryView >> Query.find [ id "pause-toggle" ]
                 , unhoveredSelector =
                     { description = "grey play icon"
                     , selector =
-                        [ style [ ( "opacity", "0.5" ) ] ]
+                        [ style "opacity" "0.5" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-play-circle-outline.svg"
+                                , image = Assets.PlayCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
                 , hoveredSelector =
                     { description = "white play icon"
                     , selector =
-                        [ style [ ( "opacity", "1" ) ] ]
+                        [ style "opacity" "1" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-play-circle-outline.svg"
+                                , image = Assets.PlayCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
-                , mouseEnterMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.Toggle
-                , mouseLeaveMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.None
+                , hoverable = Message.Message.ToggleJobButton
                 }
-            , test "trigger build button has grey background" <|
+            , test "trigger build button has background of the header color, faded" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find
                         [ attribute <|
                             Attr.attribute "aria-label" "Trigger Build"
                         ]
                     >> Query.has
-                        [ style
-                            [ ( "padding", "10px" )
-                            , ( "border", "none" )
-                            , ( "background-color", middleGrey )
-                            , ( "outline", "none" )
-                            ]
+                        [ style "padding" "10px"
+                        , style "border" "none"
+                        , style "background-color" darkGreen
+                        , style "outline" "none"
+                        ]
+            , test "hovered trigger build button has background of the header color" <|
+                init { disabled = False, paused = False }
+                    >> Application.update
+                        (Msgs.Update <|
+                            Message.Message.Hover <|
+                                Just Message.Message.TriggerBuildButton
+                        )
+                    >> Tuple.first
+                    >> queryView
+                    >> Query.find
+                        [ attribute <|
+                            Attr.attribute "aria-label" "Trigger Build"
+                        ]
+                    >> Query.has
+                        [ style "padding" "10px"
+                        , style "border" "none"
+                        , style "background-color" brightGreen
+                        , style "outline" "none"
                         ]
             , test "trigger build button has 'plus' icon" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find
                         [ attribute <|
                             Attr.attribute "aria-label" "Trigger Build"
@@ -355,7 +360,7 @@ all =
                     >> Query.has
                         (iconSelector
                             { size = "40px"
-                            , image = "ic-add-circle-outline-white.svg"
+                            , image = Assets.AddCircleIcon |> Assets.CircleOutlineIcon
                             }
                         )
             , defineHoverBehaviour
@@ -363,111 +368,132 @@ all =
                 , setup =
                     init { disabled = False, paused = False } ()
                 , query =
-                    Application.view
-                        >> Query.fromHtml
+                    queryView
                         >> Query.find
                             [ attribute <|
                                 Attr.attribute "aria-label" "Trigger Build"
                             ]
-                , updateFunc = \msg -> Application.update msg >> Tuple.first
                 , unhoveredSelector =
                     { description = "grey plus icon"
                     , selector =
-                        [ style [ ( "opacity", "0.5" ) ] ]
+                        [ style "opacity" "0.5" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-add-circle-outline-white.svg"
+                                , image = Assets.AddCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
                 , hoveredSelector =
                     { description = "white plus icon"
                     , selector =
-                        [ style [ ( "opacity", "1" ) ] ]
+                        [ style "opacity" "1" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-add-circle-outline-white.svg"
+                                , image = Assets.AddCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
-                , mouseEnterMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.Trigger
-                , mouseLeaveMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.None
+                , hoverable = Message.Message.TriggerBuildButton
                 }
             , defineHoverBehaviour
                 { name = "disabled trigger build button"
                 , setup =
                     init { disabled = True, paused = False } ()
                 , query =
-                    Application.view
-                        >> Query.fromHtml
+                    queryView
                         >> Query.find
                             [ attribute <|
                                 Attr.attribute "aria-label" "Trigger Build"
                             ]
-                , updateFunc = \msg -> Application.update msg >> Tuple.first
                 , unhoveredSelector =
                     { description = "grey plus icon"
                     , selector =
-                        [ style [ ( "opacity", "0.5" ) ] ]
+                        [ style "opacity" "0.5" ]
                             ++ iconSelector
                                 { size = "40px"
-                                , image = "ic-add-circle-outline-white.svg"
+                                , image = Assets.AddCircleIcon |> Assets.CircleOutlineIcon
                                 }
                     }
                 , hoveredSelector =
                     { description = "grey plus icon with tooltip"
                     , selector =
-                        [ style [ ( "position", "relative" ) ]
+                        [ style "position" "relative"
                         , containing
                             [ containing
                                 [ text "manual triggering disabled in job config" ]
-                            , style
-                                [ ( "position", "absolute" )
-                                , ( "right", "100%" )
-                                , ( "top", "15px" )
-                                , ( "width", "300px" )
-                                , ( "color", "#ecf0f1" )
-                                , ( "font-size", "12px" )
-                                , ( "font-family", "Inconsolata,monospace" )
-                                , ( "padding", "10px" )
-                                , ( "text-align", "right" )
-                                ]
+                            , style "position" "absolute"
+                            , style "right" "100%"
+                            , style "top" "15px"
+                            , style "width" "300px"
+                            , style "color" "#ecf0f1"
+                            , style "font-size" "12px"
+                            , style "font-family" Views.Styles.fontFamilyDefault
+                            , style "padding" "10px"
+                            , style "text-align" "right"
                             ]
                         , containing <|
-                            [ style
-                                [ ( "opacity", "0.5" )
-                                ]
-                            ]
+                            [ style "opacity" "0.5" ]
                                 ++ iconSelector
                                     { size = "40px"
-                                    , image = "ic-add-circle-outline-white.svg"
+                                    , image = Assets.AddCircleIcon |> Assets.CircleOutlineIcon
                                     }
                         ]
                     }
-                , mouseEnterMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.Trigger
-                , mouseLeaveMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.None
+                , hoverable = Message.Message.TriggerBuildButton
                 }
-            , test "inputs icon on build" <|
+            , describe "archived pipelines" <|
+                let
+                    initWithArchivedPipeline =
+                        init { paused = False, disabled = False }
+                            >> Application.handleCallback
+                                (Callback.AllPipelinesFetched <|
+                                    Ok
+                                        [ Data.pipeline "team" 0
+                                            |> Data.withName "pipeline"
+                                            |> Data.withArchived True
+                                        ]
+                                )
+                            >> Tuple.first
+                in
+                [ test "play/pause button not displayed" <|
+                    initWithArchivedPipeline
+                        >> queryView
+                        >> Query.find [ class "build-header" ]
+                        >> Query.hasNot [ id "pause-toggle" ]
+                , test "header still includes job name" <|
+                    initWithArchivedPipeline
+                        >> queryView
+                        >> Query.find [ class "build-header" ]
+                        >> Query.has [ text "job" ]
+                , test "trigger build button not displayed" <|
+                    initWithArchivedPipeline
+                        >> queryView
+                        >> Query.find [ class "build-header" ]
+                        >> Query.hasNot [ class "trigger-build" ]
+                ]
+            , test "page below top bar fills height without scrolling" <|
+                init { disabled = False, paused = False }
+                    >> queryView
+                    >> Query.find [ id "page-below-top-bar" ]
+                    >> Query.has
+                        [ style "box-sizing" "border-box"
+                        , style "height" "100%"
+                        , style "display" "flex"
+                        ]
+            , test "page contents fill available space and align vertically" <|
+                init { disabled = False, paused = False }
+                    >> queryView
+                    >> Query.find [ id "page-below-top-bar" ]
+                    >> Query.has
+                        [ style "flex-grow" "1"
+                        , style "display" "flex"
+                        , style "flex-direction" "column"
+                        ]
+            , test "body scrolls independently" <|
                 init { disabled = False, paused = False }
                     >> Application.handleCallback
-                        (Effects.SubPage 1)
                         (JobBuildsFetched <|
                             let
                                 jobId =
-                                    { jobName = "job"
-                                    , pipelineName = "pipeline"
-                                    , teamName = "team"
-                                    }
+                                    Data.jobId
 
                                 status =
                                     BuildStatusSucceeded
@@ -494,46 +520,71 @@ all =
                                 }
                         )
                     >> Tuple.first
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
+                    >> Query.find [ class "job-body" ]
+                    >> Query.has [ style "overflow-y" "auto" ]
+            , test "inputs icon on build" <|
+                init { disabled = False, paused = False }
+                    >> Application.handleCallback
+                        (JobBuildsFetched <|
+                            let
+                                jobId =
+                                    Data.jobId
+
+                                status =
+                                    BuildStatusSucceeded
+
+                                builds =
+                                    [ { id = 0
+                                      , name = "0"
+                                      , job = Just jobId
+                                      , status = status
+                                      , duration =
+                                            { startedAt = Nothing
+                                            , finishedAt = Nothing
+                                            }
+                                      , reapTime = Nothing
+                                      }
+                                    ]
+                            in
+                            Ok
+                                { pagination =
+                                    { previousPage = Nothing
+                                    , nextPage = Nothing
+                                    }
+                                , content = builds
+                                }
+                        )
+                    >> Tuple.first
+                    >> queryView
                     >> Query.find [ class "inputs" ]
                     >> Query.children []
                     >> Query.first
                     >> Expect.all
                         [ Query.has
-                            [ style
-                                [ ( "display", "flex" )
-                                , ( "align-items", "center" )
-                                , ( "padding-bottom", "5px" )
-                                ]
+                            [ style "display" "flex"
+                            , style "align-items" "center"
+                            , style "padding-bottom" "5px"
                             ]
                         , Query.children []
                             >> Query.first
                             >> Query.has
                                 (iconSelector
                                     { size = "12px"
-                                    , image = "ic-arrow-downward.svg"
+                                    , image = Assets.DownArrow
                                     }
-                                    ++ [ style
-                                            [ ( "background-size"
-                                              , "contain"
-                                              )
-                                            , ( "margin-right", "5px" )
-                                            ]
+                                    ++ [ style "background-size" "contain"
+                                       , style "margin-right" "5px"
                                        ]
                                 )
                         ]
             , test "outputs icon on build" <|
                 init { disabled = False, paused = False }
                     >> Application.handleCallback
-                        (Effects.SubPage 1)
                         (JobBuildsFetched <|
                             let
                                 jobId =
-                                    { jobName = "job"
-                                    , pipelineName = "pipeline"
-                                    , teamName = "team"
-                                    }
+                                    Data.jobId
 
                                 status =
                                     BuildStatusSucceeded
@@ -560,85 +611,64 @@ all =
                                 }
                         )
                     >> Tuple.first
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ class "outputs" ]
                     >> Query.children []
                     >> Query.first
                     >> Expect.all
                         [ Query.has
-                            [ style
-                                [ ( "display", "flex" )
-                                , ( "align-items", "center" )
-                                , ( "padding-bottom", "5px" )
-                                ]
+                            [ style "display" "flex"
+                            , style "align-items" "center"
+                            , style "padding-bottom" "5px"
                             ]
                         , Query.children []
                             >> Query.first
                             >> Query.has
                                 (iconSelector
                                     { size = "12px"
-                                    , image = "ic-arrow-upward.svg"
+                                    , image = Assets.UpArrow
                                     }
-                                    ++ [ style
-                                            [ ( "background-size"
-                                              , "contain"
-                                              )
-                                            , ( "margin-right", "5px" )
-                                            ]
+                                    ++ [ style "background-size" "contain"
+                                       , style "margin-right" "5px"
                                        ]
                                 )
                         ]
             , test "pagination header lays out horizontally" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ id "pagination-header" ]
                     >> Query.has
-                        [ style
-                            [ ( "display", "flex" )
-                            , ( "justify-content", "space-between" )
-                            , ( "align-items", "stretch" )
-                            , ( "background-color", darkGrey )
-                            , ( "height", "60px" )
-                            ]
+                        [ style "display" "flex"
+                        , style "justify-content" "space-between"
+                        , style "align-items" "stretch"
+                        , style "background-color" darkGrey
+                        , style "height" "60px"
                         ]
-            , test "the word 'builds' is bold and indented" <|
+            , test "the word 'builds' is indented" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ id "pagination-header" ]
                     >> Query.children []
                     >> Query.first
                     >> Query.has
                         [ containing [ text "builds" ]
-                        , style
-                            [ ( "margin", "0 18px" )
-                            , ( "font-weight", "700" )
-                            ]
+                        , style "margin" "0 18px"
                         ]
             , test "pagination lays out horizontally" <|
                 init { disabled = False, paused = False }
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ id "pagination" ]
                     >> Query.has
-                        [ style
-                            [ ( "display", "flex" )
-                            , ( "align-items", "stretch" )
-                            ]
+                        [ style "display" "flex"
+                        , style "align-items" "stretch"
                         ]
             , test "pagination chevrons with no pages" <|
                 init { disabled = False, paused = False }
                     >> Application.handleCallback
-                        (Effects.SubPage 1)
                         (JobBuildsFetched <|
                             let
                                 jobId =
-                                    { jobName = "job"
-                                    , pipelineName = "pipeline"
-                                    , teamName = "team"
-                                    }
+                                    Data.jobId
 
                                 status =
                                     BuildStatusSucceeded
@@ -665,54 +695,43 @@ all =
                                 }
                         )
                     >> Tuple.first
-                    >> Application.view
-                    >> Query.fromHtml
+                    >> queryView
                     >> Query.find [ id "pagination" ]
                     >> Query.children []
                     >> Expect.all
                         [ Query.index 0
                             >> Query.has
-                                [ style
-                                    [ ( "padding", "5px" )
-                                    , ( "display", "flex" )
-                                    , ( "align-items", "center" )
-                                    , ( "border-left"
-                                      , "1px solid " ++ middleGrey
-                                      )
-                                    ]
+                                [ style "padding" "5px"
+                                , style "display" "flex"
+                                , style "align-items" "center"
+                                , style "border-left" <|
+                                    "1px solid "
+                                        ++ middleGrey
                                 , containing
                                     (iconSelector
-                                        { image =
-                                            "baseline-chevron-left-24px.svg"
+                                        { image = Assets.ChevronLeft
                                         , size = "24px"
                                         }
-                                        ++ [ style
-                                                [ ( "padding", "5px" )
-                                                , ( "opacity", "0.5" )
-                                                ]
+                                        ++ [ style "padding" "5px"
+                                           , style "opacity" "0.5"
                                            ]
                                     )
                                 ]
                         , Query.index 1
                             >> Query.has
-                                [ style
-                                    [ ( "padding", "5px" )
-                                    , ( "display", "flex" )
-                                    , ( "align-items", "center" )
-                                    , ( "border-left"
-                                      , "1px solid " ++ middleGrey
-                                      )
-                                    ]
+                                [ style "padding" "5px"
+                                , style "display" "flex"
+                                , style "align-items" "center"
+                                , style "border-left" <|
+                                    "1px solid "
+                                        ++ middleGrey
                                 , containing
                                     (iconSelector
-                                        { image =
-                                            "baseline-chevron-right-24px.svg"
+                                        { image = Assets.ChevronRight
                                         , size = "24px"
                                         }
-                                        ++ [ style
-                                                [ ( "padding", "5px" )
-                                                , ( "opacity", "0.5" )
-                                                ]
+                                        ++ [ style "padding" "5px"
+                                           , style "opacity" "0.5"
                                            ]
                                     )
                                 ]
@@ -726,10 +745,7 @@ all =
                 , setup =
                     let
                         jobId =
-                            { jobName = "job"
-                            , pipelineName = "pipeline"
-                            , teamName = "team"
-                            }
+                            Data.jobId
 
                         status =
                             BuildStatusSucceeded
@@ -754,7 +770,6 @@ all =
                     in
                     init { disabled = False, paused = False } ()
                         |> Application.handleCallback
-                            (Effects.SubPage 1)
                             (JobBuildsFetched <|
                                 Ok
                                     { pagination =
@@ -767,33 +782,26 @@ all =
                             )
                         |> Tuple.first
                 , query =
-                    Application.view
-                        >> Query.fromHtml
+                    queryView
                         >> Query.find [ id "pagination" ]
                         >> Query.children []
                         >> Query.index 0
-                , updateFunc = \msg -> Application.update msg >> Tuple.first
                 , unhoveredSelector =
                     { description = "white left chevron"
                     , selector =
-                        [ style
-                            [ ( "padding", "5px" )
-                            , ( "display", "flex" )
-                            , ( "align-items", "center" )
-                            , ( "border-left"
-                              , "1px solid " ++ middleGrey
-                              )
-                            ]
+                        [ style "padding" "5px"
+                        , style "display" "flex"
+                        , style "align-items" "center"
+                        , style "border-left" <|
+                            "1px solid "
+                                ++ middleGrey
                         , containing
                             (iconSelector
-                                { image =
-                                    "baseline-chevron-left-24px.svg"
+                                { image = Assets.ChevronLeft
                                 , size = "24px"
                                 }
-                                ++ [ style
-                                        [ ( "padding", "5px" )
-                                        , ( "opacity", "1" )
-                                        ]
+                                ++ [ style "padding" "5px"
+                                   , style "opacity" "1"
                                    , attribute <| Attr.href urlPath
                                    ]
                             )
@@ -803,42 +811,47 @@ all =
                     { description =
                         "left chevron with light grey circular bg"
                     , selector =
-                        [ style
-                            [ ( "padding", "5px" )
-                            , ( "display", "flex" )
-                            , ( "align-items", "center" )
-                            , ( "border-left"
-                              , "1px solid " ++ middleGrey
-                              )
-                            ]
+                        [ style "padding" "5px"
+                        , style "display" "flex"
+                        , style "align-items" "center"
+                        , style "border-left" <|
+                            "1px solid "
+                                ++ middleGrey
                         , containing
                             (iconSelector
-                                { image =
-                                    "baseline-chevron-left-24px.svg"
+                                { image = Assets.ChevronLeft
                                 , size = "24px"
                                 }
-                                ++ [ style
-                                        [ ( "padding", "5px" )
-                                        , ( "opacity", "1" )
-                                        , ( "border-radius", "50%" )
-                                        , ( "background-color"
-                                          , "#504b4b"
-                                          )
-                                        ]
+                                ++ [ style "padding" "5px"
+                                   , style "opacity" "1"
+                                   , style "border-radius" "50%"
+                                   , style "background-color" <|
+                                        "#504b4b"
                                    , attribute <| Attr.href urlPath
                                    ]
                             )
                         ]
                     }
-                , mouseEnterMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.PreviousPage
-                , mouseLeaveMsg =
-                    Msgs.SubMsg 1 <|
-                        SubPage.Msgs.JobMsg <|
-                            Job.Msgs.Hover Job.Msgs.None
+                , hoverable = Message.Message.PreviousPageButton
                 }
+            , describe "When fetching builds"
+                [ test "says no builds" <|
+                    \_ ->
+                        init { disabled = False, paused = False } ()
+                            |> Application.handleCallback
+                                (JobBuildsFetched <|
+                                    Ok
+                                        { pagination =
+                                            { previousPage = Nothing
+                                            , nextPage = Nothing
+                                            }
+                                        , content = []
+                                        }
+                                )
+                            |> Tuple.first
+                            |> queryView
+                            |> Query.has [ text "no builds for job “job”" ]
+                ]
             , test "JobBuildsFetched" <|
                 \_ ->
                     let
@@ -873,7 +886,7 @@ all =
                                             }
                                         }
                                 )
-                                defaultModel
+                                ( defaultModel, [] )
             , test "JobBuildsFetched error" <|
                 \_ ->
                     Expect.equal
@@ -882,7 +895,7 @@ all =
                         Tuple.first <|
                             Job.handleCallback
                                 (JobBuildsFetched <| Err Http.NetworkError)
-                                defaultModel
+                                ( defaultModel, [] )
             , test "JobFetched" <|
                 \_ ->
                     Expect.equal
@@ -891,7 +904,7 @@ all =
                         }
                     <|
                         Tuple.first <|
-                            Job.handleCallback (JobFetched <| Ok someJob) defaultModel
+                            Job.handleCallback (JobFetched <| Ok someJob) ( defaultModel, [] )
             , test "JobFetched error" <|
                 \_ ->
                     Expect.equal
@@ -900,7 +913,7 @@ all =
                         Tuple.first <|
                             Job.handleCallback
                                 (JobFetched <| Err Http.NetworkError)
-                                defaultModel
+                                ( defaultModel, [] )
             , test "BuildResourcesFetched" <|
                 \_ ->
                     let
@@ -926,7 +939,7 @@ all =
                     <|
                         Tuple.first <|
                             Job.handleCallback (BuildResourcesFetched (Ok ( 1, buildResources )))
-                                defaultModel
+                                ( defaultModel, [] )
             , test "BuildResourcesFetched error" <|
                 \_ ->
                     Expect.equal
@@ -935,7 +948,7 @@ all =
                         Tuple.first <|
                             Job.handleCallback
                                 (BuildResourcesFetched (Err Http.NetworkError))
-                                defaultModel
+                                ( defaultModel, [] )
             , test "TogglePaused" <|
                 \_ ->
                     Expect.equal
@@ -946,8 +959,8 @@ all =
                     <|
                         Tuple.first <|
                             update
-                                TogglePaused
-                                { defaultModel | job = RemoteData.Success someJob }
+                                (Click ToggleJobButton)
+                                ( { defaultModel | job = RemoteData.Success someJob }, [] )
             , test "PausedToggled" <|
                 \_ ->
                     Expect.equal
@@ -959,7 +972,7 @@ all =
                         Tuple.first <|
                             Job.handleCallback
                                 (PausedToggled <| Ok ())
-                                { defaultModel | job = RemoteData.Success someJob }
+                                ( { defaultModel | job = RemoteData.Success someJob }, [] )
             , test "PausedToggled error" <|
                 \_ ->
                     Expect.equal
@@ -968,26 +981,92 @@ all =
                         Tuple.first <|
                             Job.handleCallback
                                 (PausedToggled <| Err Http.NetworkError)
-                                { defaultModel | job = RemoteData.Success someJob }
+                                ( { defaultModel | job = RemoteData.Success someJob }, [] )
             , test "PausedToggled unauthorized" <|
                 \_ ->
                     Expect.equal
                         { defaultModel | job = RemoteData.Success someJob }
                     <|
                         Tuple.first <|
-                            Job.handleCallback
-                                (PausedToggled <|
-                                    Err <|
-                                        Http.BadStatus
-                                            { url = "http://example.com"
-                                            , status =
-                                                { code = 401
-                                                , message = ""
-                                                }
-                                            , headers = Dict.empty
-                                            , body = ""
-                                            }
-                                )
-                                { defaultModel | job = RemoteData.Success someJob }
+                            Job.handleCallback (PausedToggled <| Data.httpUnauthorized)
+                                ( { defaultModel | job = RemoteData.Success someJob }, [] )
+            , test "page is subscribed to one and five second timers" <|
+                init { disabled = False, paused = False }
+                    >> Application.subscriptions
+                    >> Expect.all
+                        [ Common.contains (Subscription.OnClockTick OneSecond)
+                        , Common.contains (Subscription.OnClockTick FiveSeconds)
+                        ]
+            , test "on five-second timer, refreshes job and builds" <|
+                init { disabled = False, paused = False }
+                    >> Application.update
+                        (Msgs.DeliveryReceived <|
+                            ClockTicked FiveSeconds <|
+                                Time.millisToPosix 0
+                        )
+                    >> Tuple.second
+                    >> Expect.all
+                        [ Common.contains (Effects.FetchJobBuilds jobInfo Nothing)
+                        , Common.contains (Effects.FetchJob jobInfo)
+                        ]
+            , test "on one-second timer, updates build timestamps" <|
+                init { disabled = False, paused = False }
+                    >> Application.handleCallback
+                        (Callback.JobBuildsFetched <|
+                            Ok
+                                { content = [ someBuild ]
+                                , pagination =
+                                    { nextPage = Nothing
+                                    , previousPage = Nothing
+                                    }
+                                }
+                        )
+                    >> Tuple.first
+                    >> Application.update
+                        (Msgs.DeliveryReceived <|
+                            ClockTicked OneSecond <|
+                                Time.millisToPosix (2 * 1000)
+                        )
+                    >> Tuple.first
+                    >> queryView
+                    >> Query.find [ class "js-build" ]
+                    >> Query.has [ text "2s ago" ]
+            , test "shows build timestamps in current timezone" <|
+                init { disabled = False, paused = False }
+                    >> Application.handleCallback
+                        (Callback.GotCurrentTimeZone <|
+                            Time.customZone (5 * 60) []
+                        )
+                    >> Tuple.first
+                    >> Application.handleCallback
+                        (Callback.JobBuildsFetched <|
+                            Ok
+                                { content = [ someBuild ]
+                                , pagination =
+                                    { nextPage = Nothing
+                                    , previousPage = Nothing
+                                    }
+                                }
+                        )
+                    >> Tuple.first
+                    >> Application.update
+                        (Msgs.DeliveryReceived <|
+                            ClockTicked OneSecond <|
+                                Time.millisToPosix (24 * 60 * 60 * 1000)
+                        )
+                    >> Tuple.first
+                    >> queryView
+                    >> Query.find [ class "js-build" ]
+                    >> Query.has [ text "Jan 1 1970 05:00:00 AM" ]
             ]
         ]
+
+
+darkGreen : String
+darkGreen =
+    "#419867"
+
+
+brightGreen : String
+brightGreen =
+    "#11c560"

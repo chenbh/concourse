@@ -7,28 +7,21 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
+	. "github.com/concourse/concourse/atc/testhelpers"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Versions API", func() {
 	var fakePipeline *dbfakes.FakePipeline
-	var fakeaccess *accessorfakes.FakeAccess
 
 	BeforeEach(func() {
 		fakePipeline = new(dbfakes.FakePipeline)
-		fakeaccess = new(accessorfakes.FakeAccess)
 		dbTeamFactory.FindTeamReturns(dbTeam, true, nil)
 		dbTeam.PipelineReturns(fakePipeline, true, nil)
-	})
-
-	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
 	})
 
 	Describe("GET /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/versions", func() {
@@ -53,7 +46,7 @@ var _ = Describe("Versions API", func() {
 
 		Context("when not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			Context("and the pipeline is private", func() {
@@ -63,7 +56,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("user is not authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(false)
+						fakeAccess.IsAuthenticatedReturns(false)
 					})
 
 					It("returns 401", func() {
@@ -73,7 +66,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("user is authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(true)
+						fakeAccess.IsAuthenticatedReturns(true)
 					})
 
 					It("returns 403", func() {
@@ -86,108 +79,53 @@ var _ = Describe("Versions API", func() {
 				BeforeEach(func() {
 					fakePipeline.PublicReturns(true)
 					fakePipeline.ResourceReturns(fakeResource, true, nil)
-					fakeResource.VersionsReturns([]atc.ResourceVersion{}, db.Pagination{}, true, nil)
+
+					returnedVersions := []atc.ResourceVersion{
+						{
+							ID:      4,
+							Enabled: true,
+							Version: atc.Version{
+								"some": "version",
+							},
+							Metadata: []atc.MetadataField{
+								{
+									Name:  "some",
+									Value: "metadata",
+								},
+							},
+						},
+						{
+							ID:      2,
+							Enabled: false,
+							Version: atc.Version{
+								"some": "version",
+							},
+							Metadata: []atc.MetadataField{
+								{
+									Name:  "some",
+									Value: "metadata",
+								},
+							},
+						},
+					}
+
+					fakeResource.VersionsReturns(returnedVersions, db.Pagination{}, true, nil)
 				})
 
 				It("returns 200 OK", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusOK))
 				})
-			})
-		})
 
-		Context("when authorized", func() {
-			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
-			})
-
-			It("finds the resource", func() {
-				Expect(fakePipeline.ResourceCallCount()).To(Equal(1))
-				Expect(fakePipeline.ResourceArgsForCall(0)).To(Equal("some-resource"))
-			})
-
-			Context("when finding the resource succeeds", func() {
-				BeforeEach(func() {
-					fakePipeline.ResourceReturns(fakeResource, true, nil)
+				It("returns content type application/json", func() {
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
-				Context("when no params are passed", func() {
-					It("does not set defaults for since and until", func() {
-						Expect(fakeResource.VersionsCallCount()).To(Equal(1))
-
-						page := fakeResource.VersionsArgsForCall(0)
-						Expect(page).To(Equal(db.Page{
-							Since: 0,
-							Until: 0,
-							From:  0,
-							To:    0,
-							Limit: 100,
-						}))
-					})
-				})
-
-				Context("when all the params are passed", func() {
+				Context("when resource is public", func() {
 					BeforeEach(func() {
-						queryParams = "?since=2&until=3&from=5&to=7&limit=8"
-					})
-
-					It("passes them through", func() {
-						Expect(fakeResource.VersionsCallCount()).To(Equal(1))
-
-						page := fakeResource.VersionsArgsForCall(0)
-						Expect(page).To(Equal(db.Page{
-							Since: 2,
-							Until: 3,
-							From:  5,
-							To:    7,
-							Limit: 8,
-						}))
-					})
-				})
-
-				Context("when getting the versions succeeds", func() {
-					var returnedVersions []atc.ResourceVersion
-
-					BeforeEach(func() {
-						queryParams = "?since=5&limit=2"
-						returnedVersions = []atc.ResourceVersion{
-							{
-								ID:      4,
-								Enabled: true,
-								Version: atc.Version{
-									"some": "version",
-								},
-								Metadata: []atc.MetadataField{
-									{
-										Name:  "some",
-										Value: "metadata",
-									},
-								},
-							},
-							{
-								ID:      2,
-								Enabled: false,
-								Version: atc.Version{
-									"some": "version",
-								},
-								Metadata: []atc.MetadataField{
-									{
-										Name:  "some",
-										Value: "metadata",
-									},
-								},
-							},
-						}
-
-						fakeResource.VersionsReturns(returnedVersions, db.Pagination{}, true, nil)
-					})
-
-					It("returns 200 OK", func() {
-						Expect(response.StatusCode).To(Equal(http.StatusOK))
-					})
-
-					It("returns content type application/json", func() {
-						Expect(response.Header.Get("Content-type")).To(Equal("application/json"))
+						fakeResource.PublicReturns(true)
 					})
 
 					It("returns the json", func() {
@@ -210,6 +148,250 @@ var _ = Describe("Versions API", func() {
 						"id":2,
 						"enabled": false,
 						"version": {"some":"version"},
+						"metadata": [
+							{
+								"name":"some",
+								"value":"metadata"
+							}
+						]
+					}
+				]`))
+					})
+				})
+
+				Context("when resource is not public", func() {
+					Context("when the user is not authenticated", func() {
+						It("returns the json without version metadata", func() {
+							body, err := ioutil.ReadAll(response.Body)
+							Expect(err).NotTo(HaveOccurred())
+
+							Expect(body).To(MatchJSON(`[
+								{
+									"id": 4,
+									"enabled": true,
+									"version": {"some":"version"}
+								},
+								{
+									"id":2,
+									"enabled": false,
+									"version": {"some":"version"}
+								}
+							]`))
+						})
+					})
+
+					Context("when the user is authenticated", func() {
+						BeforeEach(func() {
+							fakeAccess.IsAuthenticatedReturns(true)
+						})
+
+						It("returns the json without version metadata", func() {
+							body, err := ioutil.ReadAll(response.Body)
+							Expect(err).NotTo(HaveOccurred())
+
+							Expect(body).To(MatchJSON(`[
+								{
+									"id": 4,
+									"enabled": true,
+									"version": {"some":"version"}
+								},
+								{
+									"id":2,
+									"enabled": false,
+									"version": {"some":"version"}
+								}
+							]`))
+						})
+					})
+				})
+			})
+		})
+
+		Context("when authorized", func() {
+			BeforeEach(func() {
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
+			})
+
+			It("finds the resource", func() {
+				Expect(fakePipeline.ResourceCallCount()).To(Equal(1))
+				Expect(fakePipeline.ResourceArgsForCall(0)).To(Equal("some-resource"))
+			})
+
+			Context("when finding the resource succeeds", func() {
+				BeforeEach(func() {
+					fakePipeline.ResourceReturns(fakeResource, true, nil)
+				})
+
+				Context("when no params are passed", func() {
+					It("does not set defaults for since and until", func() {
+						Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+						page, versionFilter := fakeResource.VersionsArgsForCall(0)
+						Expect(page).To(Equal(db.Page{
+							Since: 0,
+							Until: 0,
+							From:  0,
+							To:    0,
+							Limit: 100,
+						}))
+						Expect(versionFilter).To(Equal(atc.Version{}))
+					})
+				})
+
+				Context("when all the params are passed", func() {
+					BeforeEach(func() {
+						queryParams = "?since=2&until=3&from=5&to=7&limit=8&filter=ref:foo&filter=some-ref:blah"
+					})
+
+					It("passes them through", func() {
+						Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+						page, versionFilter := fakeResource.VersionsArgsForCall(0)
+						Expect(page).To(Equal(db.Page{
+							Since: 2,
+							Until: 3,
+							From:  5,
+							To:    7,
+							Limit: 8,
+						}))
+						Expect(versionFilter).To(Equal(atc.Version{
+							"ref":      "foo",
+							"some-ref": "blah",
+						}))
+					})
+				})
+
+				Context("when params includes version filter has special char", func() {
+					Context("space char", func() {
+						BeforeEach(func() {
+							queryParams = "?filter=some%20ref:some%20value"
+						})
+
+						It("passes them through", func() {
+							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+							_, versionFilter := fakeResource.VersionsArgsForCall(0)
+							Expect(versionFilter).To(Equal(atc.Version{
+								"some ref": "some value",
+							}))
+						})
+					})
+
+					Context("% char", func() {
+						BeforeEach(func() {
+							queryParams = "?filter=ref:some%25value"
+						})
+
+						It("passes them through", func() {
+							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+							_, versionFilter := fakeResource.VersionsArgsForCall(0)
+							Expect(versionFilter).To(Equal(atc.Version{
+								"ref": "some%value",
+							}))
+						})
+					})
+
+					Context(": char", func() {
+						BeforeEach(func() {
+							queryParams = "?filter=key%3Awith%3Acolon:abcdef"
+						})
+
+						It("passes them through by splitting on first colon", func() {
+							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+							_, versionFilter := fakeResource.VersionsArgsForCall(0)
+							Expect(versionFilter).To(Equal(atc.Version{
+								"key": "with:colon:abcdef",
+							}))
+						})
+					})
+
+					Context("if there is no : ", func() {
+						BeforeEach(func() {
+							queryParams = "?filter=abcdef"
+						})
+
+						It("set no filter when fetching versions", func() {
+							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
+
+							_, versionFilter := fakeResource.VersionsArgsForCall(0)
+							Expect(versionFilter).To(BeEmpty())
+						})
+					})
+				})
+
+				Context("when getting the versions succeeds", func() {
+					var returnedVersions []atc.ResourceVersion
+
+					BeforeEach(func() {
+						queryParams = "?since=5&limit=2"
+						returnedVersions = []atc.ResourceVersion{
+							{
+								ID:      4,
+								Enabled: true,
+								Version: atc.Version{
+									"some": "version",
+									"ref":  "foo",
+								},
+								Metadata: []atc.MetadataField{
+									{
+										Name:  "some",
+										Value: "metadata",
+									},
+								},
+							},
+							{
+								ID:      2,
+								Enabled: false,
+								Version: atc.Version{
+									"some": "version",
+									"ref":  "blah",
+								},
+								Metadata: []atc.MetadataField{
+									{
+										Name:  "some",
+										Value: "metadata",
+									},
+								},
+							},
+						}
+
+						fakeResource.VersionsReturns(returnedVersions, db.Pagination{}, true, nil)
+					})
+
+					It("returns 200 OK", func() {
+						Expect(response.StatusCode).To(Equal(http.StatusOK))
+					})
+
+					It("returns content type application/json", func() {
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
+					})
+
+					It("returns the json", func() {
+						body, err := ioutil.ReadAll(response.Body)
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(body).To(MatchJSON(`[
+					{
+						"id": 4,
+						"enabled": true,
+						"version": {"some":"version", "ref":"foo"},
+						"metadata": [
+							{
+								"name":"some",
+								"value":"metadata"
+							}
+						]
+					},
+					{
+						"id":2,
+						"enabled": false,
+						"version": {"some":"version", "ref":"blah"},
 						"metadata": [
 							{
 								"name":"some",
@@ -297,12 +479,12 @@ var _ = Describe("Versions API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("tries to find the resource", func() {
@@ -366,7 +548,7 @@ var _ = Describe("Versions API", func() {
 
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 				It("returns Forbidden", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusForbidden))
@@ -376,7 +558,7 @@ var _ = Describe("Versions API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -401,12 +583,12 @@ var _ = Describe("Versions API", func() {
 
 		Context("when authenticated ", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("tries to find the resource", func() {
@@ -469,7 +651,7 @@ var _ = Describe("Versions API", func() {
 			})
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 
 				It("returns Forbidden", func() {
@@ -479,7 +661,7 @@ var _ = Describe("Versions API", func() {
 		})
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -504,12 +686,12 @@ var _ = Describe("Versions API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("tries to find the resource", func() {
@@ -531,7 +713,7 @@ var _ = Describe("Versions API", func() {
 
 					Context("when pinning the resource succeeds", func() {
 						BeforeEach(func() {
-							fakeResource.PinVersionReturns(nil)
+							fakeResource.PinVersionReturns(true, nil)
 						})
 
 						It("returns 200", func() {
@@ -539,9 +721,19 @@ var _ = Describe("Versions API", func() {
 						})
 					})
 
-					Context("when pinning the resource fails", func() {
+					Context("when pinning the resource fails by resource not exist", func() {
 						BeforeEach(func() {
-							fakeResource.PinVersionReturns(errors.New("welp"))
+							fakeResource.PinVersionReturns(false, nil)
+						})
+
+						It("returns 404", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+						})
+					})
+
+					Context("when pinning the resource fails by error", func() {
+						BeforeEach(func() {
+							fakeResource.PinVersionReturns(false, errors.New("welp"))
 						})
 
 						It("returns 500", func() {
@@ -573,7 +765,7 @@ var _ = Describe("Versions API", func() {
 
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 				It("returns Forbidden", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusForbidden))
@@ -583,7 +775,7 @@ var _ = Describe("Versions API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -615,7 +807,7 @@ var _ = Describe("Versions API", func() {
 
 		Context("when not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			Context("and the pipeline is private", func() {
@@ -625,7 +817,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("when authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(true)
+						fakeAccess.IsAuthenticatedReturns(true)
 					})
 
 					It("returns 403", func() {
@@ -635,7 +827,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("when not authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(false)
+						fakeAccess.IsAuthenticatedReturns(false)
 					})
 
 					It("returns 401", func() {
@@ -658,8 +850,8 @@ var _ = Describe("Versions API", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("when not finding the resource", func() {
@@ -729,7 +921,10 @@ var _ = Describe("Versions API", func() {
 					})
 
 					It("returns content type application/json", func() {
-						Expect(response.Header.Get("Content-type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns the json", func() {
@@ -812,7 +1007,7 @@ var _ = Describe("Versions API", func() {
 
 		Context("when not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			Context("and the pipeline is private", func() {
@@ -822,7 +1017,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("when authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(true)
+						fakeAccess.IsAuthenticatedReturns(true)
 					})
 
 					It("returns 403", func() {
@@ -832,7 +1027,7 @@ var _ = Describe("Versions API", func() {
 
 				Context("when not authenticated", func() {
 					BeforeEach(func() {
-						fakeaccess.IsAuthenticatedReturns(false)
+						fakeAccess.IsAuthenticatedReturns(false)
 					})
 
 					It("returns 401", func() {
@@ -855,8 +1050,8 @@ var _ = Describe("Versions API", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("when not finding the resource", func() {
@@ -926,7 +1121,10 @@ var _ = Describe("Versions API", func() {
 					})
 
 					It("returns content type application/json", func() {
-						Expect(response.Header.Get("Content-type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns the json", func() {

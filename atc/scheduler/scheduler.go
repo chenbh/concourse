@@ -1,147 +1,122 @@
 package scheduler
 
 import (
-	"sync"
-	"time"
+	"context"
+	"encoding/json"
+	"fmt"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/algorithm"
-	"github.com/concourse/concourse/atc/scheduler/inputmapper"
+	"github.com/concourse/concourse/tracing"
 )
 
-type Scheduler struct {
-	Pipeline     db.Pipeline
-	InputMapper  inputmapper.InputMapper
-	BuildStarter BuildStarter
-	Scanner      Scanner
+//go:generate counterfeiter . Algorithm
+
+type Algorithm interface {
+	Compute(
+		context.Context,
+		db.Job,
+		db.InputConfigs,
+	) (db.InputMapping, bool, bool, error)
 }
 
-//go:generate counterfeiter . Scanner
-
-type Scanner interface {
-	Scan(lager.Logger, string) error
+type Scheduler struct {
+	Algorithm    Algorithm
+	BuildStarter BuildStarter
 }
 
 func (s *Scheduler) Schedule(
+	ctx context.Context,
 	logger lager.Logger,
-	versions *algorithm.VersionsDB,
-	jobs []db.Job,
-	resources db.Resources,
-	resourceTypes atc.VersionedResourceTypes,
-) (map[string]time.Duration, error) {
-	jobSchedulingTime := map[string]time.Duration{}
-
-	for _, job := range jobs {
-		jStart := time.Now()
-		err := s.ensurePendingBuildExists(logger, versions, job, resources)
-		jobSchedulingTime[job.Name()] = time.Since(jStart)
-
-		if err != nil {
-			return jobSchedulingTime, err
-		}
-	}
-
-	nextPendingBuilds, err := s.Pipeline.GetAllPendingBuilds()
+	job db.SchedulerJob,
+) (bool, error) {
+	jobInputs, err := job.AlgorithmInputs()
 	if err != nil {
-		logger.Error("failed-to-get-all-next-pending-builds", err)
-		return jobSchedulingTime, err
+		return false, fmt.Errorf("inputs: %w", err)
 	}
 
-	for _, job := range jobs {
-		jStart := time.Now()
-		nextPendingBuildsForJob, ok := nextPendingBuilds[job.Name()]
-		if !ok {
-			continue
-		}
+	inputMapping, resolved, runAgain, err := s.Algorithm.Compute(ctx, job, jobInputs)
+	if err != nil {
+		return false, fmt.Errorf("compute inputs: %w", err)
+	}
 
-		err := s.BuildStarter.TryStartPendingBuildsForJob(logger, job, resources, resourceTypes, nextPendingBuildsForJob)
-		jobSchedulingTime[job.Name()] = jobSchedulingTime[job.Name()] + time.Since(jStart)
-
+	if runAgain {
+		err = job.RequestSchedule()
 		if err != nil {
-			return jobSchedulingTime, err
+			return false, fmt.Errorf("request schedule: %w", err)
 		}
 	}
 
-	return jobSchedulingTime, nil
+	err = job.SaveNextInputMapping(inputMapping, resolved)
+	if err != nil {
+		return false, fmt.Errorf("save next input mapping: %w", err)
+	}
+
+	err = s.ensurePendingBuildExists(ctx, logger, job, jobInputs)
+	if err != nil {
+		return false, err
+	}
+
+	return s.BuildStarter.TryStartPendingBuildsForJob(logger, job, jobInputs)
 }
 
 func (s *Scheduler) ensurePendingBuildExists(
+	ctx context.Context,
 	logger lager.Logger,
-	versions *algorithm.VersionsDB,
-	job db.Job,
-	resources db.Resources,
+	job db.SchedulerJob,
+	jobInputs db.InputConfigs,
 ) error {
-	inputMapping, err := s.InputMapper.SaveNextInputMapping(logger, versions, job, resources)
+	buildInputs, satisfiableInputs, err := job.GetFullNextBuildInputs()
 	if err != nil {
-		return err
+		return fmt.Errorf("get next build inputs: %w", err)
 	}
 
-	for _, inputConfig := range job.Config().Inputs() {
-		inputVersion, ok := inputMapping[inputConfig.Name]
+	if !satisfiableInputs {
+		logger.Debug("next-build-inputs-not-determined")
+		return nil
+	}
+
+	inputMapping := map[string]db.BuildInput{}
+	for _, input := range buildInputs {
+		inputMapping[input.Name] = input
+	}
+
+	var hasNewInputs bool
+	for _, inputConfig := range jobInputs {
+		inputSource, ok := inputMapping[inputConfig.Name]
 
 		//trigger: true, and the version has not been used
-		if ok && inputVersion.FirstOccurrence && inputConfig.Trigger {
-			err := job.EnsurePendingBuildExists()
-			if err != nil {
-				logger.Error("failed-to-ensure-pending-build-exists", err)
-				return err
-			}
+		if ok && inputSource.FirstOccurrence {
+			hasNewInputs = true
+			if inputConfig.Trigger {
+				version, _ := json.Marshal(inputSource.Version)
+				spanCtx, _ := tracing.StartSpanLinkedToFollowing(
+					ctx,
+					inputSource,
+					"job.EnsurePendingBuildExists",
+					tracing.Attrs{
+						"team":     job.TeamName(),
+						"pipeline": job.PipelineName(),
+						"job":      job.Name(),
+						"input":    inputSource.Name,
+						"version":  string(version),
+					},
+				)
+				err := job.EnsurePendingBuildExists(spanCtx)
+				if err != nil {
+					return fmt.Errorf("ensure pending build exists: %w", err)
+				}
 
-			break
+				break
+			}
+		}
+	}
+
+	if hasNewInputs != job.HasNewInputs() {
+		if err := job.SetHasNewInputs(hasNewInputs); err != nil {
+			return fmt.Errorf("set has new inputs: %w", err)
 		}
 	}
 
 	return nil
-}
-
-type Waiter interface {
-	Wait()
-}
-
-func (s *Scheduler) TriggerImmediately(
-	logger lager.Logger,
-	job db.Job,
-	resources db.Resources,
-	resourceTypes atc.VersionedResourceTypes,
-) (db.Build, Waiter, error) {
-	logger = logger.Session("trigger-immediately", lager.Data{"job_name": job.Name()})
-
-	build, err := job.CreateBuild()
-	if err != nil {
-		logger.Error("failed-to-create-job-build", err)
-		return nil, nil, err
-	}
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		nextPendingBuilds, err := job.GetPendingBuilds()
-		if err != nil {
-			logger.Error("failed-to-get-next-pending-build-for-job", err)
-			return
-		}
-
-		err = s.BuildStarter.TryStartPendingBuildsForJob(logger, job, resources, resourceTypes, nextPendingBuilds)
-		if err != nil {
-			logger.Error("failed-to-start-next-pending-build-for-job", err, lager.Data{"job-name": job.Name()})
-			return
-		}
-	}()
-
-	return build, wg, nil
-}
-
-func (s *Scheduler) SaveNextInputMapping(logger lager.Logger, job db.Job, resources db.Resources) error {
-	versions, err := s.Pipeline.LoadVersionsDB()
-	if err != nil {
-		logger.Error("failed-to-load-versions-db", err)
-		return err
-	}
-
-	_, err = s.InputMapper.SaveNextInputMapping(logger, versions, job, resources)
-	return err
 }

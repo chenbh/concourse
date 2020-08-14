@@ -52,9 +52,6 @@ var _ = Describe("FewestBuildContainersPlacementStrategy", func() {
 
 				Inputs: []InputSource{},
 			}
-			metadata = db.ContainerMetadata{
-				Type: db.ContainerTypeTask,
-			}
 		})
 
 		Context("when there is only one worker", func() {
@@ -68,7 +65,6 @@ var _ = Describe("FewestBuildContainersPlacementStrategy", func() {
 					logger,
 					workers,
 					spec,
-					metadata,
 				)
 				Expect(chooseErr).ToNot(HaveOccurred())
 				Expect(chosenWorker).To(Equal(compatibleWorker1))
@@ -84,33 +80,6 @@ var _ = Describe("FewestBuildContainersPlacementStrategy", func() {
 				compatibleWorker3.BuildContainersReturns(10)
 			})
 
-			Context("when the container is of type 'check'", func() {
-				BeforeEach(func() {
-					metadata = db.ContainerMetadata{
-						Type: db.ContainerTypeCheck,
-					}
-				})
-				It("picks a random worker", func() {
-					workerChoiceCounts := map[Worker]int{}
-
-					for i := 0; i < 100; i++ {
-						chosenWorker, err := strategy.Choose(
-							logger,
-							workers,
-							spec,
-							metadata,
-						)
-						Expect(err).ToNot(HaveOccurred())
-						Expect(chosenWorker).To(SatisfyAny(Equal(compatibleWorker1), Equal(compatibleWorker2), Equal(compatibleWorker3)))
-						workerChoiceCounts[chosenWorker]++
-					}
-
-					Expect(workerChoiceCounts[compatibleWorker1]).ToNot(BeZero())
-					Expect(workerChoiceCounts[compatibleWorker2]).ToNot(BeZero())
-					Expect(workerChoiceCounts[compatibleWorker3]).ToNot(BeZero())
-				})
-
-			})
 			Context("when the container is not of type 'check'", func() {
 				It("picks the one with least amount of containers", func() {
 					Consistently(func() Worker {
@@ -118,7 +87,6 @@ var _ = Describe("FewestBuildContainersPlacementStrategy", func() {
 							logger,
 							workers,
 							spec,
-							metadata,
 						)
 						Expect(chooseErr).ToNot(HaveOccurred())
 						return chosenWorker
@@ -137,7 +105,6 @@ var _ = Describe("FewestBuildContainersPlacementStrategy", func() {
 								logger,
 								workers,
 								spec,
-								metadata,
 							)
 							Expect(chooseErr).ToNot(HaveOccurred())
 							return chosenWorker
@@ -157,7 +124,6 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 				logger,
 				workers,
 				spec,
-				metadata,
 			)
 		})
 
@@ -167,7 +133,7 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 
 			fakeInput1 := new(workerfakes.FakeInputSource)
 			fakeInput1AS := new(workerfakes.FakeArtifactSource)
-			fakeInput1AS.VolumeOnStub = func(logger lager.Logger, worker Worker) (Volume, bool, error) {
+			fakeInput1AS.ExistsOnStub = func(logger lager.Logger, worker Worker) (Volume, bool, error) {
 				switch worker {
 				case compatibleWorkerOneCache1, compatibleWorkerOneCache2, compatibleWorkerTwoCaches:
 					return new(workerfakes.FakeVolume), true, nil
@@ -179,7 +145,7 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 
 			fakeInput2 := new(workerfakes.FakeInputSource)
 			fakeInput2AS := new(workerfakes.FakeArtifactSource)
-			fakeInput2AS.VolumeOnStub = func(logger lager.Logger, worker Worker) (Volume, bool, error) {
+			fakeInput2AS.ExistsOnStub = func(logger lager.Logger, worker Worker) (Volume, bool, error) {
 				switch worker {
 				case compatibleWorkerTwoCaches:
 					return new(workerfakes.FakeVolume), true, nil
@@ -201,19 +167,19 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 			}
 
 			compatibleWorkerOneCache1 = new(workerfakes.FakeWorker)
-			compatibleWorkerOneCache1.SatisfyingReturns(compatibleWorkerOneCache1, nil)
+			compatibleWorkerOneCache1.SatisfiesReturns(true)
 
 			compatibleWorkerOneCache2 = new(workerfakes.FakeWorker)
-			compatibleWorkerOneCache2.SatisfyingReturns(compatibleWorkerOneCache2, nil)
+			compatibleWorkerOneCache2.SatisfiesReturns(true)
 
 			compatibleWorkerTwoCaches = new(workerfakes.FakeWorker)
-			compatibleWorkerTwoCaches.SatisfyingReturns(compatibleWorkerTwoCaches, nil)
+			compatibleWorkerTwoCaches.SatisfiesReturns(true)
 
 			compatibleWorkerNoCaches1 = new(workerfakes.FakeWorker)
-			compatibleWorkerNoCaches1.SatisfyingReturns(compatibleWorkerNoCaches1, nil)
+			compatibleWorkerNoCaches1.SatisfiesReturns(true)
 
 			compatibleWorkerNoCaches2 = new(workerfakes.FakeWorker)
-			compatibleWorkerNoCaches2.SatisfyingReturns(compatibleWorkerNoCaches2, nil)
+			compatibleWorkerNoCaches2.SatisfiesReturns(true)
 		})
 
 		Context("with one having the most local caches", func() {
@@ -253,7 +219,6 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 						logger,
 						workers,
 						spec,
-						metadata,
 					)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(chosenWorker).To(SatisfyAny(Equal(compatibleWorkerOneCache1), Equal(compatibleWorkerOneCache2)))
@@ -286,7 +251,6 @@ var _ = Describe("VolumeLocalityPlacementStrategy", func() {
 						logger,
 						workers,
 						spec,
-						metadata,
 					)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(chosenWorker).To(SatisfyAny(Equal(compatibleWorkerNoCaches1), Equal(compatibleWorkerNoCaches2)))
@@ -307,7 +271,6 @@ var _ = Describe("RandomPlacementStrategy", func() {
 				logger,
 				workers,
 				spec,
-				metadata,
 			)
 		})
 
@@ -331,7 +294,6 @@ var _ = Describe("RandomPlacementStrategy", func() {
 					logger,
 					workers,
 					spec,
-					metadata,
 				)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(chosenWorker).To(SatisfyAny(Equal(compatibleWorkerNoCaches1), Equal(compatibleWorkerNoCaches2)))
@@ -340,6 +302,151 @@ var _ = Describe("RandomPlacementStrategy", func() {
 
 			Expect(workerChoiceCounts[compatibleWorkerNoCaches1]).ToNot(BeZero())
 			Expect(workerChoiceCounts[compatibleWorkerNoCaches2]).ToNot(BeZero())
+		})
+	})
+})
+
+var _ = Describe("LimitActiveTasksPlacementStrategy", func() {
+	Describe("Choose", func() {
+		var compatibleWorker1 *workerfakes.FakeWorker
+		var compatibleWorker2 *workerfakes.FakeWorker
+		var compatibleWorker3 *workerfakes.FakeWorker
+
+		BeforeEach(func() {
+			logger = lagertest.NewTestLogger("active-tasks-equal-placement-test")
+			strategy = NewLimitActiveTasksPlacementStrategy(0)
+			compatibleWorker1 = new(workerfakes.FakeWorker)
+			compatibleWorker2 = new(workerfakes.FakeWorker)
+			compatibleWorker3 = new(workerfakes.FakeWorker)
+
+			spec = ContainerSpec{
+				ImageSpec: ImageSpec{ResourceType: "some-type"},
+
+				Type: "task",
+
+				TeamID: 4567,
+
+				Inputs: []InputSource{},
+			}
+		})
+
+		Context("when there is only one worker with any amount of running tasks", func() {
+			BeforeEach(func() {
+				workers = []Worker{compatibleWorker1}
+				compatibleWorker1.ActiveTasksReturns(42, nil)
+			})
+
+			It("picks that worker", func() {
+				chosenWorker, chooseErr = strategy.Choose(
+					logger,
+					workers,
+					spec,
+				)
+				Expect(chooseErr).ToNot(HaveOccurred())
+				Expect(chosenWorker).To(Equal(compatibleWorker1))
+			})
+		})
+
+		Context("when there are multiple workers", func() {
+			BeforeEach(func() {
+				workers = []Worker{compatibleWorker1, compatibleWorker2, compatibleWorker3}
+
+				compatibleWorker1.ActiveTasksReturns(2, nil)
+				compatibleWorker2.ActiveTasksReturns(1, nil)
+				compatibleWorker3.ActiveTasksReturns(2, nil)
+			})
+
+			It("a task picks the one with least amount of active tasks", func() {
+				Consistently(func() Worker {
+					chosenWorker, chooseErr = strategy.Choose(
+						logger,
+						workers,
+						spec,
+					)
+					Expect(chooseErr).ToNot(HaveOccurred())
+					return chosenWorker
+				}).Should(Equal(compatibleWorker2))
+			})
+
+			Context("when all the workers have the same number of active tasks", func() {
+				BeforeEach(func() {
+					workers = []Worker{compatibleWorker1, compatibleWorker2, compatibleWorker3}
+					compatibleWorker1.ActiveTasksReturns(1, nil)
+					compatibleWorker3.ActiveTasksReturns(1, nil)
+				})
+
+				It("a task picks any of them", func() {
+					Consistently(func() Worker {
+						chosenWorker, chooseErr = strategy.Choose(
+							logger,
+							workers,
+							spec,
+						)
+						Expect(chooseErr).ToNot(HaveOccurred())
+						return chosenWorker
+					}).Should(Or(Equal(compatibleWorker1), Equal(compatibleWorker3)))
+				})
+			})
+		})
+		Context("when max-tasks-per-worker is set to 1", func() {
+			BeforeEach(func() {
+				strategy = NewLimitActiveTasksPlacementStrategy(1)
+			})
+			Context("when there are multiple workers", func() {
+				BeforeEach(func() {
+					workers = []Worker{compatibleWorker1, compatibleWorker2, compatibleWorker3}
+
+					compatibleWorker1.ActiveTasksReturns(1, nil)
+					compatibleWorker2.ActiveTasksReturns(0, nil)
+					compatibleWorker3.ActiveTasksReturns(1, nil)
+				})
+
+				It("picks the worker with no active tasks", func() {
+					chosenWorker, chooseErr = strategy.Choose(
+						logger,
+						workers,
+						spec,
+					)
+					Expect(chooseErr).ToNot(HaveOccurred())
+					Expect(chosenWorker).To(Equal(compatibleWorker2))
+				})
+			})
+
+			Context("when all workers have active tasks", func() {
+				BeforeEach(func() {
+					workers = []Worker{compatibleWorker1, compatibleWorker2, compatibleWorker3}
+
+					compatibleWorker1.ActiveTasksReturns(1, nil)
+					compatibleWorker2.ActiveTasksReturns(1, nil)
+					compatibleWorker3.ActiveTasksReturns(1, nil)
+				})
+
+				It("picks no worker", func() {
+					chosenWorker, chooseErr = strategy.Choose(
+						logger,
+						workers,
+						spec,
+					)
+					Expect(chooseErr).ToNot(HaveOccurred())
+					Expect(chosenWorker).To(BeNil())
+				})
+				Context("when the container is not of type 'task'", func() {
+					BeforeEach(func() {
+						spec.Type = ""
+					})
+					It("picks any worker", func() {
+						Consistently(func() Worker {
+							chosenWorker, chooseErr = strategy.Choose(
+								logger,
+								workers,
+								spec,
+							)
+							Expect(chooseErr).ToNot(HaveOccurred())
+							return chosenWorker
+						}).Should(Or(Equal(compatibleWorker1), Equal(compatibleWorker3)))
+					})
+				})
+			})
 		})
 	})
 })

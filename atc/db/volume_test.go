@@ -3,9 +3,7 @@ package db_test
 import (
 	"time"
 
-	"github.com/cloudfoundry/bosh-cli/director/template"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,15 +15,21 @@ var _ = Describe("Volume", func() {
 
 	BeforeEach(func() {
 		expiries := db.ContainerOwnerExpiries{
-			GraceTime: 2 * time.Minute,
-			Min:       5 * time.Minute,
-			Max:       1 * time.Hour,
+			Min: 5 * time.Minute,
+			Max: 1 * time.Hour,
 		}
 
-		resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(logger, "some-base-resource-type", atc.Source{}, creds.VersionedResourceTypes{})
+		resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig("some-base-resource-type", atc.Source{}, atc.VersionedResourceTypes{})
 		Expect(err).ToNot(HaveOccurred())
 
-		defaultCreatingContainer, err = defaultWorker.CreateContainer(db.NewResourceConfigCheckSessionContainerOwner(resourceConfig, expiries), db.ContainerMetadata{Type: "check"})
+		defaultCreatingContainer, err = defaultWorker.CreateContainer(
+			db.NewResourceConfigCheckSessionContainerOwner(
+				resourceConfig.ID(),
+				resourceConfig.OriginBaseResourceType().ID,
+				expiries,
+			),
+			db.ContainerMetadata{Type: "check"},
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		defaultCreatedContainer, err = defaultCreatingContainer.Created()
@@ -189,7 +193,6 @@ var _ = Describe("Volume", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
-				logger,
 				db.ForBuild(build.ID()),
 				"some-type",
 				atc.Version{"some": "version"},
@@ -197,21 +200,18 @@ var _ = Describe("Volume", func() {
 					"some": "source",
 				},
 				atc.Params{"some": "params"},
-				creds.NewVersionedResourceTypes(
-					template.StaticVariables{"source-param": "some-secret-sauce"},
-					atc.VersionedResourceTypes{
-						atc.VersionedResourceType{
-							ResourceType: atc.ResourceType{
-								Name: "some-type",
-								Type: "some-base-resource-type",
-								Source: atc.Source{
-									"some-type": "source",
-								},
+				atc.VersionedResourceTypes{
+					atc.VersionedResourceType{
+						ResourceType: atc.ResourceType{
+							Name: "some-type",
+							Type: "some-base-resource-type",
+							Source: atc.Source{
+								"some-type": "source",
 							},
-							Version: atc.Version{"some-type": "version"},
 						},
+						Version: atc.Version{"some-type": "version"},
 					},
-				),
+				},
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -260,6 +260,42 @@ var _ = Describe("Volume", func() {
 		})
 	})
 
+	Describe("createdVolume.InitializeArtifact", func() {
+		var (
+			workerArtifact db.WorkerArtifact
+			creatingVolume db.CreatingVolume
+			createdVolume  db.CreatedVolume
+			err            error
+		)
+
+		BeforeEach(func() {
+			creatingVolume, err = volumeRepository.CreateVolume(defaultTeam.ID(), defaultWorker.Name(), db.VolumeTypeArtifact)
+			Expect(err).ToNot(HaveOccurred())
+
+			createdVolume, err = creatingVolume.Created()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		JustBeforeEach(func() {
+			workerArtifact, err = createdVolume.InitializeArtifact("some-name", 0)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("initializes the worker artifact", func() {
+			Expect(workerArtifact.ID()).To(Equal(1))
+			Expect(workerArtifact.Name()).To(Equal("some-name"))
+			Expect(workerArtifact.BuildID()).To(Equal(0))
+			Expect(workerArtifact.CreatedAt()).ToNot(BeNil())
+		})
+
+		It("associates worker artifact with the volume", func() {
+			created, found, err := volumeRepository.FindCreatedVolume(createdVolume.Handle())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(found).To(BeTrue())
+			Expect(created.WorkerArtifactID()).To(Equal(workerArtifact.ID()))
+		})
+	})
+
 	Describe("createdVolume.InitializeTaskCache", func() {
 		Context("when there is a volume that belongs to worker task cache", func() {
 			var (
@@ -291,21 +327,20 @@ var _ = Describe("Volume", func() {
 			})
 
 			It("sets current volume as worker task cache volume", func() {
-				uwtc, err := workerTaskCacheFactory.FindOrCreate(defaultJob.ID(), "some-step", "some-cache-path", defaultWorker.Name())
+				taskCache, err := taskCacheFactory.FindOrCreate(defaultJob.ID(), "some-step", "some-cache-path")
 				Expect(err).ToNot(HaveOccurred())
 
-				creatingVolume, createdVolume, err := volumeRepository.FindTaskCacheVolume(defaultTeam.ID(), uwtc)
+				createdVolume, found, err := volumeRepository.FindTaskCacheVolume(defaultTeam.ID(), defaultWorker.Name(), taskCache)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(creatingVolume).To(BeNil())
+				Expect(found).To(BeTrue())
 				Expect(createdVolume).ToNot(BeNil())
 				Expect(createdVolume.Handle()).To(Equal(existingTaskCacheVolume.Handle()))
 
 				err = volume.InitializeTaskCache(defaultJob.ID(), "some-step", "some-cache-path")
 				Expect(err).ToNot(HaveOccurred())
 
-				creatingVolume, createdVolume, err = volumeRepository.FindTaskCacheVolume(defaultTeam.ID(), uwtc)
+				createdVolume, found, err = volumeRepository.FindTaskCacheVolume(defaultTeam.ID(), defaultWorker.Name(), taskCache)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(creatingVolume).To(BeNil())
 				Expect(createdVolume).ToNot(BeNil())
 				Expect(createdVolume.Handle()).To(Equal(volume.Handle()))
 
@@ -380,26 +415,42 @@ var _ = Describe("Volume", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceCache, err := resourceCacheFactory.FindOrCreateResourceCache(
-				logger,
 				db.ForBuild(build.ID()),
 				"some-type",
 				atc.Version{"some": "version"},
 				atc.Source{"some": "source"},
 				atc.Params{"some": "params"},
-				creds.NewVersionedResourceTypes(template.StaticVariables{"source-param": "some-secret-sauce"},
-					atc.VersionedResourceTypes{
-						{
-							ResourceType: atc.ResourceType{
-								Name:   "some-type",
-								Type:   "some-base-resource-type",
-								Source: atc.Source{"some-type": "((source-param))"},
-							},
-							Version: atc.Version{"some-custom-type": "version"},
+
+				atc.VersionedResourceTypes{
+					{
+						ResourceType: atc.ResourceType{
+							Name:   "some-type",
+							Type:   "some-base-resource-type",
+							Source: atc.Source{"some-type": "((source-param))"},
 						},
+						Version: atc.Version{"some-custom-type": "version"},
 					},
-				),
+				},
 			)
 			Expect(err).ToNot(HaveOccurred())
+
+			resourceConfigScope, err := defaultResourceType.SetResourceConfig(
+				atc.Source{"some": "source"},
+				atc.VersionedResourceTypes{
+					{
+						ResourceType: atc.ResourceType{
+							Name:   "some-type",
+							Type:   "some-base-resource-type",
+							Source: atc.Source{"some-type": "((source-param))"},
+						},
+						Version: atc.Version{"some-custom-type": "version"},
+					},
+				},
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			resourceConfigScope.SaveVersions(nil, []atc.Version{atc.Version{"some": "version"}})
+			resourceConfigScope.SaveVersions(nil, []atc.Version{atc.Version{"some-custom-type": "version"}})
 
 			creatingContainer, err := defaultWorker.CreateContainer(db.NewBuildStepContainerOwner(build.ID(), "some-plan", defaultTeam.ID()), db.ContainerMetadata{
 				Type:     "get",
@@ -468,7 +519,13 @@ var _ = Describe("Volume", func() {
 
 	Describe("Task cache volumes", func() {
 		It("returns volume type and task identifier", func() {
-			uwtc, err := workerTaskCacheFactory.FindOrCreate(defaultJob.ID(), "some-task", "some-path", defaultWorker.Name())
+			taskCache, err := taskCacheFactory.FindOrCreate(defaultJob.ID(), "some-task", "some-path")
+			Expect(err).ToNot(HaveOccurred())
+
+			uwtc, err := workerTaskCacheFactory.FindOrCreate(db.WorkerTaskCache{
+				WorkerName: defaultWorker.Name(),
+				TaskCache:  taskCache,
+			})
 			Expect(err).ToNot(HaveOccurred())
 
 			creatingVolume, err := volumeRepository.CreateTaskCacheVolume(defaultTeam.ID(), uwtc)
@@ -503,24 +560,21 @@ var _ = Describe("Volume", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			usedResourceCache, err := resourceCacheFactory.FindOrCreateResourceCache(
-				logger,
 				db.ForBuild(build.ID()),
 				"some-type",
 				atc.Version{"some": "version"},
 				atc.Source{"some": "source"},
 				atc.Params{"some": "params"},
-				creds.NewVersionedResourceTypes(template.StaticVariables{"source-param": "some-secret-sauce"},
-					atc.VersionedResourceTypes{
-						{
-							ResourceType: atc.ResourceType{
-								Name:   "some-type",
-								Type:   "some-base-resource-type",
-								Source: atc.Source{"some-type": "source"},
-							},
-							Version: atc.Version{"some-custom-type": "version"},
+				atc.VersionedResourceTypes{
+					{
+						ResourceType: atc.ResourceType{
+							Name:   "some-type",
+							Type:   "some-base-resource-type",
+							Source: atc.Source{"some-type": "source"},
 						},
+						Version: atc.Version{"some-custom-type": "version"},
 					},
-				),
+				},
 			)
 			Expect(err).ToNot(HaveOccurred())
 

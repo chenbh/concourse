@@ -12,20 +12,11 @@ import (
 
 type Event struct {
 	Name       string
-	Value      interface{}
-	State      EventState
+	Value      float64
 	Attributes map[string]string
 	Host       string
 	Time       time.Time
 }
-
-type EventState string
-
-const (
-	EventStateOK       EventState = "ok"
-	EventStateWarning  EventState = "warning"
-	EventStateCritical EventState = "critical"
-)
 
 //go:generate counterfeiter . Emitter
 type Emitter interface {
@@ -66,7 +57,13 @@ var (
 	emissions       chan eventEmission
 )
 
-func Initialize(logger lager.Logger, host string, attributes map[string]string) error {
+func Initialize(logger lager.Logger, host string, attributes map[string]string, bufferSize uint32) error {
+	logger.Debug("metric-initialize", lager.Data{
+		"host":        host,
+		"attributes":  attributes,
+		"buffer-size": bufferSize,
+	})
+
 	var (
 		emitterDescriptions []string
 		err                 error
@@ -94,10 +91,9 @@ func Initialize(logger lager.Logger, host string, attributes map[string]string) 
 		return nil
 	}
 
-	emitter = emitter
 	eventHost = host
 	eventAttributes = attributes
-	emissions = make(chan eventEmission, 1000)
+	emissions = make(chan eventEmission, int(bufferSize))
 
 	go emitLoop()
 

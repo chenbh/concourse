@@ -2,120 +2,122 @@ package k8s_test
 
 import (
 	"fmt"
-	"github.com/onsi/gomega/gexec"
+	"time"
 
-	. "github.com/concourse/concourse/topgun"
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Baggageclaim Drivers", func() {
-	var (
-		proxySession *gexec.Session
-		releaseName  string
-		namespace    string
-		atcEndpoint  string
-	)
+var _ = Describe("baggageclaim drivers", func() {
 
 	AfterEach(func() {
-		helmDestroy(releaseName)
-		Wait(Start(nil, "kubectl", "delete", "namespace", namespace, "--wait=false"))
-
-		if proxySession != nil {
-			Wait(proxySession.Interrupt())
-		}
+		cleanup(releaseName, namespace)
 	})
 
-	type Case struct {
-		Driver     string
-		NodeImage  string
-		ShouldWork bool
-	}
+	onPks(func() {
+		baggageclaimWorks("btrfs")
+		baggageclaimWorks("overlay")
+		baggageclaimWorks("naive")
+	})
 
-	DescribeTable("across different node images",
-		func(c Case) {
-			releaseName = fmt.Sprintf("topgun-bd-%s-%s-%d-%d",
-				c.Driver, c.NodeImage, GinkgoRandomSeed(), GinkgoParallelNode())
-			namespace = releaseName
+	onGke(func() {
 
-			args := []string{
-				"upgrade",
-				"--force",
-				"--install",
-				"--namespace=" + namespace,
-				"--set=concourse.web.kubernetes.enabled=false",
-				"--set=concourse.worker.baggageclaim.driver=" + c.Driver,
-				"--set=image=" + Environment.ConcourseImageName,
-				"--set=postgresql.persistence.enabled=false",
-				"--set=web.livenessProbe.failureThreshold=3",
-				"--set=web.livenessProbe.initialDelaySeconds=3",
-				"--set=web.livenessProbe.periodSeconds=3",
-				"--set=web.livenessProbe.timeoutSeconds=3",
-				"--set=worker.nodeSelector.nodeImage=" + c.NodeImage,
-				"--set=worker.replicas=1",
-				"--wait",
-				releaseName,
-				Environment.ConcourseChartDir,
-			}
+		const (
+			COS    = "--set=worker.nodeSelector.nodeImage=cos"
+			UBUNTU = "--set=worker.nodeSelector.nodeImage=ubuntu"
+		)
 
-			if Environment.ConcourseImageDigest != "" {
-				args = append(args, "--set=imageDigest="+Environment.ConcourseImageDigest)
-			}
+		Context("cos image", func() {
+			baggageclaimFails("btrfs", COS)
+			baggageclaimWorks("overlay", COS)
+			baggageclaimWorks("naive", COS)
+		})
 
-			helmDeploySession := Start(nil, "helm", args...)
-			Wait(helmDeploySession)
+		Context("ubuntu image", func() {
+			baggageclaimWorks("btrfs", UBUNTU)
+			baggageclaimWorks("overlay", UBUNTU)
+			baggageclaimWorks("naive", UBUNTU)
+		})
 
-			if !c.ShouldWork {
-				workerLogsSession := Start(nil, "kubectl", "logs",
-					"--namespace="+namespace, "-lapp="+namespace+"-worker")
-				<-workerLogsSession.Exited
+		Context("with a real btrfs partition", func() {
+			It("successfully recreates the worker", func() {
+				By("deploying concourse with ONLY one worker and having the worker pod use the gcloud disk and format it with btrfs")
 
-				Expect(workerLogsSession.Out.Contents()).To(ContainSubstring("failed-to-set-up-driver"))
-				return
-			}
+				setReleaseNameAndNamespace("real-btrfs-disk")
 
-			waitAllPodsInNamespaceToBeReady(namespace)
+				deployWithDriverAndSelectors("btrfs", UBUNTU,
+					"--set=persistence.enabled=false",
+					"--set=worker.additionalVolumes[0].name=concourse-work-dir",
+					"--set=worker.additionalVolumes[0].gcePersistentDisk.pdName=disk-topgun-k8s-btrfs-test",
+					"--set=worker.additionalVolumes[0].gcePersistentDisk.fsType=btrfs",
+				)
 
-			By("Creating the web proxy")
-			proxySession, atcEndpoint = startPortForwarding(namespace, releaseName+"-web", "8080")
+				atc := waitAndLogin(namespace, releaseName+"-web")
+				defer atc.Close()
 
-			By("Logging in")
-			fly.Login("test", "test", atcEndpoint)
+				By("Setting and triggering a pipeline that always fails which creates volumes on the persistent disk")
+				fly.Run("set-pipeline", "-n", "-c", "pipelines/pipeline-that-fails.yml", "-p", "failing-pipeline")
+				fly.Run("unpause-pipeline", "-p", "failing-pipeline")
+				sessionTriggerJob := fly.Start("trigger-job", "-w", "-j", "failing-pipeline/simple-job")
+				<-sessionTriggerJob.Exited
+
+				By("deleting the worker pod which triggers the initContainer script")
+				deletePods(releaseName, fmt.Sprintf("--selector=app=%s-worker", releaseName))
+
+				By("all pods should be running")
+				waitAllPodsInNamespaceToBeReady(namespace)
+			})
+		})
+
+	})
+})
+
+func baggageclaimWorks(driver string, selectorFlags ...string) {
+	Context(driver, func() {
+		It("works", func() {
+			setReleaseNameAndNamespace("bd-" + driver)
+			deployWithDriverAndSelectors(driver, selectorFlags...)
+
+			atc := waitAndLogin(namespace, releaseName+"-web")
+			defer atc.Close()
 
 			By("Setting and triggering a dumb pipeline")
-			fly.Run("set-pipeline", "-n", "-c", "../pipelines/get-task.yml", "-p", "pipeline")
-			fly.Run("trigger-job", "-j", "pipeline/simple-job")
-		},
-		Entry("with btrfs on cos", Case{
-			Driver:     "btrfs",
-			NodeImage:  "cos",
-			ShouldWork: false,
-		}),
-		Entry("with btrfs on ubuntu", Case{
-			Driver:     "btrfs",
-			NodeImage:  "ubuntu",
-			ShouldWork: true,
-		}),
-		Entry("with overlay on cos", Case{
-			Driver:     "overlay",
-			NodeImage:  "cos",
-			ShouldWork: true,
-		}),
-		Entry("with overlay on ubuntu", Case{
-			Driver:     "overlay",
-			NodeImage:  "ubuntu",
-			ShouldWork: true,
-		}),
-		Entry("with naive on cos", Case{
-			Driver:     "naive",
-			NodeImage:  "cos",
-			ShouldWork: true,
-		}),
-		Entry("with naive on ubuntu", Case{
-			Driver:     "naive",
-			NodeImage:  "ubuntu",
-			ShouldWork: true,
-		}),
-	)
-})
+			fly.Run("set-pipeline", "-n", "-c", "pipelines/get-task.yml", "-p", "some-pipeline")
+			fly.Run("unpause-pipeline", "-p", "some-pipeline")
+			fly.Run("trigger-job", "-w", "-j", "some-pipeline/simple-job")
+		})
+	})
+}
+
+func baggageclaimFails(driver string, selectorFlags ...string) {
+	Context(driver, func() {
+		It("fails", func() {
+			setReleaseNameAndNamespace("bd-" + driver)
+			deployWithDriverAndSelectors(driver, selectorFlags...)
+
+			Eventually(func() []byte {
+				var logs []byte
+				pods := getPods(namespace, metav1.ListOptions{LabelSelector: "app=" + namespace + "-worker"})
+				for _, p := range pods {
+					contents, _ := kubeClient.CoreV1().Pods(namespace).GetLogs(p.Name, &corev1.PodLogOptions{}).Do().Raw()
+					logs = append(logs, contents...)
+				}
+
+				return logs
+
+			}, 2*time.Minute, 1*time.Second).Should(ContainSubstring("failed-to-set-up-driver"))
+		})
+	})
+}
+
+func deployWithDriverAndSelectors(driver string, selectorFlags ...string) {
+	helmDeployTestFlags := []string{
+		"--set=concourse.web.kubernetes.enabled=false",
+		"--set=concourse.worker.baggageclaim.driver=" + driver,
+		"--set=worker.replicas=1",
+	}
+
+	deployConcourseChart(releaseName, append(helmDeployTestFlags, selectorFlags...)...)
+}

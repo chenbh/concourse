@@ -1,54 +1,46 @@
 ---
-name: Bug Report
-about: Let us know about a problem with Concourse
+name: 🐛 Report a bug
+about: Find something broken? Let us know! (If it's not yet reproducible, please "ask for help" instead!)
 title: ''
-labels: bug, triage
+labels: bug
 assignees: ''
 
 ---
 
-> Please remove all lines starting with '>' before submitting!
->
-> Bug reports on this repo should be related to core Concourse functionality.
->
-> If the bug has more to do with *running* Concourse, consider opening the
-> issue on a platform-specific repository instead:
->
->    BOSH: https://github.com/concourse/concourse-bosh-release
->    Docker: https://github.com/concourse/concourse-docker
->    Kubernetes: https://github.com/concourse/charts
->
-> It's OK if you open it here, but we may move it to a more appropriate repo.
->
-> If you're not sure that this is a bug and just need help with something,
-> please ask in our support forum instead:
->
->     https://discuss.concourse-ci.org/c/support
+## Summary
 
-## Bug Report
+<!--
+A brief summary of the problem.
+-->
 
-> (summarize the issue)
+## Steps to reproduce
 
-## Steps to Reproduce
+<!--
+All bug reports must have steps to reproduce, starting from the instructions in
+CONTRIBUTING.md for running Concourse locally:
 
-> (please include any pipelines/tasks using https://gist.github.com)
+https://github.com/concourse/concourse/blob/master/CONTRIBUTING.md#running-concourse
 
-## Expected Results
+Starting from `docker-compose up`, what steps can be followed to reproduce the
+problem?
 
-> (what did you expect to happen?)
+Please use https://gist.github.com for large snippets!
+-->
 
-## Actual Results
+## Expected results
 
-> (what actually happened?)
 
-## Additional Context
 
-> (delete this section if not needed)
+## Actual results
 
-## Version Info
+
+
+## Additional context
+
+
+
+## Triaging info
 
 * Concourse version:
-* Deployment type (BOSH/Docker/binary):
-* Infrastructure/IaaS:
 * Browser (if applicable):
 * Did this used to work?

@@ -1,6 +1,11 @@
 package worker
 
-import "io"
+import (
+	"context"
+	"io"
+
+	"github.com/concourse/baggageclaim"
+)
 
 //go:generate counterfeiter . ArtifactDestination
 
@@ -10,5 +15,5 @@ import "io"
 type ArtifactDestination interface {
 	// StreamIn is called with a destination directory and the tar stream to
 	// expand into the destination directory.
-	StreamIn(string, io.Reader) error
+	StreamIn(context.Context, string, baggageclaim.Encoding, io.Reader) error
 }

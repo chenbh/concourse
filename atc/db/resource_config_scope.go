@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -27,7 +26,7 @@ type ResourceConfigScope interface {
 	ResourceConfig() ResourceConfig
 	CheckError() error
 
-	SaveVersions(versions []atc.Version) error
+	SaveVersions(SpanContext, []atc.Version) error
 	FindVersion(atc.Version) (ResourceConfigVersion, bool, error)
 	LatestVersion() (ResourceConfigVersion, bool, error)
 
@@ -35,13 +34,14 @@ type ResourceConfigScope interface {
 
 	AcquireResourceCheckingLock(
 		logger lager.Logger,
-		interval time.Duration,
 	) (lock.Lock, bool, error)
 
-	UpdateLastChecked(
+	UpdateLastCheckStartTime(
 		interval time.Duration,
 		immediate bool,
 	) (bool, error)
+
+	UpdateLastCheckEndTime() (bool, error)
 }
 
 type resourceConfigScope struct {
@@ -65,38 +65,51 @@ func (r *resourceConfigScope) CheckError() error              { return r.checkEr
 //
 // In the case of a check resource from an older version, the versions
 // that already exist in the DB will be re-ordered using
-// incrementCheckOrderWhenNewerVersion to input the correct check order
-func (r *resourceConfigScope) SaveVersions(versions []atc.Version) error {
-	tx, err := r.conn.Begin()
+// incrementCheckOrder to input the correct check order
+func (r *resourceConfigScope) SaveVersions(spanContext SpanContext, versions []atc.Version) error {
+	return saveVersions(r.conn, r.ID(), versions, spanContext)
+}
+
+func saveVersions(conn Conn, rcsID int, versions []atc.Version, spanContext SpanContext) error {
+	tx, err := conn.Begin()
 	if err != nil {
 		return err
 	}
 
 	defer Rollback(tx)
 
+	var containsNewVersion bool
 	for _, version := range versions {
-		_, err = saveResourceVersion(tx, r, version, nil)
+		newVersion, err := saveResourceVersion(tx, rcsID, version, nil, spanContext)
 		if err != nil {
 			return err
 		}
 
-		versionJSON, err := json.Marshal(version)
-		if err != nil {
-			return err
+		containsNewVersion = containsNewVersion || newVersion
+	}
+
+	if containsNewVersion {
+		// bump the check order of all the versions returned by the check if there
+		// is at least one new version within the set of returned versions
+		for _, version := range versions {
+			versionJSON, err := json.Marshal(version)
+			if err != nil {
+				return err
+			}
+
+			err = incrementCheckOrder(tx, rcsID, string(versionJSON))
+			if err != nil {
+				return err
+			}
 		}
 
-		err = incrementCheckOrder(tx, r, string(versionJSON))
+		err = requestScheduleForJobsUsingResourceConfigScope(tx, rcsID)
 		if err != nil {
 			return err
 		}
 	}
 
 	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	err = bumpCacheIndexForPipelinesUsingResourceConfigScope(r.conn, r.id)
 	if err != nil {
 		return err
 	}
@@ -119,7 +132,7 @@ func (r *resourceConfigScope) FindVersion(v atc.Version) (ResourceConfigVersion,
 		Where(sq.Eq{
 			"v.resource_config_scope_id": r.id,
 		}).
-		Where(sq.Expr(fmt.Sprintf("v.version_md5 = md5('%s')", versionByte))).
+		Where(sq.Expr("v.version_md5 = md5(?)", versionByte)).
 		RunWith(r.conn).
 		QueryRow()
 
@@ -180,7 +193,6 @@ func (r *resourceConfigScope) SetCheckError(cause error) error {
 
 func (r *resourceConfigScope) AcquireResourceCheckingLock(
 	logger lager.Logger,
-	interval time.Duration,
 ) (lock.Lock, bool, error) {
 	return r.lockFactory.Acquire(
 		logger,
@@ -188,7 +200,7 @@ func (r *resourceConfigScope) AcquireResourceCheckingLock(
 	)
 }
 
-func (r *resourceConfigScope) UpdateLastChecked(
+func (r *resourceConfigScope) UpdateLastCheckStartTime(
 	interval time.Duration,
 	immediate bool,
 ) (bool, error) {
@@ -203,13 +215,13 @@ func (r *resourceConfigScope) UpdateLastChecked(
 
 	condition := ""
 	if !immediate {
-		condition = "AND now() - last_checked > ($2 || ' SECONDS')::INTERVAL"
+		condition = "AND now() - last_check_start_time > ($2 || ' SECONDS')::INTERVAL"
 		params = append(params, interval.Seconds())
 	}
 
 	updated, err := checkIfRowsUpdated(tx, `
 			UPDATE resource_config_scopes
-			SET last_checked = now()
+			SET last_check_start_time = now()
 			WHERE id = $1
 		`+condition, params...)
 	if err != nil {
@@ -228,7 +240,36 @@ func (r *resourceConfigScope) UpdateLastChecked(
 	return true, nil
 }
 
-func saveResourceVersion(tx Tx, r ResourceConfigScope, version atc.Version, metadata ResourceConfigMetadataFields) (bool, error) {
+func (r *resourceConfigScope) UpdateLastCheckEndTime() (bool, error) {
+	tx, err := r.conn.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	defer Rollback(tx)
+
+	updated, err := checkIfRowsUpdated(tx, `
+			UPDATE resource_config_scopes
+			SET last_check_end_time = now()
+			WHERE id = $1
+		`, r.id)
+	if err != nil {
+		return false, err
+	}
+
+	if !updated {
+		return false, nil
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func saveResourceVersion(tx Tx, rcsID int, version atc.Version, metadata ResourceConfigMetadataFields, spanContext SpanContext) (bool, error) {
 	versionJSON, err := json.Marshal(version)
 	if err != nil {
 		return false, err
@@ -239,13 +280,19 @@ func saveResourceVersion(tx Tx, r ResourceConfigScope, version atc.Version, meta
 		return false, err
 	}
 
+	spanContextJSON, err := json.Marshal(spanContext)
+	if err != nil {
+		return false, err
+	}
+
 	var checkOrder int
 	err = tx.QueryRow(`
-		INSERT INTO resource_config_versions (resource_config_scope_id, version, version_md5, metadata)
-		SELECT $1, $2, md5($3), $4
-		ON CONFLICT (resource_config_scope_id, version_md5) DO UPDATE SET metadata = $4
+		INSERT INTO resource_config_versions (resource_config_scope_id, version, version_md5, metadata, span_context)
+		SELECT $1, $2, md5($3), $4, $5
+		ON CONFLICT (resource_config_scope_id, version_md5)
+		DO UPDATE SET metadata = COALESCE(NULLIF(excluded.metadata, 'null'::jsonb), resource_config_versions.metadata)
 		RETURNING check_order
-		`, r.ID(), string(versionJSON), string(versionJSON), string(metadataJSON)).Scan(&checkOrder)
+		`, rcsID, string(versionJSON), string(versionJSON), string(metadataJSON), string(spanContextJSON)).Scan(&checkOrder)
 	if err != nil {
 		return false, err
 	}
@@ -257,7 +304,7 @@ func saveResourceVersion(tx Tx, r ResourceConfigScope, version atc.Version, meta
 // current max. This will fix the case of a check from an old version causing
 // the desired order to change; existing versions will be re-ordered since
 // we add them in the desired order.
-func incrementCheckOrder(tx Tx, r ResourceConfigScope, version string) error {
+func incrementCheckOrder(tx Tx, rcsID int, version string) error {
 	_, err := tx.Exec(`
 		WITH max_checkorder AS (
 			SELECT max(check_order) co
@@ -269,42 +316,47 @@ func incrementCheckOrder(tx Tx, r ResourceConfigScope, version string) error {
 		SET check_order = mc.co + 1
 		FROM max_checkorder mc
 		WHERE resource_config_scope_id = $1
-		AND version = $2
-		AND check_order <= mc.co;`, r.ID(), version)
+		AND version_md5 = md5($2)
+		AND check_order <= mc.co;`, rcsID, version)
 	return err
 }
 
-func bumpCacheIndexForPipelinesUsingResourceConfigScope(conn Conn, rcsID int) error {
-	rows, err := psql.Select("p.id").
-		From("pipelines p").
-		Join("resources r ON r.pipeline_id = p.id").
+// The SELECT query orders the jobs for updating to prevent deadlocking.
+// Updating multiple rows using a SELECT subquery does not preserve the same
+// order for the updates, which can lead to deadlocking.
+func requestScheduleForJobsUsingResourceConfigScope(tx Tx, rcsID int) error {
+	rows, err := psql.Select("DISTINCT j.job_id").
+		From("job_inputs j").
+		Join("resources r ON r.id = j.resource_id").
 		Where(sq.Eq{
 			"r.resource_config_scope_id": rcsID,
+			"j.passed_job_id":            nil,
 		}).
-		RunWith(conn).
+		OrderBy("j.job_id DESC").
+		RunWith(tx).
 		Query()
 	if err != nil {
 		return err
 	}
 
-	var pipelines []int
+	var jobIDs []int
 	for rows.Next() {
-		var pid int
-		err = rows.Scan(&pid)
+		var id int
+		err = rows.Scan(&id)
 		if err != nil {
 			return err
 		}
 
-		pipelines = append(pipelines, pid)
+		jobIDs = append(jobIDs, id)
 	}
 
-	for _, p := range pipelines {
-		_, err := psql.Update("pipelines").
-			Set("cache_index", sq.Expr("cache_index + 1")).
+	for _, jID := range jobIDs {
+		_, err := psql.Update("jobs").
+			Set("schedule_requested", sq.Expr("now()")).
 			Where(sq.Eq{
-				"id": p,
+				"id": jID,
 			}).
-			RunWith(conn).
+			RunWith(tx).
 			Exec()
 		if err != nil {
 			return err

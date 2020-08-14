@@ -3,21 +3,16 @@ module Concourse.Pagination exposing
     , Page
     , Paginated
     , Pagination
-    , chevron
     , chevronContainer
+    , chevronLeft
+    , chevronRight
     , equal
-    , fetch
-    , parseLinks
     )
 
+import Assets
 import Colors
-import Dict exposing (Dict)
-import Http
-import Json.Decode
-import Maybe.Extra
-import Regex exposing (Regex)
-import String
-import Task exposing (Task)
+import Html
+import Html.Attributes exposing (style)
 
 
 type alias Paginated a =
@@ -45,21 +40,6 @@ type Direction
     | To Int
 
 
-previousRel : String
-previousRel =
-    "previous"
-
-
-nextRel : String
-nextRel =
-    "next"
-
-
-linkHeaderRegex : Regex
-linkHeaderRegex =
-    Regex.regex ("<([^>]+)>; rel=\"(" ++ previousRel ++ "|" ++ nextRel ++ ")\"")
-
-
 directionEqual : Direction -> Direction -> Bool
 directionEqual d1 d2 =
     case ( d1, d2 ) of
@@ -84,228 +64,50 @@ equal one two =
     directionEqual one.direction two.direction
 
 
-fetch : Json.Decode.Decoder a -> String -> Maybe Page -> Task Http.Error (Paginated a)
-fetch decode url page =
-    Http.toTask <|
-        Http.request
-            { method = "GET"
-            , headers = []
-            , url = addParams url page
-            , body = Http.emptyBody
-            , expect = Http.expectStringResponse (parsePagination decode)
-            , timeout = Nothing
-            , withCredentials = False
-            }
-
-
-parsePagination : Json.Decode.Decoder a -> Http.Response String -> Result String (Paginated a)
-parsePagination decode response =
-    let
-        pagination =
-            parseLinks response
-
-        decoded =
-            Json.Decode.decodeString (Json.Decode.list decode) response.body
-    in
-    case decoded of
-        Err err ->
-            Err err
-
-        Ok content ->
-            Ok { content = content, pagination = pagination }
-
-
-parseLinks : Http.Response String -> Pagination
-parseLinks response =
-    case Dict.get "link" <| keysToLower response.headers of
-        Nothing ->
-            Pagination Nothing Nothing
-
-        Just commaSeparatedCraziness ->
-            let
-                headers =
-                    String.split ", " commaSeparatedCraziness
-
-                parsed =
-                    Dict.fromList <| List.filterMap parseLinkTuple headers
-            in
-            Pagination
-                (Dict.get previousRel parsed |> Maybe.andThen parseParams)
-                (Dict.get nextRel parsed |> Maybe.andThen parseParams)
-
-
-keysToLower : Dict String a -> Dict String a
-keysToLower =
-    Dict.toList
-        >> List.map (Tuple.mapFirst String.toLower)
-        >> Dict.fromList
-
-
-parseLinkTuple : String -> Maybe ( String, String )
-parseLinkTuple header =
-    case Regex.find (Regex.AtMost 1) linkHeaderRegex header of
-        [] ->
-            Nothing
-
-        { submatches } :: _ ->
-            case submatches of
-                (Just url) :: (Just rel) :: _ ->
-                    Just ( rel, url )
-
-                _ ->
-                    Nothing
-
-
-parseParams : String -> Maybe Page
-parseParams =
-    fromQuery << Tuple.second << extractQuery
-
-
-extractQuery : String -> ( String, Dict String String )
-extractQuery url =
-    case String.split "?" url of
-        baseURL :: query :: _ ->
-            ( baseURL, parseQuery query )
-
-        _ ->
-            ( url, Dict.empty )
-
-
-setQuery : String -> Dict String String -> String
-setQuery baseURL query =
-    let
-        params =
-            String.join "&" <|
-                List.map (\( k, v ) -> k ++ "=" ++ v) (Dict.toList query)
-    in
-    if params == "" then
-        baseURL
-
-    else
-        baseURL ++ "?" ++ params
-
-
-parseQuery : String -> Dict String String
-parseQuery query =
-    let
-        parseParam p =
-            case String.split "=" p of
-                k :: vs ->
-                    ( k, String.join "=" vs )
-
-                [] ->
-                    ( "", "" )
-    in
-    Dict.fromList <|
-        List.map parseParam <|
-            String.split "&" query
-
-
-addParams : String -> Maybe Page -> String
-addParams url page =
-    let
-        ( baseURL, query ) =
-            extractQuery url
-    in
-    setQuery baseURL (Dict.union query (toQuery page))
-
-
-fromQuery : Dict String String -> Maybe Page
-fromQuery query =
-    let
-        limit =
-            Maybe.withDefault 0 <|
-                (Dict.get "limit" query |> Maybe.andThen parseNum)
-
-        until =
-            Maybe.map Until <|
-                (Dict.get "until" query |> Maybe.andThen parseNum)
-
-        since =
-            Maybe.map Since <|
-                (Dict.get "since" query |> Maybe.andThen parseNum)
-
-        from =
-            Maybe.map Since <|
-                (Dict.get "from" query |> Maybe.andThen parseNum)
-
-        to =
-            Maybe.map Since <|
-                (Dict.get "to" query |> Maybe.andThen parseNum)
-    in
-    Maybe.map (\direction -> { direction = direction, limit = limit }) <|
-        Maybe.Extra.or until <|
-            Maybe.Extra.or since <|
-                Maybe.Extra.or from to
-
-
-toQuery : Maybe Page -> Dict String String
-toQuery page =
-    case page of
-        Nothing ->
-            Dict.empty
-
-        Just somePage ->
-            let
-                directionParam =
-                    case somePage.direction of
-                        Since id ->
-                            ( "since", toString id )
-
-                        Until id ->
-                            ( "until", toString id )
-
-                        From id ->
-                            ( "from", toString id )
-
-                        To id ->
-                            ( "to", toString id )
-
-                limitParam =
-                    ( "limit", toString somePage.limit )
-            in
-            Dict.fromList [ directionParam, limitParam ]
-
-
-parseNum : String -> Maybe Int
-parseNum =
-    Result.toMaybe << String.toInt
-
-
-chevronContainer : List ( String, String )
+chevronContainer : List (Html.Attribute msg)
 chevronContainer =
-    [ ( "padding", "5px" )
-    , ( "display", "flex" )
-    , ( "align-items", "center" )
-    , ( "border-left", "1px solid " ++ Colors.background )
+    [ style "padding" "5px"
+    , style "display" "flex"
+    , style "align-items" "center"
+    , style "border-left" <| "1px solid " ++ Colors.background
     ]
 
 
 chevron :
-    { direction : String, enabled : Bool, hovered : Bool }
-    -> List ( String, String )
-chevron { direction, enabled, hovered } =
-    [ ( "background-image"
-      , "url(/public/images/baseline-chevron-" ++ direction ++ "-24px.svg)"
-      )
-    , ( "background-position", "50% 50%" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "width", "24px" )
-    , ( "height", "24px" )
-    , ( "padding", "5px" )
-    , ( "opacity"
-      , if enabled then
+    Assets.Asset
+    -> { enabled : Bool, hovered : Bool }
+    -> List (Html.Attribute msg)
+chevron asset { enabled, hovered } =
+    [ style "background-image" <|
+        Assets.backgroundImage <|
+            Just asset
+    , style "background-position" "50% 50%"
+    , style "background-repeat" "no-repeat"
+    , style "width" "24px"
+    , style "height" "24px"
+    , style "padding" "5px"
+    , style "opacity" <|
+        if enabled then
             "1"
 
         else
             "0.5"
-      )
     ]
         ++ (if hovered then
-                [ ( "background-color", Colors.paginationHover )
-                , ( "border-radius", "50%" )
+                [ style "background-color" Colors.paginationHover
+                , style "border-radius" "50%"
                 ]
 
             else
                 []
            )
+
+
+chevronLeft : { enabled : Bool, hovered : Bool } -> List (Html.Attribute msg)
+chevronLeft =
+    chevron <| Assets.ChevronLeft
+
+
+chevronRight : { enabled : Bool, hovered : Bool } -> List (Html.Attribute msg)
+chevronRight =
+    chevron <| Assets.ChevronRight

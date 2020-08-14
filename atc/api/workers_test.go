@@ -9,30 +9,19 @@ import (
 	"time"
 
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
-	"github.com/concourse/concourse/atc/worker/workerfakes"
+	. "github.com/concourse/concourse/atc/testhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Workers API", func() {
-	var (
-		fakeaccess *accessorfakes.FakeAccess
-	)
-	BeforeEach(func() {
-		fakeaccess = new(accessorfakes.FakeAccess)
-	})
-	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
-	})
 
 	Describe("GET /api/v1/workers", func() {
 		var response *http.Response
 
 		JustBeforeEach(func() {
-
 			req, err := http.NewRequest("GET", server.URL+"/api/v1/workers", nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -41,11 +30,28 @@ var _ = Describe("Workers API", func() {
 		})
 
 		Context("when authenticated", func() {
+			var (
+				teamWorker1 *dbfakes.FakeWorker
+				teamWorker2 *dbfakes.FakeWorker
+			)
+
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
-				fakeaccess.TeamNamesReturns([]string{"some-team"})
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
+				fakeAccess.TeamNamesReturns([]string{"some-team"})
 				dbWorkerFactory.VisibleWorkersReturns(nil, nil)
+
+				teamWorker1 = new(dbfakes.FakeWorker)
+				gardenAddr1 := "1.2.3.4:7777"
+				teamWorker1.GardenAddrReturns(&gardenAddr1)
+				bcURL1 := "1.2.3.4:8888"
+				teamWorker1.BaggageclaimURLReturns(&bcURL1)
+
+				teamWorker2 = new(dbfakes.FakeWorker)
+				gardenAddr2 := "5.6.7.8:7777"
+				teamWorker2.GardenAddrReturns(&gardenAddr2)
+				bcURL2 := "5.6.7.8:8888"
+				teamWorker2.BaggageclaimURLReturns(&bcURL2)
 			})
 
 			It("fetches workers by team name from worker user context", func() {
@@ -55,25 +61,43 @@ var _ = Describe("Workers API", func() {
 				Expect(teamNames).To(ConsistOf("some-team"))
 			})
 
-			Context("when the workers can be listed", func() {
-				var (
-					teamWorker1 *dbfakes.FakeWorker
-					teamWorker2 *dbfakes.FakeWorker
-				)
-
+			Context("when user is an admin", func() {
 				BeforeEach(func() {
+					fakeAccess.IsAdminReturns(true)
+					dbWorkerFactory.WorkersReturns([]db.Worker{
+						teamWorker1,
+						teamWorker2,
+					}, nil)
+				})
 
-					teamWorker1 = new(dbfakes.FakeWorker)
-					gardenAddr1 := "1.2.3.4:7777"
-					teamWorker1.GardenAddrReturns(&gardenAddr1)
-					bcURL1 := "1.2.3.4:8888"
-					teamWorker1.BaggageclaimURLReturns(&bcURL1)
+				It("returns all the workers", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusOK))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 
-					teamWorker2 = new(dbfakes.FakeWorker)
-					gardenAddr2 := "5.6.7.8:7777"
-					teamWorker2.GardenAddrReturns(&gardenAddr2)
-					bcURL2 := "5.6.7.8:8888"
-					teamWorker2.BaggageclaimURLReturns(&bcURL2)
+					Expect(dbWorkerFactory.WorkersCallCount()).To(Equal(1))
+
+					var returnedWorkers []atc.Worker
+					err := json.NewDecoder(response.Body).Decode(&returnedWorkers)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(returnedWorkers).To(Equal([]atc.Worker{
+						{
+							GardenAddr:      "1.2.3.4:7777",
+							BaggageclaimURL: "1.2.3.4:8888",
+						},
+						{
+							GardenAddr:      "5.6.7.8:7777",
+							BaggageclaimURL: "5.6.7.8:8888",
+						},
+					}))
+				})
+			})
+
+			Context("when the workers can be listed", func() {
+				BeforeEach(func() {
 					dbWorkerFactory.VisibleWorkersReturns([]db.Worker{
 						teamWorker1,
 						teamWorker2,
@@ -85,13 +109,18 @@ var _ = Describe("Workers API", func() {
 				})
 
 				It("returns Content-Type 'application/json'", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
 				It("returns the workers", func() {
 					var returnedWorkers []atc.Worker
 					err := json.NewDecoder(response.Body).Decode(&returnedWorkers)
 					Expect(err).NotTo(HaveOccurred())
+
+					Expect(dbWorkerFactory.VisibleWorkersCallCount()).To(Equal(1))
 
 					Expect(returnedWorkers).To(Equal([]atc.Worker{
 						{
@@ -120,7 +149,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -135,8 +164,7 @@ var _ = Describe("Workers API", func() {
 			ttl       string
 			certsPath string
 
-			response         *http.Response
-			fakeGardenWorker *workerfakes.FakeWorker
+			response *http.Response
 		)
 
 		BeforeEach(func() {
@@ -151,6 +179,7 @@ var _ = Describe("Workers API", func() {
 				NoProxy:          "example.com,127.0.0.1,localhost",
 				ActiveContainers: 2,
 				ActiveVolumes:    10,
+				ActiveTasks:      42,
 				ResourceTypes: []atc.WorkerResourceType{
 					{Type: "some-resource", Image: "some-resource-image"},
 				},
@@ -160,11 +189,8 @@ var _ = Describe("Workers API", func() {
 			}
 
 			ttl = "30s"
-			fakeaccess.IsAuthorizedReturns(true)
-			fakeaccess.IsSystemReturns(true)
-
-			fakeGardenWorker = new(workerfakes.FakeWorker)
-			fakeWorkerProvider.NewGardenWorkerReturns(fakeGardenWorker)
+			fakeAccess.IsAuthorizedReturns(true)
+			fakeAccess.IsSystemReturns(true)
 		})
 
 		JustBeforeEach(func() {
@@ -180,7 +206,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			It("tries to save the worker", func() {
@@ -196,6 +222,7 @@ var _ = Describe("Workers API", func() {
 					NoProxy:          "example.com,127.0.0.1,localhost",
 					ActiveContainers: 2,
 					ActiveVolumes:    10,
+					ActiveTasks:      42,
 					ResourceTypes: []atc.WorkerResourceType{
 						{Type: "some-resource", Image: "some-resource-image"},
 					},
@@ -208,19 +235,9 @@ var _ = Describe("Workers API", func() {
 			})
 
 			Context("when request is not from tsa", func() {
-				Context("when system claim is not present", func() {
-					BeforeEach(func() {
-						fakeaccess.IsSystemReturns(false)
-					})
-
-					It("return 403", func() {
-						Expect(response.StatusCode).To(Equal(http.StatusForbidden))
-					})
-				})
-
 				Context("when system claim is false", func() {
 					BeforeEach(func() {
-						fakeaccess.IsSystemReturns(false)
+						fakeAccess.IsSystemReturns(false)
 					})
 
 					It("return 403", func() {
@@ -297,6 +314,7 @@ var _ = Describe("Workers API", func() {
 						NoProxy:          "example.com,127.0.0.1,localhost",
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
+						ActiveTasks:      42,
 						ResourceTypes: []atc.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
@@ -328,6 +346,7 @@ var _ = Describe("Workers API", func() {
 						NoProxy:          "example.com,127.0.0.1,localhost",
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
+						ActiveTasks:      42,
 						ResourceTypes: []atc.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
@@ -360,6 +379,7 @@ var _ = Describe("Workers API", func() {
 						NoProxy:          "example.com,127.0.0.1,localhost",
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
+						ActiveTasks:      42,
 						ResourceTypes: []atc.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
@@ -452,7 +472,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -487,13 +507,13 @@ var _ = Describe("Workers API", func() {
 			fakeWorker.TeamNameReturns("some-team")
 			fakeWorker.LandReturns(nil)
 
-			fakeaccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
 			dbWorkerFactory.GetWorkerReturns(fakeWorker, true, nil)
 		})
 
 		Context("when the request is authenticated as system", func() {
 			BeforeEach(func() {
-				fakeaccess.IsSystemReturns(true)
+				fakeAccess.IsSystemReturns(true)
 			})
 
 			It("returns 200", func() {
@@ -532,7 +552,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when the request is authorized as the worker's owner", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			It("returns 200", func() {
@@ -542,7 +562,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when the request is authorized as the wrong team", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			It("returns 403", func() {
@@ -552,7 +572,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -585,7 +605,7 @@ var _ = Describe("Workers API", func() {
 			workerName = "some-worker"
 			fakeWorker.NameReturns(workerName)
 			fakeWorker.TeamNameReturns("some-team")
-			fakeaccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
 
 			dbWorkerFactory.GetWorkerReturns(fakeWorker, true, nil)
 			fakeWorker.RetireReturns(nil)
@@ -593,7 +613,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when autheticated as system", func() {
 			BeforeEach(func() {
-				fakeaccess.IsSystemReturns(true)
+				fakeAccess.IsSystemReturns(true)
 			})
 
 			It("returns 200", func() {
@@ -633,7 +653,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when authorized as as the worker's owner", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			It("returns 200", func() {
@@ -643,7 +663,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when authorized as some other team", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			It("returns 403", func() {
@@ -653,7 +673,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -688,8 +708,8 @@ var _ = Describe("Workers API", func() {
 			fakeWorker.TeamNameReturns("some-team")
 
 			dbWorkerFactory.GetWorkerReturns(fakeWorker, true, nil)
-			fakeaccess.IsAuthenticatedReturns(true)
-			fakeaccess.IsAuthorizedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthorizedReturns(true)
 			fakeWorker.PruneReturns(nil)
 		})
 
@@ -738,7 +758,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -769,6 +789,7 @@ var _ = Describe("Workers API", func() {
 			fakeWorker.NameReturns(workerName)
 			fakeWorker.ActiveContainersReturns(2)
 			fakeWorker.ActiveVolumesReturns(10)
+			fakeWorker.ActiveTasksReturns(42, nil)
 			fakeWorker.PlatformReturns("penguin")
 			fakeWorker.TagsReturns([]string{"some-tag"})
 			fakeWorker.StateReturns(db.WorkerStateRunning)
@@ -783,7 +804,7 @@ var _ = Describe("Workers API", func() {
 				Name:             workerName,
 				ActiveContainers: 2,
 			}
-			fakeaccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
 			dbWorkerFactory.HeartbeatWorkerReturns(fakeWorker, nil)
 		})
 
@@ -803,7 +824,10 @@ var _ = Describe("Workers API", func() {
 		})
 
 		It("returns Content-Type 'application/json'", func() {
-			Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+			expectedHeaderEntries := map[string]string{
+				"Content-Type": "application/json",
+			}
+			Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 		})
 
 		It("returns saved worker", func() {
@@ -817,6 +841,7 @@ var _ = Describe("Workers API", func() {
 				"baggageclaim_url": "",
 				"active_containers": 2,
 				"active_volumes": 10,
+				"active_tasks": 42,
 				"resource_types": null,
 				"platform": "penguin",
 				"ephemeral": true,
@@ -878,7 +903,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {
@@ -911,14 +936,14 @@ var _ = Describe("Workers API", func() {
 			workerName = "some-worker"
 			fakeWorker.NameReturns(workerName)
 
-			fakeaccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
 			fakeWorker.DeleteReturns(nil)
 			dbWorkerFactory.GetWorkerReturns(fakeWorker, true, nil)
 		})
 
 		Context("when user is system user", func() {
 			BeforeEach(func() {
-				fakeaccess.IsSystemReturns(true)
+				fakeAccess.IsSystemReturns(true)
 			})
 			It("deletes the worker from the DB", func() {
 				Expect(dbWorkerFactory.GetWorkerCallCount()).To(Equal(1))
@@ -956,7 +981,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when user is admin user", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAdminReturns(true)
+				fakeAccess.IsAdminReturns(true)
 			})
 			It("deletes the worker from the DB", func() {
 				Expect(dbWorkerFactory.GetWorkerCallCount()).To(Equal(1))
@@ -972,7 +997,7 @@ var _ = Describe("Workers API", func() {
 		Context("when user is authorized for team", func() {
 			BeforeEach(func() {
 				fakeWorker.TeamNameReturns("some-team")
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 			It("deletes the worker from the DB", func() {
 				Expect(dbWorkerFactory.GetWorkerCallCount()).To(Equal(1))
@@ -987,7 +1012,7 @@ var _ = Describe("Workers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {

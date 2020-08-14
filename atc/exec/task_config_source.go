@@ -1,10 +1,9 @@
 package exec
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	boshtemplate "github.com/cloudfoundry/bosh-cli/director/template"
-	"github.com/concourse/concourse/atc/template"
 	"io/ioutil"
 	"math"
 	"strconv"
@@ -13,7 +12,10 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/vars"
+	"sigs.k8s.io/yaml"
 )
 
 //go:generate counterfeiter . TaskConfigSource
@@ -21,8 +23,8 @@ import (
 // TaskConfigSource is used to determine a Task step's TaskConfig.
 type TaskConfigSource interface {
 	// FetchConfig returns the TaskConfig, and may have to a task config file out
-	// of the worker.ArtifactRepository.
-	FetchConfig(lager.Logger, *worker.ArtifactRepository) (atc.TaskConfig, error)
+	// of the artifact.Repository.
+	FetchConfig(context.Context, lager.Logger, *build.Repository) (atc.TaskConfig, error)
 	Warnings() []string
 }
 
@@ -32,7 +34,7 @@ type StaticConfigSource struct {
 }
 
 // FetchConfig returns the configuration.
-func (configSource StaticConfigSource) FetchConfig(lager.Logger, *worker.ArtifactRepository) (atc.TaskConfig, error) {
+func (configSource StaticConfigSource) FetchConfig(context.Context, lager.Logger, *build.Repository) (atc.TaskConfig, error) {
 	taskConfig := atc.TaskConfig{}
 	if configSource.Config != nil {
 		taskConfig = *configSource.Config
@@ -45,16 +47,17 @@ func (configSource StaticConfigSource) Warnings() []string {
 }
 
 // FileConfigSource represents a dynamically configured TaskConfig, which will
-// be fetched from a specified file in the worker.ArtifactRepository.
+// be fetched from a specified file in the artifact.Repository.
 type FileConfigSource struct {
 	ConfigPath string
+	Client     worker.Client
 }
 
-// FetchConfig reads the specified file from the worker.ArtifactRepository and loads the
+// FetchConfig reads the specified file from the artifact.Repository and loads the
 // TaskConfig contained therein (expecting it to be YAML format).
 //
 // The path must be in the format SOURCE_NAME/FILE/PATH.yml. The SOURCE_NAME
-// will be used to determine the ArtifactSource in the worker.ArtifactRepository to
+// will be used to determine the StreamableArtifactSource in the artifact.Repository to
 // stream the file out of.
 //
 // If the source name is missing (i.e. if the path is just "foo.yml"),
@@ -65,21 +68,20 @@ type FileConfigSource struct {
 //
 // If the task config file is not found, or is invalid YAML, or is an invalid
 // task configuration, the respective errors will be bubbled up.
-func (configSource FileConfigSource) FetchConfig(logger lager.Logger, repo *worker.ArtifactRepository) (atc.TaskConfig, error) {
+func (configSource FileConfigSource) FetchConfig(ctx context.Context, logger lager.Logger, repo *build.Repository) (atc.TaskConfig, error) {
 	segs := strings.SplitN(configSource.ConfigPath, "/", 2)
 	if len(segs) != 2 {
 		return atc.TaskConfig{}, UnspecifiedArtifactSourceError{configSource.ConfigPath}
 	}
 
-	sourceName := worker.ArtifactName(segs[0])
+	sourceName := build.ArtifactName(segs[0])
 	filePath := segs[1]
 
-	source, found := repo.SourceFor(sourceName)
+	artifact, found := repo.ArtifactFor(sourceName)
 	if !found {
 		return atc.TaskConfig{}, UnknownArtifactSourceError{sourceName, configSource.ConfigPath}
 	}
-
-	stream, err := source.StreamFile(logger, filePath)
+	stream, err := configSource.Client.StreamFileFromArtifact(ctx, logger, artifact, filePath)
 	if err != nil {
 		if err == baggageclaim.ErrFileNotFound {
 			return atc.TaskConfig{}, fmt.Errorf("task config '%s/%s' not found", sourceName, filePath)
@@ -115,14 +117,14 @@ type OverrideParamsConfigSource struct {
 
 // FetchConfig overrides parameters, allowing the user to set params required by a task loaded
 // from a file by providing them in static configuration.
-func (configSource *OverrideParamsConfigSource) FetchConfig(logger lager.Logger, source *worker.ArtifactRepository) (atc.TaskConfig, error) {
-	taskConfig, err := configSource.ConfigSource.FetchConfig(logger, source)
+func (configSource *OverrideParamsConfigSource) FetchConfig(ctx context.Context, logger lager.Logger, source *build.Repository) (atc.TaskConfig, error) {
+	taskConfig, err := configSource.ConfigSource.FetchConfig(ctx, logger, source)
 	if err != nil {
 		return atc.TaskConfig{}, err
 	}
 
 	if taskConfig.Params == nil {
-		taskConfig.Params = map[string]string{}
+		taskConfig.Params = atc.TaskEnv{}
 	}
 
 	for key, val := range configSource.Params {
@@ -157,24 +159,25 @@ func (configSource OverrideParamsConfigSource) Warnings() []string {
 
 // InterpolateTemplateConfigSource represents a config source interpolated by template vars
 type InterpolateTemplateConfigSource struct {
-	ConfigSource TaskConfigSource
-	Vars         []boshtemplate.Variables
+	ConfigSource  TaskConfigSource
+	Vars          []vars.Variables
+	ExpectAllKeys bool
 }
 
 // FetchConfig returns the interpolated configuration
-func (configSource InterpolateTemplateConfigSource) FetchConfig(logger lager.Logger, source *worker.ArtifactRepository) (atc.TaskConfig, error) {
-	taskConfig, err := configSource.ConfigSource.FetchConfig(logger, source)
+func (configSource InterpolateTemplateConfigSource) FetchConfig(ctx context.Context, logger lager.Logger, source *build.Repository) (atc.TaskConfig, error) {
+	taskConfig, err := configSource.ConfigSource.FetchConfig(ctx, logger, source)
 	if err != nil {
 		return atc.TaskConfig{}, err
 	}
 
-	byteConfig, err := json.Marshal(taskConfig)
+	byteConfig, err := yaml.Marshal(taskConfig)
 	if err != nil {
 		return atc.TaskConfig{}, fmt.Errorf("failed to marshal task config: %s", err)
 	}
 
 	// process task config using the provided variables
-	byteConfig, err = template.NewTemplateResolver(byteConfig, configSource.Vars).Resolve(true, true)
+	byteConfig, err = vars.NewTemplateResolver(byteConfig, configSource.Vars).Resolve(configSource.ExpectAllKeys, true)
 	if err != nil {
 		return atc.TaskConfig{}, fmt.Errorf("failed to interpolate task config: %s", err)
 	}
@@ -199,8 +202,8 @@ type ValidatingConfigSource struct {
 
 // FetchConfig fetches the config using the underlying ConfigSource, and checks
 // that it's valid.
-func (configSource ValidatingConfigSource) FetchConfig(logger lager.Logger, source *worker.ArtifactRepository) (atc.TaskConfig, error) {
-	config, err := configSource.ConfigSource.FetchConfig(logger, source)
+func (configSource ValidatingConfigSource) FetchConfig(ctx context.Context, logger lager.Logger, source *build.Repository) (atc.TaskConfig, error) {
+	config, err := configSource.ConfigSource.FetchConfig(ctx, logger, source)
 	if err != nil {
 		return atc.TaskConfig{}, err
 	}
@@ -216,10 +219,10 @@ func (configSource ValidatingConfigSource) Warnings() []string {
 	return configSource.ConfigSource.Warnings()
 }
 
-// UnknownArtifactSourceError is returned when the worker.ArtifactName specified by the
-// path does not exist in the worker.ArtifactRepository.
+// UnknownArtifactSourceError is returned when the artifact.ArtifactName specified by the
+// path does not exist in the artifact.Repository.
 type UnknownArtifactSourceError struct {
-	SourceName worker.ArtifactName
+	SourceName build.ArtifactName
 	ConfigPath string
 }
 

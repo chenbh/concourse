@@ -1,34 +1,18 @@
 module Resource.Models exposing
     ( CheckStatus(..)
-    , Hoverable(..)
     , Model
     , PageError(..)
     , PinnedVersion
     , Version
     , VersionEnabledState(..)
     , VersionId
-    , VersionToggleAction(..)
     )
 
 import Concourse
 import Concourse.Pagination exposing (Page, Paginated)
-import Date exposing (Date)
+import Login.Login as Login
 import Pinned exposing (CommentState, ResourcePinState)
 import Time
-import TopBar.Model
-
-
-type Hoverable
-    = PreviousPage
-    | NextPage
-    | CheckButton
-    | SaveComment
-    | None
-
-
-type VersionToggleAction
-    = Enable
-    | Disable
 
 
 type PageError
@@ -38,30 +22,28 @@ type PageError
 
 type CheckStatus
     = CheckingSuccessfully
-    | CurrentlyChecking
+    | CheckPending
+    | CurrentlyChecking Int
     | FailingToCheck
 
 
 type alias Model =
-    { pageStatus : Result PageError ()
-    , checkStatus : CheckStatus
-    , checkError : String
-    , checkSetupError : String
-    , lastChecked : Maybe Date
-    , pinnedVersion : PinnedVersion
-    , now : Maybe Time.Time
-    , resourceIdentifier : Concourse.ResourceIdentifier
-    , currentPage : Maybe Page
-    , hovered : Hoverable
-    , versions : Paginated Version
-    , csrfToken : String
-    , showPinBarTooltip : Bool
-    , pinIconHover : Bool
-    , topBar : TopBar.Model.Model
-    , pinCommentLoading : Bool
-    , ctrlDown : Bool
-    , textAreaFocused : Bool
-    }
+    Login.Model
+        { pageStatus : Result PageError ()
+        , checkStatus : CheckStatus
+        , checkError : String
+        , checkSetupError : String
+        , lastChecked : Maybe Time.Posix
+        , pinnedVersion : PinnedVersion
+        , now : Maybe Time.Posix
+        , resourceIdentifier : Concourse.ResourceIdentifier
+        , currentPage : Maybe Page
+        , versions : Paginated Version
+        , pinCommentLoading : Bool
+        , textAreaFocused : Bool
+        , icon : Maybe String
+        , isEditing : Bool
+        }
 
 
 type alias PinnedVersion =

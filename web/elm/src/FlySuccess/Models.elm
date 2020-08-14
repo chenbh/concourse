@@ -1,11 +1,24 @@
 module FlySuccess.Models exposing
     ( ButtonState(..)
-    , TokenTransfer
-    , TransferResult
+    , InputState(..)
+    , Model
+    , TokenTransfer(..)
     , hover
     , isClicked
-    , isPending
     )
+
+import Login.Login as Login
+
+
+type alias Model =
+    Login.Model
+        { copyTokenButtonState : ButtonState
+        , sendTokenButtonState : ButtonState
+        , copyTokenInputState : InputState
+        , authToken : String
+        , tokenTransfer : TokenTransfer
+        , flyPort : Maybe Int
+        }
 
 
 type ButtonState
@@ -14,12 +27,17 @@ type ButtonState
     | Clicked
 
 
-type alias TokenTransfer =
-    Maybe TransferResult
+type InputState
+    = InputUnhovered
+    | InputHovered
 
 
-type alias TransferResult =
-    Result () Bool
+type TokenTransfer
+    = Pending
+    | Success
+    | NetworkTrouble
+    | BlockedByBrowser
+    | NoFlyPort
 
 
 hover : Bool -> ButtonState -> ButtonState
@@ -39,8 +57,3 @@ hover hovered buttonState =
 isClicked : ButtonState -> Bool
 isClicked =
     (==) Clicked
-
-
-isPending : TokenTransfer -> Bool
-isPending =
-    (==) Nothing

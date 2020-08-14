@@ -10,10 +10,6 @@ import (
 )
 
 func (team *team) ListJobs(pipelineName string) ([]atc.Job, error) {
-	if pipelineName == "" {
-		return []atc.Job{}, NameRequiredError("pipeline")
-	}
-
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
@@ -30,11 +26,18 @@ func (team *team) ListJobs(pipelineName string) ([]atc.Job, error) {
 	return jobs, err
 }
 
-func (team *team) Job(pipelineName, jobName string) (atc.Job, bool, error) {
-	if pipelineName == "" {
-		return atc.Job{}, false, NameRequiredError("pipeline")
-	}
+func (client *client) ListAllJobs() ([]atc.Job, error) {
+	var jobs []atc.Job
+	err := client.connection.Send(internal.Request{
+		RequestName: atc.ListAllJobs,
+	}, &internal.Response{
+		Result: &jobs,
+	})
 
+	return jobs, err
+}
+
+func (team *team) Job(pipelineName, jobName string) (atc.Job, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"job_name":      jobName,
@@ -122,6 +125,28 @@ func (team *team) UnpauseJob(pipelineName string, jobName string) (bool, error) 
 
 	err := team.connection.Send(internal.Request{
 		RequestName: atc.UnpauseJob,
+		Params:      params,
+	}, &internal.Response{})
+
+	switch err.(type) {
+	case nil:
+		return true, nil
+	case internal.ResourceNotFoundError:
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+func (team *team) ScheduleJob(pipelineName string, jobName string) (bool, error) {
+	params := rata.Params{
+		"pipeline_name": pipelineName,
+		"job_name":      jobName,
+		"team_name":     team.name,
+	}
+
+	err := team.connection.Send(internal.Request{
+		RequestName: atc.ScheduleJob,
 		Params:      params,
 	}, &internal.Response{})
 

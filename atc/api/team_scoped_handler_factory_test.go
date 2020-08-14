@@ -11,7 +11,7 @@ import (
 
 	"github.com/concourse/concourse/atc/api"
 	"github.com/concourse/concourse/atc/api/accessor"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
+	"github.com/concourse/concourse/atc/auditor/auditorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
@@ -26,12 +26,9 @@ var _ = Describe("TeamScopedHandlerFactory", func() {
 		fakeTeamFactory *dbfakes.FakeTeamFactory
 		fakeTeam        *dbfakes.FakeTeam
 		handler         http.Handler
-		fakeaccess      *accessorfakes.FakeAccess
-	//	accessFactory   *accessorfakes.FakeAccessFactory
 	)
 
 	BeforeEach(func() {
-		fakeaccess = new(accessorfakes.FakeAccess)
 		fakeTeamFactory = new(dbfakes.FakeTeamFactory)
 		fakeTeam = new(dbfakes.FakeTeam)
 		fakeTeamFactory.FindTeamReturns(fakeTeam, true, nil)
@@ -43,11 +40,17 @@ var _ = Describe("TeamScopedHandlerFactory", func() {
 		handlerFactory := api.NewTeamScopedHandlerFactory(logger, fakeTeamFactory)
 		innerHandler := handlerFactory.HandlerFor(delegate.GetHandler)
 
-		handler = accessor.NewHandler(innerHandler, fakeAccessor, "some-action")
+		handler = accessor.NewHandler(
+			logger,
+			"some-action",
+			innerHandler,
+			fakeAccessor,
+			new(auditorfakes.FakeAuditor),
+			map[string]string{},
+		)
 	})
 
 	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
 		server = httptest.NewServer(handler)
 
 		fullUrl := fmt.Sprintf("%s?:team_name=some-team", server.URL)
@@ -68,8 +71,8 @@ var _ = Describe("TeamScopedHandlerFactory", func() {
 
 	Context("when team is in auth context", func() {
 		BeforeEach(func() {
-			fakeaccess.IsAuthenticatedReturns(true)
-			fakeaccess.IsAuthorizedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthorizedReturns(true)
 		})
 
 		Context("when the team is not found", func() {
@@ -105,7 +108,7 @@ var _ = Describe("TeamScopedHandlerFactory", func() {
 
 	Context("when team is not in auth context", func() {
 		BeforeEach(func() {
-			fakeaccess.IsAuthorizedReturns(false)
+			fakeAccess.IsAuthorizedReturns(false)
 		})
 
 		It("returns 403", func() {

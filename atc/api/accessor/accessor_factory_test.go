@@ -1,87 +1,113 @@
 package accessor_test
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"fmt"
+	"errors"
 	"net/http"
 
-	"github.com/concourse/concourse/atc/api/accessor"
-	jwt "github.com/dgrijalva/jwt-go"
-
+	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
+	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/concourse/concourse/atc/api/accessor"
+	"github.com/concourse/concourse/atc/db"
 )
 
 var _ = Describe("AccessorFactory", func() {
-	var accessorFactory accessor.AccessFactory
-	var access accessor.Access
-	var key *rsa.PrivateKey
-	var req *http.Request
+	var (
+		systemClaimKey    string
+		systemClaimValues []string
+
+		fakeTokenVerifier *accessorfakes.FakeTokenVerifier
+		fakeTeamFetcher   *accessorfakes.FakeTeamFetcher
+		dummyRequest      *http.Request
+
+		role  string
+	)
+
+	BeforeEach(func() {
+		systemClaimKey = "sub"
+		systemClaimValues = []string{"some-sub"}
+
+		fakeTokenVerifier = new(accessorfakes.FakeTokenVerifier)
+		fakeTeamFetcher = new(accessorfakes.FakeTeamFetcher)
+		dummyRequest, _ = http.NewRequest("GET", "/", nil)
+
+		role = "viewer"
+	})
 
 	Describe("Create", func() {
-		BeforeEach(func() {
-			reader := rand.Reader
-			bitSize := 2048
-			var err error
-			key, err = rsa.GenerateKey(reader, bitSize)
-			Expect(err).NotTo(HaveOccurred())
 
-			publicKey := &key.PublicKey
-			//publicKey = rsa.GenerateKey(random, bits)
-			accessorFactory = accessor.NewAccessFactory(publicKey)
+		var (
+			access accessor.Access
+			err    error
+		)
 
-			req, err = http.NewRequest("GET", "localhost:8080", nil)
-			Expect(err).NotTo(HaveOccurred())
-		})
 		JustBeforeEach(func() {
-			access = accessorFactory.Create(req, "some-action")
+			factory := accessor.NewAccessFactory(fakeTokenVerifier, fakeTeamFetcher, systemClaimKey, systemClaimValues)
+			access, err = factory.Create(dummyRequest, role)
 		})
 
-		Context("when request has jwt token set", func() {
+		Context("when the token is valid", func() {
 			BeforeEach(func() {
-				token := jwt.New(jwt.SigningMethodRS256)
-				tokenString, err := token.SignedString(key)
-				Expect(err).NotTo(HaveOccurred())
-				req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", tokenString))
+				fakeTokenVerifier.VerifyReturns(map[string]interface{}{
+					"federated_claims": map[string]interface{}{
+						"connector_id": "github",
+						"user_name":    "user1",
+					},
+				}, nil)
+				teamWithUsers := func(name string, authenticated bool) db.Team {
+					t := new(dbfakes.FakeTeam)
+					t.NameReturns(name)
+					if authenticated {
+						t.AuthReturns(atc.TeamAuth{"viewer": map[string][]string{
+							"users": {"github:user1"},
+						}})
+					}
+					return t
+				}
+				fakeTeamFetcher.GetTeamsReturns([]db.Team{
+					teamWithUsers("t1", true),
+					teamWithUsers("t2", false),
+					teamWithUsers("t3", true),
+				}, nil)
 			})
 
-			It("creates valid access object", func() {
-				Expect(access).ToNot(BeNil())
-			})
-		})
-
-		Context("when request has jwt token with invalid signing key", func() {
-			BeforeEach(func() {
-				mySigningKey := []byte("AllYourBase")
-
-				token := jwt.New(jwt.SigningMethodHS256)
-				tokenString, err := token.SignedString(mySigningKey)
-
-				Expect(err).NotTo(HaveOccurred())
-				req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", tokenString))
-			})
-
-			It("creates valid access object", func() {
-				Expect(access).ToNot(BeNil())
-			})
-
-		})
-		Context("when request does not have jwt token set", func() {
-			BeforeEach(func() {
-				req.Header.Add("Authorization", "")
-			})
-			It("creates valid access object", func() {
-				Expect(access).ToNot(BeNil())
+			It("returns an accessor with the correct teams", func() {
+				Expect(access.TeamNames()).To(ConsistOf("t1", "t3"))
 			})
 		})
 
-		Context("when request does not have valid jwt token set", func() {
+		Context("when the team fetcher returns an error", func() {
 			BeforeEach(func() {
-				req.Header.Add("Authorization", "blah-token")
+				fakeTeamFetcher.GetTeamsReturns(nil, errors.New("nope"))
 			})
-			It("creates valid access object", func() {
-				Expect(access).ToNot(BeNil())
+
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when the verifier returns a NoToken error", func() {
+			BeforeEach(func() {
+				fakeTokenVerifier.VerifyReturns(nil, accessor.ErrVerificationNoToken)
+			})
+
+			It("the accessor has no token", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(access.HasToken()).To(BeFalse())
+			})
+		})
+
+		Context("when the verifier returns some other error", func() {
+			BeforeEach(func() {
+				fakeTokenVerifier.VerifyReturns(nil, accessor.ErrVerificationTokenExpired)
+			})
+
+			It("the accessor is unauthenticated", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(access.IsAuthenticated()).To(BeFalse())
 			})
 		})
 	})

@@ -8,14 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/concourse/flag"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/mitchellh/mapstructure"
-	yaml "gopkg.in/yaml.v2"
-)
+	"sigs.k8s.io/yaml"
 
-var ErrAuthNotConfiguredFromFlags = errors.New("ErrAuthNotConfiguredFromFlags")
-var ErrAuthNotConfiguredFromFile = errors.New("ErrAuthNotConfiguredFromFile")
+	"github.com/concourse/concourse/atc"
+	"github.com/concourse/flag"
+)
 
 var connectors []*Connector
 
@@ -46,16 +45,17 @@ func WireTeamConnectors(group *flags.Group) {
 type AuthFlags struct {
 	SecureCookies bool              `long:"cookie-secure" description:"Force sending secure flag on http cookies"`
 	Expiration    time.Duration     `long:"auth-duration" default:"24h" description:"Length of time for which tokens are valid. Afterwards, users will have to log back in."`
-	SigningKey    *flag.PrivateKey  `long:"session-signing-key" description:"File containing an RSA private key, used to sign auth tokens."`
+	SigningKey    *flag.PrivateKey  `long:"session-signing-key" required:"true" description:"File containing an RSA private key, used to sign auth tokens."`
 	LocalUsers    map[string]string `long:"add-local-user" description:"List of username:password combinations for all your local users. The password can be bcrypted - if so, it must have a minimum cost of 10." value-name:"USERNAME:PASSWORD"`
+	Clients       map[string]string `long:"add-client" description:"List of client_id:client_secret combinations" value-name:"CLIENT_ID:CLIENT_SECRET"`
 }
 
 type AuthTeamFlags struct {
-	LocalUsers []string  `long:"local-user" description:"List of whitelisted local concourse users. These are the users you've added at web startup with the --add-local-user flag." value-name:"USERNAME"`
+	LocalUsers []string  `long:"local-user" description:"A whitelisted local concourse user. These are the users you've added at web startup with the --add-local-user flag." value-name:"USERNAME"`
 	Config     flag.File `short:"c" long:"config" description:"Configuration file for specifying team params"`
 }
 
-func (flag *AuthTeamFlags) Format() (AuthConfig, error) {
+func (flag *AuthTeamFlags) Format() (atc.TeamAuth, error) {
 
 	if path := flag.Config.Path(); path != "" {
 		return flag.formatFromFile()
@@ -74,7 +74,7 @@ func (flag *AuthTeamFlags) Format() (AuthConfig, error) {
 // The github connector has configuration for: users, teams, orgs
 // The cf conncetor has configuration for: users, orgs, spaces
 
-func (flag *AuthTeamFlags) formatFromFile() (AuthConfig, error) {
+func (flag *AuthTeamFlags) formatFromFile() (atc.TeamAuth, error) {
 
 	content, err := ioutil.ReadFile(flag.Config.Path())
 	if err != nil {
@@ -82,13 +82,13 @@ func (flag *AuthTeamFlags) formatFromFile() (AuthConfig, error) {
 	}
 
 	var data struct {
-		Roles []map[string]interface{} `yaml:"roles"`
+		Roles []map[string]interface{} `json:"roles"`
 	}
 	if err = yaml.Unmarshal(content, &data); err != nil {
 		return nil, err
 	}
 
-	auth := AuthConfig{}
+	auth := atc.TeamAuth{}
 
 	for _, role := range data.Roles {
 		roleName := role["name"].(string)
@@ -125,7 +125,7 @@ func (flag *AuthTeamFlags) formatFromFile() (AuthConfig, error) {
 			}
 		}
 
-		if conf, ok := role["local"].(map[interface{}]interface{}); ok {
+		if conf, ok := role["local"].(map[string]interface{}); ok {
 			for _, user := range conf["users"].([]interface{}) {
 				if user != "" {
 					users = append(users, "local:"+strings.ToLower(user.(string)))
@@ -134,13 +134,17 @@ func (flag *AuthTeamFlags) formatFromFile() (AuthConfig, error) {
 		}
 
 		if len(users) == 0 && len(groups) == 0 {
-			return nil, ErrAuthNotConfiguredFromFile
+			continue
 		}
 
 		auth[roleName] = map[string][]string{
 			"users":  users,
 			"groups": groups,
 		}
+	}
+
+	if err := auth.Validate(); err != nil {
+		return nil, err
 	}
 
 	return auth, nil
@@ -150,7 +154,7 @@ func (flag *AuthTeamFlags) formatFromFile() (AuthConfig, error) {
 // TeamConfig has already been populated by the flags library. All we need to
 // do is grab the teamConfig object and extract the users and groups.
 
-func (flag *AuthTeamFlags) formatFromFlags() (AuthConfig, error) {
+func (flag *AuthTeamFlags) formatFromFlags() (atc.TeamAuth, error) {
 
 	users := []string{}
 	groups := []string{}
@@ -179,10 +183,10 @@ func (flag *AuthTeamFlags) formatFromFlags() (AuthConfig, error) {
 	}
 
 	if len(users) == 0 && len(groups) == 0 {
-		return nil, ErrAuthNotConfiguredFromFlags
+		return nil, atc.ErrAuthConfigInvalid
 	}
 
-	return AuthConfig{
+	return atc.TeamAuth{
 		"owner": map[string][]string{
 			"users":  users,
 			"groups": groups,
@@ -238,5 +242,3 @@ func (con *Connector) newTeamConfig() (TeamConfig, error) {
 
 	return res, nil
 }
-
-type AuthConfig map[string]map[string][]string

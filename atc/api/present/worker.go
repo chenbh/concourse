@@ -18,8 +18,12 @@ func Worker(workerInfo db.Worker) atc.Worker {
 	if workerInfo.Version() != nil {
 		version = *workerInfo.Version()
 	}
+	activeTasks, err := workerInfo.ActiveTasks()
+	if err != nil {
+		activeTasks = 0
+	}
 
-	return atc.Worker{
+	atcWorker := atc.Worker{
 		GardenAddr:       gardenAddr,
 		BaggageclaimURL:  baggageclaimURL,
 		HTTPProxyURL:     workerInfo.HTTPProxyURL(),
@@ -27,14 +31,20 @@ func Worker(workerInfo db.Worker) atc.Worker {
 		NoProxy:          workerInfo.NoProxy(),
 		ActiveContainers: workerInfo.ActiveContainers(),
 		ActiveVolumes:    workerInfo.ActiveVolumes(),
+		ActiveTasks:      activeTasks,
 		ResourceTypes:    workerInfo.ResourceTypes(),
 		Platform:         workerInfo.Platform(),
 		Tags:             workerInfo.Tags(),
 		Name:             workerInfo.Name(),
 		Team:             workerInfo.TeamName(),
 		State:            string(workerInfo.State()),
-		StartTime:        workerInfo.StartTime(),
 		Version:          version,
 		Ephemeral:        workerInfo.Ephemeral(),
 	}
+
+	if !workerInfo.StartTime().IsZero() {
+		atcWorker.StartTime = workerInfo.StartTime().Unix()
+	}
+
+	return atcWorker
 }

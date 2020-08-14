@@ -4,17 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	gclient "code.cloudfoundry.org/garden/client"
-	gconn "code.cloudfoundry.org/garden/client/connection"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	bclient "github.com/concourse/baggageclaim/client"
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/worker/gclient"
 	"github.com/concourse/concourse/tsa"
 	"golang.org/x/crypto/ssh"
 )
@@ -76,11 +74,10 @@ func (req forwardWorkerRequest) Handle(ctx context.Context, state ConnState, cha
 		clock.NewClock(),
 		req.server.heartbeatInterval,
 		req.server.cprInterval,
-		gclient.New(
-			gconn.NewWithDialerAndLogger(
-				keepaliveDialerFactory("tcp", worker.GardenAddr),
-				lagerctx.WithSession(ctx, "garden-connection"),
-			),
+		gclient.BasicGardenClientWithRequestTimeout(
+			lagerctx.WithSession(ctx, "garden-connection"),
+			req.server.gardenRequestTimeout,
+			gardenURL(worker.GardenAddr),
 		),
 		bclient.NewWithHTTPClient(worker.BaggageclaimURL, &http.Client{
 			Transport: &http.Transport{
@@ -89,7 +86,7 @@ func (req forwardWorkerRequest) Handle(ctx context.Context, state ConnState, cha
 			},
 		}),
 		req.server.atcEndpointPicker,
-		req.server.tokenGenerator,
+		req.server.httpClient,
 		worker,
 		tsa.NewEventWriter(channel),
 	)
@@ -138,46 +135,6 @@ func (r forwardWorkerRequest) expectedForwards() int {
 	return expected
 }
 
-type registerWorkerRequest struct {
-	server *server
-}
-
-func (req registerWorkerRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
-	err := json.NewDecoder(channel).Decode(&worker)
-	if err != nil {
-		return err
-	}
-
-	if err := checkTeam(state, worker); err != nil {
-		return err
-	}
-
-	heartbeater := tsa.NewHeartbeater(
-		clock.NewClock(),
-		req.server.heartbeatInterval,
-		req.server.cprInterval,
-		gclient.New(
-			gconn.NewWithDialerAndLogger(
-				keepaliveDialerFactory("tcp", worker.GardenAddr),
-				lagerctx.WithSession(ctx, "garden-connection"),
-			),
-		),
-		bclient.NewWithHTTPClient(worker.BaggageclaimURL, &http.Client{
-			Transport: &http.Transport{
-				DisableKeepAlives:     true,
-				ResponseHeaderTimeout: 1 * time.Minute,
-			},
-		}),
-		req.server.atcEndpointPicker,
-		req.server.tokenGenerator,
-		worker,
-		tsa.NewEventWriter(channel),
-	)
-
-	return heartbeater.Heartbeat(ctx)
-}
-
 type landWorkerRequest struct {
 	server *server
 }
@@ -211,8 +168,8 @@ func (req landWorkerRequest) Handle(ctx context.Context, state ConnState, channe
 	}
 
 	return (&tsa.Lander{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
+		ATCEndpoint: req.server.atcEndpointPicker.Pick(),
+		HTTPClient:  req.server.httpClient,
 	}).Land(ctx, worker)
 }
 
@@ -232,8 +189,8 @@ func (req retireWorkerRequest) Handle(ctx context.Context, state ConnState, chan
 	}
 
 	return (&tsa.Retirer{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
+		ATCEndpoint: req.server.atcEndpointPicker.Pick(),
+		HTTPClient:  req.server.httpClient,
 	}).Retire(ctx, worker)
 }
 
@@ -253,8 +210,8 @@ func (req deleteWorkerRequest) Handle(ctx context.Context, state ConnState, chan
 	}
 
 	return (&tsa.Deleter{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
+		ATCEndpoint: req.server.atcEndpointPicker.Pick(),
+		HTTPClient:  req.server.httpClient,
 	}).Delete(ctx, worker)
 }
 
@@ -274,8 +231,8 @@ func (req sweepContainersRequest) Handle(ctx context.Context, state ConnState, c
 	}
 
 	sweeper := &tsa.Sweeper{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
+		ATCEndpoint: req.server.atcEndpointPicker.Pick(),
+		HTTPClient:  req.server.httpClient,
 	}
 
 	handles, err := sweeper.Sweep(ctx, worker, tsa.SweepContainers)
@@ -309,7 +266,7 @@ func (req reportContainersRequest) Handle(ctx context.Context, state ConnState, 
 
 	return (&tsa.WorkerStatus{
 		ATCEndpoint:      req.server.atcEndpointPicker.Pick(),
-		TokenGenerator:   req.server.tokenGenerator,
+		HTTPClient:       req.server.httpClient,
 		ContainerHandles: req.containerHandles,
 	}).WorkerStatus(ctx, worker, tsa.ReportContainers)
 }
@@ -330,8 +287,8 @@ func (req sweepVolumesRequest) Handle(ctx context.Context, state ConnState, chan
 	}
 
 	sweeper := &tsa.Sweeper{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
+		ATCEndpoint: req.server.atcEndpointPicker.Pick(),
+		HTTPClient:  req.server.httpClient,
 	}
 
 	handles, err := sweeper.Sweep(ctx, worker, tsa.SweepVolumes)
@@ -364,18 +321,12 @@ func (req reportVolumesRequest) Handle(ctx context.Context, state ConnState, cha
 	}
 
 	return (&tsa.WorkerStatus{
-		ATCEndpoint:    req.server.atcEndpointPicker.Pick(),
-		TokenGenerator: req.server.tokenGenerator,
-		VolumeHandles:  req.volumeHandles,
+		ATCEndpoint:   req.server.atcEndpointPicker.Pick(),
+		HTTPClient:    req.server.httpClient,
+		VolumeHandles: req.volumeHandles,
 	}).WorkerStatus(ctx, worker, tsa.ReportVolumes)
 }
 
-func keepaliveDialerFactory(network string, address string) gconn.DialerFunc {
-	dialer := &net.Dialer{
-		KeepAlive: 15 * time.Second,
-	}
-
-	return func(string, string) (net.Conn, error) {
-		return dialer.Dial(network, address)
-	}
+func gardenURL(addr string) string {
+	return fmt.Sprintf("http://%s", addr)
 }

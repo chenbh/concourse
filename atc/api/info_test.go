@@ -12,11 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/secretsmanager/secretsmanageriface"
 	awsssm "github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/creds/credhub"
 	"github.com/concourse/concourse/atc/creds/secretsmanager"
 	"github.com/concourse/concourse/atc/creds/ssm"
 	"github.com/concourse/concourse/atc/creds/vault"
+	. "github.com/concourse/concourse/atc/testhelpers"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,7 +55,10 @@ var _ = Describe("Pipelines API", func() {
 		})
 
 		It("returns Content-Type 'application/json'", func() {
-			Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+			expectedHeaderEntries := map[string]string{
+				"Content-Type": "application/json",
+			}
+			Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 		})
 
 		It("contains the version", func() {
@@ -64,7 +67,9 @@ var _ = Describe("Pipelines API", func() {
 
 			Expect(body).To(MatchJSON(`{
 				"version": "1.2.3",
-				"worker_version": "4.5.6"
+				"worker_version": "4.5.6",
+				"external_url": "https://example.com",
+				"cluster_name": "Test Cluster"
 			}`))
 		})
 	})
@@ -72,18 +77,9 @@ var _ = Describe("Pipelines API", func() {
 	Describe("GET /api/v1/info/creds", func() {
 		var (
 			response   *http.Response
-			fakeaccess *accessorfakes.FakeAccess
 			credServer *ghttp.Server
 			body       []byte
 		)
-
-		BeforeEach(func() {
-			fakeaccess = new(accessorfakes.FakeAccess)
-		})
-
-		JustBeforeEach(func() {
-			fakeAccessor.CreateReturns(fakeaccess)
-		})
 
 		JustBeforeEach(func() {
 			req, err := http.NewRequest("GET", server.URL+"/api/v1/info/creds", nil)
@@ -94,7 +90,10 @@ var _ = Describe("Pipelines API", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(response.StatusCode).To(Equal(http.StatusOK))
-			Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+			expectedHeaderEntries := map[string]string{
+				"Content-Type": "application/json",
+			}
+			Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 
 			body, err = ioutil.ReadAll(response.Body)
 			Expect(err).NotTo(HaveOccurred())
@@ -104,10 +103,10 @@ var _ = Describe("Pipelines API", func() {
 			var mockService MockSsmService
 
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAdminReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAdminReturns(true)
 
-				ssmAccess := ssm.NewSsm(lager.NewLogger("ssm_test"), &mockService, "alpha", "bogus", nil)
+				ssmAccess := ssm.NewSsm(lager.NewLogger("ssm_test"), &mockService, nil)
 				ssmManager := &ssm.SsmManager{
 					AwsAccessKeyID:         "",
 					AwsSecretAccessKey:     "",
@@ -174,8 +173,8 @@ var _ = Describe("Pipelines API", func() {
 
 		Context("vault", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAdminReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAdminReturns(true)
 
 				authConfig := vault.AuthConfig{
 					Backend:       "backend-server",
@@ -184,19 +183,19 @@ var _ = Describe("Pipelines API", func() {
 					RetryInitial:  2,
 				}
 
-				tls := vault.TLS{
+				tls := vault.TLSConfig{
 					CACert:     "",
 					ServerName: "server-name",
 				}
 
 				credServer = ghttp.NewServer()
 				vaultManager := &vault.VaultManager{
-					URL:        credServer.URL(),
-					PathPrefix: "testpath",
-					Cache:      false,
-					MaxLease:   60,
-					TLS:        tls,
-					Auth:       authConfig,
+					URL:             credServer.URL(),
+					Namespace:       "testnamespace",
+					PathPrefix:      "testpath",
+					LookupTemplates: []string{"/{{.Team}}/{{.Pipeline}}/{{.Secret}}", "/{{.Team}}/{{.Secret}}"},
+					TLS:             tls,
+					Auth:            authConfig,
 				}
 
 				err := vaultManager.Init(lager.NewLogger("test"))
@@ -264,8 +263,9 @@ var _ = Describe("Pipelines API", func() {
           "vault": {
             "url": "` + credServer.URL() + `",
             "path_prefix": "testpath",
-						"cache": false,
-						"max_lease": 60,
+            "lookup_templates": ["/{{.Team}}/{{.Pipeline}}/{{.Secret}}", "/{{.Team}}/{{.Secret}}"],
+			"shared_path": "",
+			"namespace": "testnamespace",
             "ca_cert": "",
             "server_name": "server-name",
 						"auth_backend": "backend-server",
@@ -277,6 +277,7 @@ var _ = Describe("Pipelines API", func() {
                   "initialized": true,
                   "sealed": false,
                   "standby": false,
+				  "performance_standby": false,
                   "replication_performance_mode": "foo",
                   "replication_dr_mode": "blah",
                   "server_time_utc": 0,
@@ -297,8 +298,8 @@ var _ = Describe("Pipelines API", func() {
 			)
 
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAdminReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAdminReturns(true)
 
 				tls = credhub.TLS{
 					CACerts: []string{},
@@ -398,10 +399,10 @@ var _ = Describe("Pipelines API", func() {
 			var mockService MockSecretsManagerService
 
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAdminReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAdminReturns(true)
 
-				secretsManagerAccess := secretsmanager.NewSecretsManager(lager.NewLogger("ssm_test"), &mockService, "alpha", "bogus", nil)
+				secretsManagerAccess := secretsmanager.NewSecretsManager(lager.NewLogger("ssm_test"), &mockService, nil)
 
 				secretsManager := &secretsmanager.Manager{
 					AwsAccessKeyID:         "",

@@ -1,10 +1,11 @@
 package worker
 
 import (
+	"context"
+	"github.com/concourse/concourse/tracing"
 	"io"
 
 	"code.cloudfoundry.org/lager"
-
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -20,13 +21,15 @@ type Volume interface {
 
 	SetPrivileged(bool) error
 
-	StreamIn(path string, tarStream io.Reader) error
-	StreamOut(path string) (io.ReadCloser, error)
+	StreamIn(ctx context.Context, path string, encoding baggageclaim.Encoding, tarStream io.Reader) error
+	StreamOut(ctx context.Context, path string, encoding baggageclaim.Encoding) (io.ReadCloser, error)
 
 	COWStrategy() baggageclaim.COWStrategy
 
 	InitializeResourceCache(db.UsedResourceCache) error
-	InitializeTaskCache(lager.Logger, int, string, string, bool) error
+	GetResourceCacheID() int
+	InitializeTaskCache(logger lager.Logger, jobID int, stepName string, path string, privileged bool) error
+	InitializeArtifact(name string, buildID int) (db.WorkerArtifact, error)
 
 	CreateChildForContainer(db.CreatingContainer, string) (db.CreatingVolume, error)
 
@@ -83,12 +86,20 @@ func (v *volume) SetPrivileged(privileged bool) error {
 	return v.bcVolume.SetPrivileged(privileged)
 }
 
-func (v *volume) StreamIn(path string, tarStream io.Reader) error {
-	return v.bcVolume.StreamIn(path, tarStream)
+func (v *volume) StreamIn(ctx context.Context, path string, encoding baggageclaim.Encoding, tarStream io.Reader) error {
+	_, span := tracing.StartSpan(ctx, "volume.StreamIn", tracing.Attrs{
+		"destination-volume": v.Handle(),
+		"destination-worker": v.WorkerName(),
+	})
+
+	err := v.bcVolume.StreamIn(ctx, path, encoding, tarStream)
+	tracing.End(span, err)
+
+	return err
 }
 
-func (v *volume) StreamOut(path string) (io.ReadCloser, error) {
-	return v.bcVolume.StreamOut(path)
+func (v *volume) StreamOut(ctx context.Context, path string, encoding baggageclaim.Encoding) (io.ReadCloser, error) {
+	return v.bcVolume.StreamOut(ctx, path, encoding)
 }
 
 func (v *volume) Properties() (baggageclaim.VolumeProperties, error) {
@@ -111,6 +122,14 @@ func (v *volume) COWStrategy() baggageclaim.COWStrategy {
 
 func (v *volume) InitializeResourceCache(urc db.UsedResourceCache) error {
 	return v.dbVolume.InitializeResourceCache(urc)
+}
+
+func (v *volume) GetResourceCacheID() int {
+	return v.dbVolume.GetResourceCacheID()
+}
+
+func (v *volume) InitializeArtifact(name string, buildID int) (db.WorkerArtifact, error) {
+	return v.dbVolume.InitializeArtifact(name, buildID)
 }
 
 func (v *volume) InitializeTaskCache(

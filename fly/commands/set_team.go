@@ -7,8 +7,10 @@ import (
 
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
+	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
+	"github.com/concourse/concourse/go-concourse/concourse"
 	"github.com/concourse/concourse/skymarshal/skycmd"
 	"github.com/jessevdk/go-flags"
 	"github.com/vito/go-interact/interact"
@@ -24,12 +26,28 @@ func WireTeamConnectors(command *flags.Command) {
 }
 
 type SetTeamCommand struct {
-	TeamName        string               `short:"n" long:"team-name" required:"true" description:"The team to create or modify"`
+	Team            flaghelpers.TeamFlag `short:"n" long:"team-name" required:"true" description:"The team to create or modify"`
 	SkipInteractive bool                 `long:"non-interactive" description:"Force apply configuration"`
 	AuthFlags       skycmd.AuthTeamFlags `group:"Authentication"`
 }
 
+func (command *SetTeamCommand) Validate() ([]concourse.ConfigWarning, error) {
+	var warnings []concourse.ConfigWarning
+	if warning := atc.ValidateIdentifier(command.Team.Name(), "team"); warning != nil {
+		warnings = append(warnings, concourse.ConfigWarning{
+			Type:    warning.Type,
+			Message: warning.Message,
+		})
+	}
+	return warnings, nil
+}
+
 func (command *SetTeamCommand) Execute([]string) error {
+	warnings, err := command.Validate()
+	if err != nil {
+		return err
+	}
+
 	target, err := rc.LoadTarget(Fly.Target, Fly.Verbose)
 	if err != nil {
 		return err
@@ -42,7 +60,7 @@ func (command *SetTeamCommand) Execute([]string) error {
 
 	authRoles, err := command.AuthFlags.Format()
 	if err != nil {
-		command.ErrorAuthNotConfigured(err)
+		fmt.Fprintln(ui.Stderr, "error:", err)
 		os.Exit(1)
 	}
 
@@ -52,36 +70,43 @@ func (command *SetTeamCommand) Execute([]string) error {
 	}
 	sort.Strings(roles)
 
-	fmt.Println("Team Name:", command.TeamName)
+	teamName := command.Team.Name()
+	fmt.Println("setting team:", ui.Embolden("%s", teamName))
 
 	for _, role := range roles {
 		authUsers := authRoles[role]["users"]
 		authGroups := authRoles[role]["groups"]
 
-		fmt.Printf("\nUsers (%s):\n", role)
+		fmt.Println()
+		fmt.Printf("role %s:\n", ui.Embolden(role))
+		fmt.Printf("  users:\n")
 		if len(authUsers) > 0 {
 			for _, user := range authUsers {
-				fmt.Println("-", user)
+				fmt.Printf("  - %s\n", user)
 			}
 		} else {
-			fmt.Println("- none")
+			fmt.Printf("    %s\n", ui.OffColor.Sprint("none"))
 		}
 
-		fmt.Printf("\nGroups (%s):\n", role)
+		fmt.Println()
+		fmt.Printf("  groups:\n")
 		if len(authGroups) > 0 {
 			for _, group := range authGroups {
-				fmt.Println("-", group)
+				fmt.Printf("  - %s\n", group)
 			}
 		} else {
-			fmt.Println("- none")
+			fmt.Printf("    %s\n", ui.OffColor.Sprint("none"))
 		}
+	}
 
+	if len(warnings) > 0 {
+		displayhelpers.ShowWarnings(warnings)
 	}
 
 	confirm := true
 	if !command.SkipInteractive {
 		confirm = false
-		err = interact.NewInteraction("\napply configuration?").Resolve(&confirm)
+		err = interact.NewInteraction("\napply team configuration?").Resolve(&confirm)
 		if err != nil {
 			return err
 		}
@@ -91,11 +116,15 @@ func (command *SetTeamCommand) Execute([]string) error {
 		displayhelpers.Failf("bailing out")
 	}
 
-	team := atc.Team{Auth: atc.TeamAuth(authRoles)}
+	team := atc.Team{Auth: authRoles}
 
-	_, created, updated, err := target.Client().Team(command.TeamName).CreateOrUpdate(team)
+	_, created, updated, warnings, err := target.Client().Team(teamName).CreateOrUpdate(team)
 	if err != nil {
 		return err
+	}
+
+	if len(warnings) > 0 {
+		displayhelpers.ShowWarnings(warnings)
 	}
 
 	if created {
@@ -105,17 +134,4 @@ func (command *SetTeamCommand) Execute([]string) error {
 	}
 
 	return nil
-}
-
-func (command *SetTeamCommand) ErrorAuthNotConfigured(err error) {
-	switch err {
-	case skycmd.ErrAuthNotConfiguredFromFile:
-		fmt.Fprintln(ui.Stderr, "You have not provided a list of users and groups for one of the roles in your config yaml.")
-
-	case skycmd.ErrAuthNotConfiguredFromFlags:
-		fmt.Fprintln(ui.Stderr, "You have not provided a list of users and groups for the specified team.")
-
-	default:
-		fmt.Fprintln(ui.Stderr, "error:", err)
-	}
 }

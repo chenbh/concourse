@@ -6,7 +6,8 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/runtime"
 )
 
 type WorkerSpec struct {
@@ -14,7 +15,7 @@ type WorkerSpec struct {
 	ResourceType  string
 	Tags          []string
 	TeamID        int
-	ResourceTypes creds.VersionedResourceTypes
+	ResourceTypes atc.VersionedResourceTypes
 }
 
 type ContainerSpec struct {
@@ -23,9 +24,14 @@ type ContainerSpec struct {
 	TeamID    int
 	ImageSpec ImageSpec
 	Env       []string
+	Type      db.ContainerType
 
 	// Working directory for processes run in the container.
 	Dir string
+
+	// artifacts configured as usable. The key reps the mount path of the input artifact
+	// and value is the artifact itself
+	ArtifactByPath map[string]runtime.Artifact
 
 	// Inputs to provide to the container. Inputs with a volume local to the
 	// selected worker will be made available via a COW volume; others will be
@@ -45,6 +51,44 @@ type ContainerSpec struct {
 	User string
 }
 
+// The below methods cause ContainerSpec to fulfill the
+// go.opentelemetry.io/otel/api/propagators.Supplier interface
+
+func (cs *ContainerSpec) Get(key string) string {
+	for _, env := range cs.Env {
+		assignment := strings.SplitN("=", env, 2)
+		if assignment[0] == strings.ToUpper(key) {
+			return assignment[1]
+		}
+	}
+	return ""
+}
+
+func (cs *ContainerSpec) Set(key string, value string) {
+	varName := strings.ToUpper(key)
+	envVar := varName + "=" + value
+	for i, env := range cs.Env {
+		if strings.SplitN("=", env, 2)[0] == varName {
+			cs.Env[i] = envVar
+			return
+		}
+	}
+	cs.Env = append(cs.Env, envVar)
+}
+
+//go:generate counterfeiter . InputSource
+
+type InputSource interface {
+	Source() ArtifactSource
+	DestinationPath() string
+}
+
+//go:generate counterfeiter . BindMountSource
+
+type BindMountSource interface {
+	VolumeOn(Worker) (garden.BindMount, bool, error)
+}
+
 // OutputPaths is a mapping from output name to its path in the container.
 type OutputPaths map[string]string
 
@@ -52,21 +96,34 @@ type ImageSpec struct {
 	ResourceType        string
 	ImageURL            string
 	ImageResource       *ImageResource
-	ImageArtifactSource ArtifactSource
-	ImageArtifactName   ArtifactName
+	ImageArtifactSource StreamableArtifactSource
+	ImageArtifact       runtime.Artifact
 	Privileged          bool
 }
 
 type ImageResource struct {
 	Type    string
-	Source  creds.Source
-	Params  *atc.Params
-	Version *atc.Version
+	Source  atc.Source
+	Params  atc.Params
+	Version atc.Version
 }
 
 type ContainerLimits struct {
 	CPU    *uint64
 	Memory *uint64
+}
+
+type inputSource struct {
+	source ArtifactSource
+	path   string
+}
+
+func (src inputSource) Source() ArtifactSource {
+	return src.source
+}
+
+func (src inputSource) DestinationPath() string {
+	return src.path
 }
 
 var GardenLimitDefault = uint64(0)

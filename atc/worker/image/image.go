@@ -11,6 +11,7 @@ import (
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/tracing"
 )
 
 const RawRootFSScheme = "raw"
@@ -43,7 +44,7 @@ func (i *imageProvidedByPreviousStepOnSameWorker) FetchForContainer(
 		return worker.FetchedImage{}, err
 	}
 
-	imageMetadataReader, err := i.imageSpec.ImageArtifactSource.StreamFile(logger, ImageMetadataFile)
+	imageMetadataReader, err := i.imageSpec.ImageArtifactSource.StreamFile(ctx, ImageMetadataFile)
 	if err != nil {
 		logger.Error("failed-to-stream-metadata-file", err)
 		return worker.FetchedImage{}, err
@@ -77,6 +78,9 @@ func (i *imageProvidedByPreviousStepOnDifferentWorker) FetchForContainer(
 	logger lager.Logger,
 	container db.CreatingContainer,
 ) (worker.FetchedImage, error) {
+	ctx, span := tracing.StartSpan(ctx, "imageProvidedByPreviousStepOnDifferentWorker.FetchForContainer", tracing.Attrs{"container_id": container.Handle()})
+	defer span.End()
+
 	imageVolume, err := i.volumeClient.FindOrCreateVolumeForContainer(
 		logger,
 		worker.VolumeSpec{
@@ -89,20 +93,21 @@ func (i *imageProvidedByPreviousStepOnDifferentWorker) FetchForContainer(
 	)
 	if err != nil {
 		logger.Error("failed-to-create-image-artifact-replicated-volume", err)
-		return worker.FetchedImage{}, nil
+		return worker.FetchedImage{}, err
 	}
 
 	dest := artifactDestination{
 		destination: imageVolume,
 	}
 
-	err = i.imageSpec.ImageArtifactSource.StreamTo(logger, &dest)
+	err = i.imageSpec.ImageArtifactSource.StreamTo(ctx, &dest)
 	if err != nil {
 		logger.Error("failed-to-stream-image-artifact-source", err)
-		return worker.FetchedImage{}, nil
+		return worker.FetchedImage{}, err
 	}
+	logger.Debug("streamed-non-local-image-volume")
 
-	imageMetadataReader, err := i.imageSpec.ImageArtifactSource.StreamFile(logger, ImageMetadataFile)
+	imageMetadataReader, err := i.imageSpec.ImageArtifactSource.StreamFile(ctx, ImageMetadataFile)
 	if err != nil {
 		logger.Error("failed-to-stream-metadata-file", err)
 		return worker.FetchedImage{}, err
@@ -260,6 +265,6 @@ type artifactDestination struct {
 	destination worker.Volume
 }
 
-func (wad *artifactDestination) StreamIn(path string, tarStream io.Reader) error {
-	return wad.destination.StreamIn(path, tarStream)
+func (wad *artifactDestination) StreamIn(ctx context.Context, path string, encoding baggageclaim.Encoding, tarStream io.Reader) error {
+	return wad.destination.StreamIn(ctx, path, encoding, tarStream)
 }

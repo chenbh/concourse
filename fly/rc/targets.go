@@ -10,7 +10,7 @@ import (
 
 	"github.com/concourse/concourse/atc"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -26,25 +26,42 @@ func (err UnknownTargetError) Error() string {
 	return fmt.Sprintf("unknown target: %s", err.TargetName)
 }
 
+type Targets map[TargetName]TargetProps
+
+type RC struct {
+	Targets Targets `json:"targets"`
+}
+
 type TargetProps struct {
-	API      string       `yaml:"api"`
-	TeamName string       `yaml:"team"`
-	Insecure bool         `yaml:"insecure,omitempty"`
-	Token    *TargetToken `yaml:"token,omitempty"`
-	CACert   string       `yaml:"ca_cert,omitempty"`
+	API      string       `json:"api"`
+	TeamName string       `json:"team"`
+	Insecure bool         `json:"insecure,omitempty"`
+	Token    *TargetToken `json:"token,omitempty"`
+	CACert   string       `json:"ca_cert,omitempty"`
 }
 
 type TargetToken struct {
-	Type  string `yaml:"type"`
-	Value string `yaml:"value"`
-}
-
-type targetDetailsYAML struct {
-	Targets map[TargetName]TargetProps
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 func flyrcPath() string {
 	return filepath.Join(userHomeDir(), ".flyrc")
+}
+
+func LogoutTarget(targetName TargetName) error {
+	flyTargets, err := LoadTargets()
+	if err != nil {
+		return err
+	}
+
+	if target, ok := flyTargets[targetName]; ok {
+		if target.Token != nil {
+			*target.Token = TargetToken{}
+		}
+	}
+
+	return writeTargets(flyrcPath(), flyTargets)
 }
 
 func DeleteTarget(targetName TargetName) error {
@@ -53,10 +70,45 @@ func DeleteTarget(targetName TargetName) error {
 		return err
 	}
 
-	if target, ok := flyTargets.Targets[targetName]; ok {
-		if target.Token != nil {
-			*target.Token = TargetToken{}
-		}
+	delete(flyTargets, targetName)
+
+	return writeTargets(flyrcPath(), flyTargets)
+}
+
+func DeleteAllTargets() error {
+	return writeTargets(flyrcPath(), Targets{})
+}
+
+func UpdateTargetProps(targetName TargetName, targetProps TargetProps) error {
+	flyTargets, err := LoadTargets()
+	if err != nil {
+		return err
+	}
+
+	target := flyTargets[targetName]
+
+	if targetProps.API != "" {
+		target.API = targetProps.API
+	}
+
+	if targetProps.TeamName != "" {
+		target.TeamName = targetProps.TeamName
+	}
+
+	flyTargets[targetName] = target
+
+	return writeTargets(flyrcPath(), flyTargets)
+}
+
+func UpdateTargetName(targetName TargetName, newTargetName TargetName) error {
+	flyTargets, err := LoadTargets()
+	if err != nil {
+		return err
+	}
+
+	if newTargetName != "" {
+		flyTargets[newTargetName] = flyTargets[targetName]
+		delete(flyTargets, targetName)
 	}
 
 	return writeTargets(flyrcPath(), flyTargets)
@@ -76,14 +128,14 @@ func SaveTarget(
 	}
 
 	flyrc := flyrcPath()
-	newInfo := flyTargets.Targets[targetName]
+	newInfo := flyTargets[targetName]
 	newInfo.API = api
 	newInfo.Insecure = insecure
 	newInfo.Token = token
 	newInfo.TeamName = teamName
 	newInfo.CACert = caCert
 
-	flyTargets.Targets[targetName] = newInfo
+	flyTargets[targetName] = newInfo
 	return writeTargets(flyrc, flyTargets)
 }
 
@@ -96,7 +148,7 @@ func selectTarget(selectedTarget TargetName) (TargetProps, error) {
 		return TargetProps{}, err
 	}
 
-	target, ok := flyTargets.Targets[selectedTarget]
+	target, ok := flyTargets[selectedTarget]
 	if !ok {
 		return TargetProps{}, UnknownTargetError{selectedTarget}
 	}
@@ -124,8 +176,8 @@ func userHomeDir() string {
 	panic("could not detect home directory for .flyrc")
 }
 
-func LoadTargets() (*targetDetailsYAML, error) {
-	var flyTargets *targetDetailsYAML
+func LoadTargets() (Targets, error) {
+	var rc RC
 
 	flyrc := flyrcPath()
 	if _, err := os.Stat(flyrc); err == nil {
@@ -133,31 +185,34 @@ func LoadTargets() (*targetDetailsYAML, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = yaml.Unmarshal(flyTargetsBytes, &flyTargets)
+		err = yaml.Unmarshal(flyTargetsBytes, &rc)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("in the file '%s': %s", flyrc, err)
 		}
 	}
 
-	if flyTargets == nil {
-		return &targetDetailsYAML{Targets: map[TargetName]TargetProps{}}, nil
+	targets := rc.Targets
+	if targets == nil {
+		targets = map[TargetName]TargetProps{}
 	}
-	for name, targetProps := range flyTargets.Targets {
+
+	for name, targetProps := range targets {
 		if targetProps.TeamName == "" {
 			targetProps.TeamName = atc.DefaultTeamName
-			flyTargets.Targets[name] = targetProps
+			targets[name] = targetProps
 		}
 	}
-	return flyTargets, nil
+
+	return targets, nil
 }
 
-func writeTargets(configFileLocation string, targetsToWrite *targetDetailsYAML) error {
-	yamlBytes, err := yaml.Marshal(targetsToWrite)
+func writeTargets(configFileLocation string, targetsToWrite Targets) error {
+	yamlBytes, err := yaml.Marshal(RC{Targets: targetsToWrite})
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(configFileLocation, yamlBytes, os.ModePerm)
+	err = ioutil.WriteFile(configFileLocation, yamlBytes, os.FileMode(0600))
 	if err != nil {
 		return err
 	}

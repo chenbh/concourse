@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -10,14 +11,12 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-
 	"github.com/Masterminds/squirrel"
 	"github.com/concourse/concourse/atc/db/encryption"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/atc/db/migration"
-	"github.com/lib/pq"
-
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/lib/pq"
 )
 
 //go:generate counterfeiter . Conn
@@ -30,13 +29,19 @@ type Conn interface {
 	Driver() driver.Driver
 
 	Begin() (Tx, error)
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) squirrel.RowScanner
+	Exec(string, ...interface{}) (sql.Result, error)
+	Prepare(string) (*sql.Stmt, error)
+	Query(string, ...interface{}) (*sql.Rows, error)
+	QueryRow(string, ...interface{}) squirrel.RowScanner
 
-	SetMaxIdleConns(n int)
-	SetMaxOpenConns(n int)
+	BeginTx(context.Context, *sql.TxOptions) (Tx, error)
+	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+	PrepareContext(context.Context, string) (*sql.Stmt, error)
+	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...interface{}) squirrel.RowScanner
+
+	SetMaxIdleConns(int)
+	SetMaxOpenConns(int)
 	Stats() sql.DBStats
 
 	Close() error
@@ -47,12 +52,17 @@ type Conn interface {
 
 type Tx interface {
 	Commit() error
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) squirrel.RowScanner
+	Exec(string, ...interface{}) (sql.Result, error)
+	Prepare(string) (*sql.Stmt, error)
+	Query(string, ...interface{}) (*sql.Rows, error)
+	QueryRow(string, ...interface{}) squirrel.RowScanner
+	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+	PrepareContext(context.Context, string) (*sql.Stmt, error)
+	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...interface{}) squirrel.RowScanner
 	Rollback() error
-	Stmt(stmt *sql.Stmt) *sql.Stmt
+	Stmt(*sql.Stmt) *sql.Stmt
+	EncryptionStrategy() encryption.Strategy
 }
 
 func Open(logger lager.Logger, sqlDriver string, sqlDataSource string, newKey *encryption.Key, oldKey *encryption.Key, connectionName string, lockFactory lock.LockFactory) (Conn, error) {
@@ -116,39 +126,48 @@ func shouldRetry(err error) bool {
 	return false
 }
 
-var encryptedColumns = map[string]string{
-	"teams":          "legacy_auth",
-	"resources":      "config",
-	"jobs":           "config",
-	"resource_types": "config",
-	"builds":         "engine_metadata",
+type encryptedColumn struct {
+	Table      string
+	Column     string
+	PrimaryKey string
+}
+
+var encryptedColumns = []encryptedColumn{
+	{"teams", "legacy_auth", "id"},
+	{"resources", "config", "id"},
+	{"jobs", "config", "id"},
+	{"resource_types", "config", "id"},
+	{"builds", "private_plan", "id"},
+	{"cert_cache", "cert", "domain"},
+	{"checks", "plan", "id"},
+	{"pipelines", "var_sources", "id"},
 }
 
 func encryptPlaintext(logger lager.Logger, sqlDB *sql.DB, key *encryption.Key) error {
-	for table, col := range encryptedColumns {
+	for _, ec := range encryptedColumns {
 		rows, err := sqlDB.Query(`
-			SELECT id, ` + col + `
-			FROM ` + table + `
+			SELECT ` + ec.PrimaryKey + `, ` + ec.Column + `
+			FROM ` + ec.Table + `
 			WHERE nonce IS NULL
-			AND ` + col + ` IS NOT NULL
+			AND ` + ec.Column + ` IS NOT NULL
 		`)
 		if err != nil {
 			return err
 		}
 
 		tLog := logger.Session("table", lager.Data{
-			"table": table,
+			"table": ec.Table,
 		})
 
 		encryptedRows := 0
 
 		for rows.Next() {
 			var (
-				id  int
-				val sql.NullString
+				primaryKey interface{}
+				val        sql.NullString
 			)
 
-			err := rows.Scan(&id, &val)
+			err := rows.Scan(&primaryKey, &val)
 			if err != nil {
 				tLog.Error("failed-to-scan", err)
 				return err
@@ -159,7 +178,7 @@ func encryptPlaintext(logger lager.Logger, sqlDB *sql.DB, key *encryption.Key) e
 			}
 
 			rLog := tLog.Session("row", lager.Data{
-				"id": id,
+				"primary-key": primaryKey,
 			})
 
 			encrypted, nonce, err := key.Encrypt([]byte(val.String))
@@ -169,10 +188,10 @@ func encryptPlaintext(logger lager.Logger, sqlDB *sql.DB, key *encryption.Key) e
 			}
 
 			_, err = sqlDB.Exec(`
-				UPDATE `+table+`
-				SET `+col+` = $1, nonce = $2
-				WHERE id = $3
-			`, encrypted, nonce, id)
+				UPDATE `+ec.Table+`
+				SET `+ec.Column+` = $1, nonce = $2
+				WHERE `+ec.PrimaryKey+` = $3
+			`, encrypted, nonce, primaryKey)
 			if err != nil {
 				rLog.Error("failed-to-update", err)
 				return err
@@ -192,10 +211,10 @@ func encryptPlaintext(logger lager.Logger, sqlDB *sql.DB, key *encryption.Key) e
 }
 
 func decryptToPlaintext(logger lager.Logger, sqlDB *sql.DB, oldKey *encryption.Key) error {
-	for table, col := range encryptedColumns {
+	for _, ec := range encryptedColumns {
 		rows, err := sqlDB.Query(`
-			SELECT id, nonce, ` + col + `
-			FROM ` + table + `
+			SELECT ` + ec.PrimaryKey + `, nonce, ` + ec.Column + `
+			FROM ` + ec.Table + `
 			WHERE nonce IS NOT NULL
 		`)
 		if err != nil {
@@ -203,25 +222,25 @@ func decryptToPlaintext(logger lager.Logger, sqlDB *sql.DB, oldKey *encryption.K
 		}
 
 		tLog := logger.Session("table", lager.Data{
-			"table": table,
+			"table": ec.Table,
 		})
 
 		decryptedRows := 0
 
 		for rows.Next() {
 			var (
-				id         int
+				primaryKey interface{}
 				val, nonce string
 			)
 
-			err := rows.Scan(&id, &nonce, &val)
+			err := rows.Scan(&primaryKey, &nonce, &val)
 			if err != nil {
 				tLog.Error("failed-to-scan", err)
 				return err
 			}
 
 			rLog := tLog.Session("row", lager.Data{
-				"id": id,
+				"primary-key": primaryKey,
 			})
 
 			decrypted, err := oldKey.Decrypt(val, &nonce)
@@ -231,10 +250,10 @@ func decryptToPlaintext(logger lager.Logger, sqlDB *sql.DB, oldKey *encryption.K
 			}
 
 			_, err = sqlDB.Exec(`
-				UPDATE `+table+`
-				SET `+col+` = $1, nonce = NULL
-				WHERE id = $2
-			`, decrypted, id)
+				UPDATE `+ec.Table+`
+				SET `+ec.Column+` = $1, nonce = NULL
+				WHERE `+ec.PrimaryKey+` = $2
+			`, decrypted, primaryKey)
 			if err != nil {
 				rLog.Error("failed-to-update", err)
 				return err
@@ -256,10 +275,10 @@ func decryptToPlaintext(logger lager.Logger, sqlDB *sql.DB, oldKey *encryption.K
 var ErrEncryptedWithUnknownKey = errors.New("row encrypted with neither old nor new key")
 
 func encryptWithNewKey(logger lager.Logger, sqlDB *sql.DB, newKey *encryption.Key, oldKey *encryption.Key) error {
-	for table, col := range encryptedColumns {
+	for _, ec := range encryptedColumns {
 		rows, err := sqlDB.Query(`
-			SELECT id, nonce, ` + col + `
-			FROM ` + table + `
+			SELECT ` + ec.PrimaryKey + `, nonce, ` + ec.Column + `
+			FROM ` + ec.Table + `
 			WHERE nonce IS NOT NULL
 		`)
 		if err != nil {
@@ -267,25 +286,25 @@ func encryptWithNewKey(logger lager.Logger, sqlDB *sql.DB, newKey *encryption.Ke
 		}
 
 		tLog := logger.Session("table", lager.Data{
-			"table": table,
+			"table": ec.Table,
 		})
 
 		encryptedRows := 0
 
 		for rows.Next() {
 			var (
-				id         int
+				primaryKey interface{}
 				val, nonce string
 			)
 
-			err := rows.Scan(&id, &nonce, &val)
+			err := rows.Scan(&primaryKey, &nonce, &val)
 			if err != nil {
 				tLog.Error("failed-to-scan", err)
 				return err
 			}
 
 			rLog := tLog.Session("row", lager.Data{
-				"id": id,
+				"primary-key": primaryKey,
 			})
 
 			decrypted, err := oldKey.Decrypt(val, &nonce)
@@ -307,10 +326,10 @@ func encryptWithNewKey(logger lager.Logger, sqlDB *sql.DB, newKey *encryption.Ke
 			}
 
 			_, err = sqlDB.Exec(`
-				UPDATE `+table+`
-				SET `+col+` = $1, nonce = $2
-				WHERE id = $3
-			`, encrypted, newNonce, id)
+				UPDATE `+ec.Table+`
+				SET `+ec.Column+` = $1, nonce = $2
+				WHERE `+ec.PrimaryKey+` = $3
+			`, encrypted, newNonce, primaryKey)
 			if err != nil {
 				rLog.Error("failed-to-update", err)
 				return err
@@ -376,7 +395,7 @@ func (db *db) Begin() (Tx, error) {
 		return nil, err
 	}
 
-	return &dbTx{tx, GlobalConnectionTracker.Track()}, nil
+	return &dbTx{tx, GlobalConnectionTracker.Track(), db.EncryptionStrategy()}, nil
 }
 
 func (db *db) Exec(query string, args ...interface{}) (sql.Result, error) {
@@ -400,15 +419,50 @@ func (db *db) QueryRow(query string, args ...interface{}) squirrel.RowScanner {
 	return db.DB.QueryRow(query, args...)
 }
 
+func (db *db) BeginTx(ctx context.Context, opts *sql.TxOptions) (Tx, error) {
+	tx, err := db.DB.BeginTx(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dbTx{tx, GlobalConnectionTracker.Track(), db.EncryptionStrategy()}, nil
+}
+
+func (db *db) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	defer GlobalConnectionTracker.Track().Release()
+	return db.DB.ExecContext(ctx, query, args...)
+}
+
+func (db *db) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	defer GlobalConnectionTracker.Track().Release()
+	return db.DB.PrepareContext(ctx, query)
+}
+
+func (db *db) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	defer GlobalConnectionTracker.Track().Release()
+	return db.DB.QueryContext(ctx, query, args...)
+}
+
+// to conform to squirrel.Runner interface
+func (db *db) QueryRowContext(ctx context.Context, query string, args ...interface{}) squirrel.RowScanner {
+	defer GlobalConnectionTracker.Track().Release()
+	return db.DB.QueryRowContext(ctx, query, args...)
+}
+
 type dbTx struct {
 	*sql.Tx
 
-	session *ConnectionSession
+	session            *ConnectionSession
+	encryptionStrategy encryption.Strategy
 }
 
 // to conform to squirrel.Runner interface
 func (tx *dbTx) QueryRow(query string, args ...interface{}) squirrel.RowScanner {
 	return tx.Tx.QueryRow(query, args...)
+}
+
+func (tx *dbTx) QueryRowContext(ctx context.Context, query string, args ...interface{}) squirrel.RowScanner {
+	return tx.Tx.QueryRowContext(ctx, query, args...)
 }
 
 func (tx *dbTx) Commit() error {
@@ -421,16 +475,20 @@ func (tx *dbTx) Rollback() error {
 	return tx.Tx.Rollback()
 }
 
+func (tx *dbTx) EncryptionStrategy() encryption.Strategy {
+	return tx.encryptionStrategy
+}
+
 // Rollback ignores errors, and should be used with defer.
 // makes errcheck happy that those errs are captured
 func Rollback(tx Tx) {
 	_ = tx.Rollback()
 }
 
-type nonOneRowAffectedError struct {
+type NonOneRowAffectedError struct {
 	RowsAffected int64
 }
 
-func (err nonOneRowAffectedError) Error() string {
+func (err NonOneRowAffectedError) Error() string {
 	return fmt.Sprintf("expected 1 row to be updated; got %d", err.RowsAffected)
 }

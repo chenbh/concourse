@@ -5,139 +5,232 @@ module Concourse.BuildEvents exposing
     , decodeErrorEvent
     , decodeFinishResource
     , decodeOrigin
-    , parseEvent
-    , parseEvents
-    , parseEventsFromIndex
     )
 
-import Array exposing (Array)
-import Build.Models exposing (BuildEvent(..), Origin)
+import Build.StepTree.Models exposing (BuildEvent(..), BuildEventEnvelope, Origin)
 import Concourse
-import Date exposing (Date)
-import Dict exposing (Dict)
-import EventSource.LowLevel as ES
+import Concourse.BuildStatus
+import Dict
 import Json.Decode
+import Time
 
 
-decodeBuildEventEnvelope : Json.Decode.Decoder BuildEvent
+decodeBuildEventEnvelope : Json.Decode.Decoder BuildEventEnvelope
 decodeBuildEventEnvelope =
-    Json.Decode.field "event" Json.Decode.string |> Json.Decode.andThen decodeBuildEvent
-
-
-decodeBuildEvent : String -> Json.Decode.Decoder BuildEvent
-decodeBuildEvent eventType =
-    case eventType of
-        "status" ->
+    let
+        typeDecoder =
             Json.Decode.field
-                "data"
-                (Json.Decode.map2 BuildStatus
-                    (Json.Decode.field "status" Concourse.decodeBuildStatus)
-                    (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.float)
-                )
+                "type"
+                Json.Decode.string
 
-        "log" ->
-            Json.Decode.field
-                "data"
-                (Json.Decode.map3 Log
-                    (Json.Decode.field "origin" <| Json.Decode.lazy (\_ -> decodeOrigin))
-                    (Json.Decode.field "payload" Json.Decode.string)
-                    (Json.Decode.maybe <| Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.float)
-                )
+        urlDecoder =
+            Json.Decode.at [ "target", "url" ] Json.Decode.string
 
-        "error" ->
-            Json.Decode.field "data" decodeErrorEvent
+        dataDecoder =
+            typeDecoder
+                |> Json.Decode.andThen
+                    (\t ->
+                        case t of
+                            "end" ->
+                                Json.Decode.succeed End
 
-        "initialize" ->
-            Json.Decode.field
-                "data"
-                (Json.Decode.map Initialize (Json.Decode.field "origin" decodeOrigin))
+                            "open" ->
+                                Json.Decode.succeed Opened
 
-        "initialize-task" ->
-            Json.Decode.field
-                "data"
-                (Json.Decode.map Initialize (Json.Decode.field "origin" decodeOrigin))
+                            "error" ->
+                                Json.Decode.succeed NetworkError
 
-        "start-task" ->
-            Json.Decode.field
-                "data"
-                (Json.Decode.map StartTask (Json.Decode.field "origin" decodeOrigin))
+                            _ ->
+                                Json.Decode.field "data" Json.Decode.string
+                                    |> Json.Decode.andThen
+                                        (\rawEvent ->
+                                            case
+                                                Json.Decode.decodeString
+                                                    decodeBuildEvent
+                                                    rawEvent
+                                            of
+                                                Ok event ->
+                                                    Json.Decode.succeed event
 
-        "finish-task" ->
-            Json.Decode.field
-                "data"
-                (Json.Decode.map2 FinishTask
-                    (Json.Decode.field "origin" decodeOrigin)
-                    (Json.Decode.field "exit_status" Json.Decode.int)
-                )
-
-        "finish-get" ->
-            Json.Decode.field "data" (decodeFinishResource FinishGet)
-
-        "finish-put" ->
-            Json.Decode.field "data" (decodeFinishResource FinishPut)
-
-        unknown ->
-            Json.Decode.fail ("unknown event type: " ++ unknown)
+                                                Err err ->
+                                                    Json.Decode.fail <|
+                                                        Json.Decode.errorToString err
+                                        )
+                    )
+    in
+    Json.Decode.map2 BuildEventEnvelope
+        dataDecoder
+        urlDecoder
 
 
-parseEvents : Array.Array ES.Event -> Result String (Array.Array BuildEvent)
-parseEvents evs =
-    -- this is hard to read, but faster than a fold or using a List
-    parseEventsFromIndex evs (Array.initialize (Array.length evs) (\_ -> End)) 0
+decodeBuildEvent : Json.Decode.Decoder BuildEvent
+decodeBuildEvent =
+    Json.Decode.field "event" Json.Decode.string
+        |> Json.Decode.andThen
+            (\eventType ->
+                case eventType of
+                    "status" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 BuildStatus
+                                (Json.Decode.field "status" Concourse.BuildStatus.decodeBuildStatus)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "log" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map3 Log
+                                (Json.Decode.field "origin" <| Json.Decode.lazy (\_ -> decodeOrigin))
+                                (Json.Decode.field "payload" Json.Decode.string)
+                                (Json.Decode.maybe <| Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "selected-worker" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map3 SelectedWorker
+                                (Json.Decode.field "origin" <| Json.Decode.lazy (\_ -> decodeOrigin))
+                                (Json.Decode.field "selected_worker" Json.Decode.string)
+                                (Json.Decode.maybe <| Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "error" ->
+                        Json.Decode.field "data" decodeErrorEvent
+
+                    "initialize-task" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 InitializeTask
+                                (Json.Decode.field "origin" <| Json.Decode.lazy (\_ -> decodeOrigin))
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "start-task" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 StartTask
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "finish-task" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map3 FinishTask
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "exit_status" Json.Decode.int)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "initialize" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 Initialize
+                                (Json.Decode.field "origin" <| Json.Decode.lazy (\_ -> decodeOrigin))
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "start" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 Start
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "finish" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map3 Finish
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                                (Json.Decode.field "succeeded" Json.Decode.bool)
+                            )
+
+                    "initialize-get" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 InitializeGet
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "start-get" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 StartGet
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "finish-get" ->
+                        Json.Decode.field "data" (decodeFinishResource FinishGet)
+
+                    "initialize-put" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 InitializePut
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "start-put" ->
+                        Json.Decode.field
+                            "data"
+                            (Json.Decode.map2 StartPut
+                                (Json.Decode.field "origin" decodeOrigin)
+                                (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
+                            )
+
+                    "finish-put" ->
+                        Json.Decode.field "data" (decodeFinishResource FinishPut)
+
+                    unknown ->
+                        Json.Decode.fail ("unknown event type: " ++ unknown)
+            )
 
 
-parseEventsFromIndex :
-    Array.Array ES.Event
-    -> Array.Array BuildEvent
-    -> Int
-    -> Result String (Array.Array BuildEvent)
-parseEventsFromIndex evs acc i =
-    case Array.get i evs of
-        Nothing ->
-            Ok acc
-
-        Just ev ->
-            case parseEvent ev of
-                Ok ev ->
-                    parseEventsFromIndex evs (Array.set i ev acc) (i + 1)
-
-                Err err ->
-                    Err err
-
-
-parseEvent : ES.Event -> Result String BuildEvent
-parseEvent event =
-    case ( event.name, event.data ) of
-        ( Just "end", data ) ->
-            Ok End
-
-        ( Just "event", data ) ->
-            Json.Decode.decodeString decodeBuildEventEnvelope data
-
-        ( name, data ) ->
-            Err ("unknown event type: " ++ toString name ++ " (data: " ++ toString data ++ ")")
-
-
-dateFromSeconds : Float -> Date
+dateFromSeconds : Int -> Time.Posix
 dateFromSeconds =
-    Date.fromTime << (*) 1000
+    Time.millisToPosix << (*) 1000
 
 
-decodeFinishResource : (Origin -> Int -> Concourse.Version -> Concourse.Metadata -> a) -> Json.Decode.Decoder a
+decodeFinishResource :
+    (Origin
+     -> Int
+     -> Concourse.Version
+     -> Concourse.Metadata
+     -> Maybe Time.Posix
+     -> a
+    )
+    -> Json.Decode.Decoder a
 decodeFinishResource cons =
-    Json.Decode.map4 cons
+    Json.Decode.map5 cons
         (Json.Decode.field "origin" decodeOrigin)
         (Json.Decode.field "exit_status" Json.Decode.int)
-        (Json.Decode.map (Maybe.withDefault Dict.empty) << Json.Decode.maybe <| Json.Decode.field "version" Concourse.decodeVersion)
-        (Json.Decode.map (Maybe.withDefault []) << Json.Decode.maybe <| Json.Decode.field "metadata" Concourse.decodeMetadata)
+        (Json.Decode.map
+            (Maybe.withDefault Dict.empty)
+            << Json.Decode.maybe
+         <|
+            Json.Decode.field "version" Concourse.decodeVersion
+        )
+        (Json.Decode.map
+            (Maybe.withDefault [])
+            << Json.Decode.maybe
+         <|
+            Json.Decode.field "metadata" Concourse.decodeMetadata
+        )
+        (Json.Decode.maybe <| Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
 
 
 decodeErrorEvent : Json.Decode.Decoder BuildEvent
 decodeErrorEvent =
-    Json.Decode.oneOf
-        [ Json.Decode.map2 Error (Json.Decode.field "origin" decodeOrigin) (Json.Decode.field "message" Json.Decode.string)
-        , Json.Decode.map BuildError (Json.Decode.field "message" Json.Decode.string)
-        ]
+    Json.Decode.map3
+        Error
+        (Json.Decode.field "origin" decodeOrigin)
+        (Json.Decode.field "message" Json.Decode.string)
+        (Json.Decode.field "time" <| Json.Decode.map dateFromSeconds Json.Decode.int)
 
 
 decodeOrigin : Json.Decode.Decoder Origin

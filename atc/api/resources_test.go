@@ -9,36 +9,28 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/jsonapi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/bosh-cli/director/template"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
-	"github.com/concourse/concourse/atc/radar/radarfakes"
-	"github.com/concourse/concourse/atc/resource"
+	. "github.com/concourse/concourse/atc/testhelpers"
+	"github.com/concourse/concourse/vars"
 )
 
 var _ = Describe("Resources API", func() {
 	var (
 		fakePipeline *dbfakes.FakePipeline
 		resource1    *dbfakes.FakeResource
-		fakeaccess   = new(accessorfakes.FakeAccess)
-		variables    creds.Variables
+		variables    vars.Variables
 	)
 
 	BeforeEach(func() {
 		fakePipeline = new(dbfakes.FakePipeline)
 		dbTeamFactory.FindTeamReturns(dbTeam, true, nil)
 		dbTeam.PipelineReturns(fakePipeline, true, nil)
-	})
-
-	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
 	})
 
 	Describe("GET /api/v1/resources", func() {
@@ -61,7 +53,7 @@ var _ = Describe("Resources API", func() {
 				resource1.TeamNameReturns("some-team")
 				resource1.NameReturns("resource-1")
 				resource1.TypeReturns("type-1")
-				resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+				resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 
 				resource2 := new(dbfakes.FakeResource)
 				resource2.IDReturns(2)
@@ -91,7 +83,10 @@ var _ = Describe("Resources API", func() {
 			})
 
 			It("returns Content-Type 'application/json'", func() {
-				Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+				expectedHeaderEntries := map[string]string{
+					"Content-Type": "application/json",
+				}
+				Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 			})
 
 			It("returns each resource, including their check failure", func() {
@@ -157,12 +152,22 @@ var _ = Describe("Resources API", func() {
 
 			Context("when authenticated", func() {
 				BeforeEach(func() {
-					fakeaccess.TeamNamesReturns([]string{"some-team"})
+					fakeAccess.TeamNamesReturns([]string{"some-team"})
 				})
 
 				It("constructs job factory with provided team names", func() {
 					Expect(dbResourceFactory.VisibleResourcesCallCount()).To(Equal(1))
 					Expect(dbResourceFactory.VisibleResourcesArgsForCall(0)).To(ContainElement("some-team"))
+				})
+
+				Context("when user has admin privilege", func() {
+					BeforeEach(func() {
+						fakeAccess.IsAdminReturns(true)
+					})
+
+					It("returns all resources", func() {
+						Expect(dbResourceFactory.AllResourcesCallCount()).To(Equal(1))
+					})
 				})
 			})
 		})
@@ -187,7 +192,7 @@ var _ = Describe("Resources API", func() {
 				resource1.PipelineNameReturns("a-pipeline")
 				resource1.NameReturns("resource-1")
 				resource1.TypeReturns("type-1")
-				resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+				resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 
 				resource2 := new(dbfakes.FakeResource)
 				resource2.IDReturns(2)
@@ -212,8 +217,8 @@ var _ = Describe("Resources API", func() {
 
 			Context("when not authenticated and not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthenticatedReturns(false)
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthenticatedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 
 				Context("and the pipeline is private", func() {
@@ -236,7 +241,10 @@ var _ = Describe("Resources API", func() {
 					})
 
 					It("returns Content-Type 'application/json'", func() {
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns each resource, excluding their check failure", func() {
@@ -272,8 +280,8 @@ var _ = Describe("Resources API", func() {
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthenticatedReturns(true)
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthenticatedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("returns 200 OK", func() {
@@ -281,7 +289,10 @@ var _ = Describe("Resources API", func() {
 				})
 
 				It("returns Content-Type 'application/json'", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
 				It("returns each resource, including their check failure", func() {
@@ -356,12 +367,12 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authenticated ", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("tries to find the resource", func() {
@@ -419,7 +430,7 @@ var _ = Describe("Resources API", func() {
 			})
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 
 				It("returns Forbidden", func() {
@@ -429,7 +440,7 @@ var _ = Describe("Resources API", func() {
 		})
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -460,7 +471,7 @@ var _ = Describe("Resources API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -470,12 +481,12 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authenticated ", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
 			})
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("tries to find the resource", func() {
@@ -540,7 +551,7 @@ var _ = Describe("Resources API", func() {
 			})
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 
 				It("returns Forbidden", func() {
@@ -551,14 +562,10 @@ var _ = Describe("Resources API", func() {
 	})
 
 	Describe("POST /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/check", func() {
-		var fakeScanner *radarfakes.FakeScanner
 		var checkRequestBody atc.CheckRequestBody
 		var response *http.Response
 
 		BeforeEach(func() {
-			fakeScanner = new(radarfakes.FakeScanner)
-			fakeScannerFactory.NewResourceScannerReturns(fakeScanner)
-
 			checkRequestBody = atc.CheckRequestBody{}
 		})
 
@@ -576,113 +583,138 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
-			It("injects the proper pipelineDB", func() {
-				Expect(dbTeam.PipelineCallCount()).To(Equal(1))
-				pipelineName := dbTeam.PipelineArgsForCall(0)
-				Expect(pipelineName).To(Equal("a-pipeline"))
-			})
-
-			It("tries to scan with no version specified", func() {
-				Expect(fakeScanner.ScanFromVersionCallCount()).To(Equal(1))
-				_, actualResourceName, actualFromVersion := fakeScanner.ScanFromVersionArgsForCall(0)
-				Expect(actualResourceName).To(Equal("resource-name"))
-				Expect(actualFromVersion).To(BeNil())
-			})
-
-			It("returns 200", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusOK))
-			})
-
-			Context("when checking with a version specified", func() {
+			Context("when looking up the resource fails", func() {
 				BeforeEach(func() {
-					checkRequestBody = atc.CheckRequestBody{
-						From: atc.Version{
-							"some-version-key": "some-version-value",
-						},
-					}
+					fakePipeline.ResourceReturns(nil, false, errors.New("nope"))
 				})
-
-				It("tries to scan with the version specified", func() {
-					Expect(fakeScanner.ScanFromVersionCallCount()).To(Equal(1))
-					_, actualResourceName, actualFromVersion := fakeScanner.ScanFromVersionArgsForCall(0)
-					Expect(actualResourceName).To(Equal("resource-name"))
-					Expect(actualFromVersion).To(Equal(checkRequestBody.From))
+				It("returns 500", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 				})
 			})
 
-			Context("when checking fails with ResourceNotFoundError", func() {
+			Context("when the resource is not found", func() {
 				BeforeEach(func() {
-					fakeScanner.ScanFromVersionReturns(db.ResourceNotFoundError{})
+					fakePipeline.ResourceReturns(nil, false, nil)
 				})
-
 				It("returns 404", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 				})
 			})
 
-			Context("when checking the resource fails with ResourceTypeNotFoundError", func() {
+			Context("when it finds the resource", func() {
+				var fakeResource *dbfakes.FakeResource
+
 				BeforeEach(func() {
-					fakeScanner.ScanFromVersionReturns(db.ResourceTypeNotFoundError{Name: "missing-type"})
+					fakeResource = new(dbfakes.FakeResource)
+					fakeResource.IDReturns(1)
+					fakePipeline.ResourceReturns(fakeResource, true, nil)
 				})
 
-				It("returns jsonapi 400", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-					Expect(response.Header.Get("Content-Type")).To(Equal(jsonapi.MediaType))
-				})
-			})
-
-			Context("when checking the resource fails internally", func() {
-				BeforeEach(func() {
-					fakeScanner.ScanFromVersionReturns(errors.New("welp"))
+				Context("when looking up the resource types fails", func() {
+					BeforeEach(func() {
+						fakePipeline.ResourceTypesReturns(nil, errors.New("nope"))
+					})
+					It("returns 500", func() {
+						Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+					})
 				})
 
-				It("returns 500", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-					buf := new(bytes.Buffer)
-					_, err := buf.ReadFrom(response.Body)
-					Expect(err).ToNot(HaveOccurred())
-					body := buf.String()
-					Expect(body).To(Equal("welp"))
-				})
-			})
+				Context("when looking up the resource types succeeds", func() {
+					var fakeResourceTypes db.ResourceTypes
 
-			Context("when checking the resource fails with ErrResourceScriptFailed", func() {
-				BeforeEach(func() {
-					fakeScanner.ScanFromVersionReturns(
-						resource.ErrResourceScriptFailed{
-							ExitStatus: 42,
-							Stderr:     "my tooth",
-						},
-					)
-				})
+					BeforeEach(func() {
+						fakeResourceTypes = db.ResourceTypes{}
+						fakePipeline.ResourceTypesReturns(fakeResourceTypes, nil)
+					})
 
-				It("returns 400", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-				})
+					It("checks with no version specified", func() {
+						Expect(dbCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+						_, actualResource, actualResourceTypes, actualFromVersion, manuallyTriggered := dbCheckFactory.TryCreateCheckArgsForCall(0)
+						Expect(actualResource).To(Equal(fakeResource))
+						Expect(actualResourceTypes).To(Equal(fakeResourceTypes))
+						Expect(actualFromVersion).To(BeNil())
+						Expect(manuallyTriggered).To(BeTrue())
+					})
 
-				It("returns the script's exit status and stderr", func() {
-					body, err := ioutil.ReadAll(response.Body)
-					Expect(err).NotTo(HaveOccurred())
+					Context("when checking with a version specified", func() {
+						BeforeEach(func() {
+							checkRequestBody = atc.CheckRequestBody{
+								From: atc.Version{
+									"some-version-key": "some-version-value",
+								},
+							}
+						})
 
-					Expect(body).To(MatchJSON(`{
-						"exit_status": 42,
-						"stderr": "my tooth"
-					}`))
-				})
+						It("checks with the version specified", func() {
+							Expect(dbCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+							_, actualResource, actualResourceTypes, actualFromVersion, manuallyTriggered := dbCheckFactory.TryCreateCheckArgsForCall(0)
+							Expect(actualResource).To(Equal(fakeResource))
+							Expect(actualResourceTypes).To(Equal(fakeResourceTypes))
+							Expect(actualFromVersion).To(Equal(checkRequestBody.From))
+							Expect(manuallyTriggered).To(BeTrue())
+						})
+					})
 
-				It("returns application/json", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					Context("when checking fails", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, errors.New("nope"))
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking does not create a new check", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, nil)
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking creates a new check", func() {
+						var fakeCheck *dbfakes.FakeCheck
+
+						BeforeEach(func() {
+							fakeCheck = new(dbfakes.FakeCheck)
+							fakeCheck.IDReturns(10)
+							fakeCheck.StatusReturns("started")
+							fakeCheck.CreateTimeReturns(time.Date(2000, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.StartTimeReturns(time.Date(2001, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.EndTimeReturns(time.Date(2002, 01, 01, 0, 0, 0, 0, time.UTC))
+
+							dbCheckFactory.TryCreateCheckReturns(fakeCheck, true, nil)
+						})
+
+						It("notify checker", func() {
+							Expect(dbCheckFactory.NotifyCheckerCallCount()).To(Equal(1))
+						})
+
+						It("returns 201", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusCreated))
+							Expect(ioutil.ReadAll(response.Body)).To(MatchJSON(`{
+                 "id": 10,
+								 "status": "started",
+								 "create_time": 946684800,
+								 "start_time": 978307200,
+								 "end_time": 1009843200
+							}`))
+						})
+					})
 				})
 			})
 		})
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -717,6 +749,7 @@ var _ = Describe("Resources API", func() {
 				})
 				resourceType1.CheckErrorReturns(nil)
 				resourceType1.CheckSetupErrorReturns(nil)
+				resourceType1.UniqueVersionHistoryReturns(true)
 
 				resourceType2 := new(dbfakes.FakeResourceType)
 				resourceType2.IDReturns(2)
@@ -740,8 +773,8 @@ var _ = Describe("Resources API", func() {
 
 			Context("when not authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthenticatedReturns(false)
-					fakeaccess.IsAuthorizedReturns(false)
+					fakeAccess.IsAuthenticatedReturns(false)
+					fakeAccess.IsAuthorizedReturns(false)
 				})
 
 				Context("and the pipeline is private", func() {
@@ -764,7 +797,10 @@ var _ = Describe("Resources API", func() {
 					})
 
 					It("returns application/json", func() {
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns each resource type, excluding the check errors", func() {
@@ -776,10 +812,9 @@ var _ = Describe("Resources API", func() {
 					"name": "resource-type-1",
 					"type": "type-1",
 					"tags": ["tag1"],
-					"privileged": false,
 					"params": {"param-key-1": "param-value-1"},
 					"source": {"source-key-1": "source-value-1"},
-					"unique_version_history": false,
+					"unique_version_history": true,
 					"version": {
 						"version-key-1": "version-value-1",
 						"version-key-2": "version-value-2"
@@ -793,7 +828,6 @@ var _ = Describe("Resources API", func() {
 					"check_every": "10ms",
 					"params": {"param-key-2": "param-value-2"},
 					"source": {"source-key-2": "source-value-2"},
-					"unique_version_history": false,
 					"version": {
 						"version-key-2": "version-value-2"
 					}
@@ -805,8 +839,8 @@ var _ = Describe("Resources API", func() {
 
 			Context("when authorized", func() {
 				BeforeEach(func() {
-					fakeaccess.IsAuthenticatedReturns(true)
-					fakeaccess.IsAuthorizedReturns(true)
+					fakeAccess.IsAuthenticatedReturns(true)
+					fakeAccess.IsAuthorizedReturns(true)
 				})
 
 				It("returns 200 OK", func() {
@@ -814,7 +848,10 @@ var _ = Describe("Resources API", func() {
 				})
 
 				It("returns application/json", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
 				It("returns each resource type", func() {
@@ -826,10 +863,9 @@ var _ = Describe("Resources API", func() {
 				"name": "resource-type-1",
 				"type": "type-1",
 				"tags": ["tag1"],
-				"privileged": false,
 				"params": {"param-key-1": "param-value-1"},
 				"source": {"source-key-1": "source-value-1"},
-				"unique_version_history": false,
+				"unique_version_history": true,
 				"version": {
 					"version-key-1": "version-value-1",
 					"version-key-2": "version-value-2"
@@ -843,7 +879,6 @@ var _ = Describe("Resources API", func() {
 				"check_every": "10ms",
 				"params": {"param-key-2": "param-value-2"},
 				"source": {"source-key-2": "source-value-2"},
-				"unique_version_history": false,
 				"version": {
 					"version-key-2": "version-value-2"
 				},
@@ -864,7 +899,10 @@ var _ = Describe("Resources API", func() {
 						})
 
 						It("returns application/json", func() {
-							Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+							expectedHeaderEntries := map[string]string{
+								"Content-Type": "application/json",
+							}
+							Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 						})
 					})
 
@@ -901,8 +939,8 @@ var _ = Describe("Resources API", func() {
 
 		Context("when not authenticated and not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			Context("and the pipeline is private", func() {
@@ -926,7 +964,7 @@ var _ = Describe("Resources API", func() {
 					resource1.PipelineNameReturns("a-pipeline")
 					resource1.NameReturns("resource-1")
 					resource1.TypeReturns("type-1")
-					resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+					resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 
 					fakePipeline.ResourceReturns(resource1, true, nil)
 				})
@@ -936,7 +974,10 @@ var _ = Describe("Resources API", func() {
 				})
 
 				It("returns Content-Type 'application/json'", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
 				It("returns the resource json without the check error", func() {
@@ -958,8 +999,8 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			It("looks it up in the database", func() {
@@ -996,7 +1037,7 @@ var _ = Describe("Resources API", func() {
 						resource1.PipelineNameReturns("a-pipeline")
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
-						resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 						resource1.ConfigPinnedVersionReturns(atc.Version{"version": "v1"})
 
 						fakePipeline.ResourceReturns(resource1, true, nil)
@@ -1007,7 +1048,10 @@ var _ = Describe("Resources API", func() {
 					})
 
 					It("returns Content-Type 'application/json'", func() {
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns the resource json with the check error", func() {
@@ -1035,7 +1079,7 @@ var _ = Describe("Resources API", func() {
 						resource1.PipelineNameReturns("a-pipeline")
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
-						resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 						resource1.APIPinnedVersionReturns(atc.Version{"version": "v1"})
 
 						fakePipeline.ResourceReturns(resource1, true, nil)
@@ -1046,7 +1090,10 @@ var _ = Describe("Resources API", func() {
 					})
 
 					It("returns Content-Type 'application/json'", func() {
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns the resource json describing the pinned version", func() {
@@ -1071,7 +1118,7 @@ var _ = Describe("Resources API", func() {
 						resource1.PipelineNameReturns("a-pipeline")
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
-						resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 						resource1.APIPinnedVersionReturns(atc.Version{"version": "v1"})
 						resource1.PinCommentReturns("a pin comment")
 						fakePipeline.ResourceReturns(resource1, true, nil)
@@ -1098,8 +1145,8 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authenticated but not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			Context("and the pipeline is private", func() {
@@ -1122,7 +1169,7 @@ var _ = Describe("Resources API", func() {
 					resource1.PipelineNameReturns("a-pipeline")
 					resource1.NameReturns("resource-1")
 					resource1.TypeReturns("type-1")
-					resource1.LastCheckedReturns(time.Unix(1513364881, 0))
+					resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
 
 					fakePipeline.ResourceReturns(resource1, true, nil)
 				})
@@ -1132,7 +1179,10 @@ var _ = Describe("Resources API", func() {
 				})
 
 				It("returns Content-Type 'application/json'", func() {
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 
 				It("returns the resource json without the check error", func() {
@@ -1175,7 +1225,7 @@ var _ = Describe("Resources API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns Unauthorized", func() {
@@ -1185,8 +1235,8 @@ var _ = Describe("Resources API", func() {
 
 		Context("when not authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(false)
 			})
 
 			It("returns Forbidden", func() {
@@ -1195,59 +1245,135 @@ var _ = Describe("Resources API", func() {
 		})
 
 		Context("when authenticated and authorized", func() {
-			var fakeScanner *radarfakes.FakeScanner
 
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
-
-				fakeScanner = new(radarfakes.FakeScanner)
-				fakeScannerFactory.NewResourceTypeScannerReturns(fakeScanner)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
-			It("returns 200", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusOK))
-			})
-
-			It("calls Scan", func() {
-				Expect(fakeScanner.ScanFromVersionCallCount()).To(Equal(1))
-			})
-
-			Context("when checking with a version specified", func() {
+			Context("when looking up the resource type fails", func() {
 				BeforeEach(func() {
-					checkRequestBody = atc.CheckRequestBody{
-						From: atc.Version{
-							"some-version-key": "some-version-value",
-						},
-					}
+					fakePipeline.ResourceTypeReturns(nil, false, errors.New("nope"))
 				})
-
-				It("tries to scan with the version specified", func() {
-					Expect(fakeScanner.ScanFromVersionCallCount()).To(Equal(1))
-					_, actualResourceName, actualFromVersion := fakeScanner.ScanFromVersionArgsForCall(0)
-					Expect(actualResourceName).To(Equal("resource-type-name"))
-					Expect(actualFromVersion).To(Equal(checkRequestBody.From))
+				It("returns 500", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 				})
 			})
 
-			Context("when resource type checking fails with ResourceNotFoundError", func() {
+			Context("when the resource type is not found", func() {
 				BeforeEach(func() {
-					fakeScanner.ScanFromVersionReturns(db.ResourceTypeNotFoundError{})
+					fakePipeline.ResourceTypeReturns(nil, false, nil)
 				})
-
 				It("returns 404", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 				})
 			})
 
-			Context("when resource type fails with unexpected error", func() {
+			Context("when it finds the resource type", func() {
+				var fakeResourceType *dbfakes.FakeResourceType
+
 				BeforeEach(func() {
-					err := errors.New("some-error")
-					fakeScanner.ScanFromVersionReturns(err)
+					fakeResourceType = new(dbfakes.FakeResourceType)
+					fakeResourceType.IDReturns(1)
+					fakePipeline.ResourceTypeReturns(fakeResourceType, true, nil)
 				})
 
-				It("returns 500", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+				Context("when looking up the resource types fails", func() {
+					BeforeEach(func() {
+						fakePipeline.ResourceTypesReturns(nil, errors.New("nope"))
+					})
+
+					It("returns 500", func() {
+						Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+					})
+				})
+
+				Context("when looking up the resource types succeeds", func() {
+					var fakeResourceTypes db.ResourceTypes
+
+					BeforeEach(func() {
+						fakeResourceTypes = db.ResourceTypes{}
+						fakePipeline.ResourceTypesReturns(fakeResourceTypes, nil)
+					})
+
+					It("checks with no version specified", func() {
+						Expect(dbCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+						_, actualResourceType, actualResourceTypes, actualFromVersion, manuallyTriggered := dbCheckFactory.TryCreateCheckArgsForCall(0)
+						Expect(actualResourceType).To(Equal(fakeResourceType))
+						Expect(actualResourceTypes).To(Equal(fakeResourceTypes))
+						Expect(actualFromVersion).To(BeNil())
+						Expect(manuallyTriggered).To(BeTrue())
+					})
+
+					Context("when checking with a version specified", func() {
+						BeforeEach(func() {
+							checkRequestBody = atc.CheckRequestBody{
+								From: atc.Version{
+									"some-version-key": "some-version-value",
+								},
+							}
+						})
+
+						It("checks with no version specified", func() {
+							Expect(dbCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+							_, actualResourceType, actualResourceTypes, actualFromVersion, manuallyTriggered := dbCheckFactory.TryCreateCheckArgsForCall(0)
+							Expect(actualResourceType).To(Equal(fakeResourceType))
+							Expect(actualResourceTypes).To(Equal(fakeResourceTypes))
+							Expect(actualFromVersion).To(Equal(checkRequestBody.From))
+							Expect(manuallyTriggered).To(BeTrue())
+						})
+					})
+
+					Context("when checking fails", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, errors.New("nope"))
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking does not create a new check", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, nil)
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking creates a new check", func() {
+						var fakeCheck *dbfakes.FakeCheck
+
+						BeforeEach(func() {
+							fakeCheck = new(dbfakes.FakeCheck)
+							fakeCheck.IDReturns(10)
+							fakeCheck.StatusReturns("started")
+							fakeCheck.CreateTimeReturns(time.Date(2000, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.StartTimeReturns(time.Date(2001, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.EndTimeReturns(time.Date(2002, 01, 01, 0, 0, 0, 0, time.UTC))
+
+							dbCheckFactory.TryCreateCheckReturns(fakeCheck, true, nil)
+						})
+
+						It("notify checker", func() {
+							Expect(dbCheckFactory.NotifyCheckerCallCount()).To(Equal(1))
+						})
+
+						It("returns 201", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusCreated))
+							Expect(ioutil.ReadAll(response.Body)).To(MatchJSON(`{
+                 "id": 10,
+								 "status": "started",
+								 "create_time": 946684800,
+								 "start_time": 978307200,
+								 "end_time": 1009843200
+							}`))
+						})
+					})
+
 				})
 			})
 		})
@@ -1255,25 +1381,17 @@ var _ = Describe("Resources API", func() {
 
 	Describe("POST /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/check/webhook", func() {
 		var (
-			fakeScanner               *radarfakes.FakeScanner
-			checkRequestBody          atc.CheckRequestBody
-			response                  *http.Response
-			fakeResource              *dbfakes.FakeResource
-			fakeResourceConfig        *dbfakes.FakeResourceConfig
-			fakeResourceConfigVersion *dbfakes.FakeResourceConfigVersion
-			fakeResourceConfigScope   *dbfakes.FakeResourceConfigScope
+			checkRequestBody atc.CheckRequestBody
+			response         *http.Response
+			fakeResource     *dbfakes.FakeResource
 		)
 
 		BeforeEach(func() {
-			fakeScanner = new(radarfakes.FakeScanner)
-			fakeScannerFactory.NewResourceScannerReturns(fakeScanner)
 			checkRequestBody = atc.CheckRequestBody{}
 
 			fakeResource = new(dbfakes.FakeResource)
 			fakeResource.NameReturns("resource-name")
-			fakeResourceConfig = new(dbfakes.FakeResourceConfig)
-			fakeResourceConfigVersion = new(dbfakes.FakeResourceConfigVersion)
-			fakeResourceConfigScope = new(dbfakes.FakeResourceConfigScope)
+			fakeResource.IDReturns(10)
 		})
 
 		JustBeforeEach(func() {
@@ -1290,7 +1408,7 @@ var _ = Describe("Resources API", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				variables = template.StaticVariables{
+				variables = vars.StaticVariables{
 					"webhook-token": "fake-token",
 				}
 				token, err := creds.NewString(variables, "((webhook-token))").Evaluate()
@@ -1317,101 +1435,81 @@ var _ = Describe("Resources API", func() {
 					fakePipeline.ResourceReturns(fakeResource, true, nil)
 				})
 
-				It("tries to find the resource config using the resource config id", func() {
-					Eventually(dbResourceConfigFactory.FindResourceConfigByIDCallCount).Should(Equal(1))
-					Expect(dbResourceConfigFactory.FindResourceConfigByIDArgsForCall(0)).To(Equal(1))
-				})
-
-				Context("when finding the resource config succeeds", func() {
+				Context("when finding the resource types fails", func() {
 					BeforeEach(func() {
-						dbResourceConfigFactory.FindResourceConfigByIDReturns(fakeResourceConfig, true, nil)
+						fakePipeline.ResourceTypesReturns(nil, errors.New("oops"))
 					})
 
-					It("tries to find the resource config scope using the resource config scope id", func() {
-						Eventually(fakeResourceConfig.FindResourceConfigScopeByIDCallCount).Should(Equal(1))
-						resourceConfigScopeID, resource := fakeResourceConfig.FindResourceConfigScopeByIDArgsForCall(0)
-						Expect(resourceConfigScopeID).To(Equal(2))
-						Expect(resource).To(Equal(fakeResource))
-					})
-
-					Context("when finding the resource config scope succeeds", func() {
-
-						BeforeEach(func() {
-							fakeResourceConfig.FindResourceConfigScopeByIDReturns(fakeResourceConfigScope, true, nil)
-						})
-
-						Context("when the latest version is found", func() {
-							BeforeEach(func() {
-								fakeResourceConfigVersion.IDReturns(4)
-								fakeResourceConfigVersion.VersionReturns(db.Version{"some": "version"})
-								fakeResourceConfigVersion.MetadataReturns([]db.ResourceConfigMetadataField{
-									{
-										Name:  "some",
-										Value: "metadata",
-									},
-								})
-
-								fakeResourceConfigScope.LatestVersionReturns(fakeResourceConfigVersion, true, nil)
-							})
-
-							It("tries to scan with the latest version", func() {
-								Eventually(fakeScanner.ScanFromVersionCallCount).Should(Equal(1))
-								_, actualResourceName, actualFromVersion := fakeScanner.ScanFromVersionArgsForCall(0)
-								Expect(actualResourceName).To(Equal("resource-name"))
-								Expect(actualFromVersion).To(Equal(atc.Version{"some": "version"}))
-							})
-
-							It("returns 200", func() {
-								Expect(response.StatusCode).To(Equal(http.StatusOK))
-							})
-						})
-
-						Context("when the latest version is not found", func() {
-							BeforeEach(func() {
-								fakeResourceConfigScope.LatestVersionReturns(nil, false, nil)
-							})
-
-							It("tries to scan with no version specified", func() {
-								Eventually(fakeScanner.ScanFromVersionCallCount).Should(Equal(1))
-								_, actualResourceName, actualFromVersion := fakeScanner.ScanFromVersionArgsForCall(0)
-								Expect(actualResourceName).To(Equal("resource-name"))
-								Expect(actualFromVersion).To(BeNil())
-							})
-
-							It("returns 200", func() {
-								Expect(response.StatusCode).To(Equal(http.StatusOK))
-							})
-						})
-
-						Context("when failing to get latest version for resource", func() {
-							BeforeEach(func() {
-								fakeResourceConfigScope.LatestVersionReturns(nil, false, errors.New("disaster"))
-							})
-
-							It("does not scan from version", func() {
-								Consistently(fakeScanner.ScanFromVersionCallCount).Should(Equal(0))
-							})
-						})
-					})
-
-					Context("when the resource config scope is not found", func() {
-						BeforeEach(func() {
-							fakeResourceConfig.FindResourceConfigScopeByIDReturns(nil, false, nil)
-						})
-
-						It("tries to scan", func() {
-							Eventually(fakeScanner.ScanFromVersionCallCount).Should(Equal(1))
-						})
+					It("returns 500", func() {
+						Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 					})
 				})
 
-				Context("when the resource config is not found", func() {
+				Context("when finding the resource types succeeds", func() {
+					var fakeResourceTypes db.ResourceTypes
+
 					BeforeEach(func() {
-						dbResourceConfigFactory.FindResourceConfigByIDReturns(nil, false, nil)
+						fakeResourceTypes = db.ResourceTypes{}
+						fakePipeline.ResourceTypesReturns(fakeResourceTypes, nil)
 					})
 
-					It("tries to scan", func() {
-						Eventually(fakeScanner.ScanFromVersionCallCount).Should(Equal(1))
+					It("checks with a nil version", func() {
+						Expect(dbCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+						_, actualResource, actualResourceTypes, actualFromVersion, manuallyTriggered := dbCheckFactory.TryCreateCheckArgsForCall(0)
+						Expect(actualResource).To(Equal(fakeResource))
+						Expect(actualResourceTypes).To(Equal(fakeResourceTypes))
+						Expect(actualFromVersion).To(BeNil())
+						Expect(manuallyTriggered).To(BeTrue())
+					})
+
+					Context("when checking fails", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, errors.New("nope"))
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking does not create a new check", func() {
+						BeforeEach(func() {
+							dbCheckFactory.TryCreateCheckReturns(nil, false, nil)
+						})
+
+						It("returns 500", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+						})
+					})
+
+					Context("when checking creates a new check", func() {
+						var fakeCheck *dbfakes.FakeCheck
+
+						BeforeEach(func() {
+							fakeCheck = new(dbfakes.FakeCheck)
+							fakeCheck.IDReturns(10)
+							fakeCheck.StatusReturns("started")
+							fakeCheck.CreateTimeReturns(time.Date(2000, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.StartTimeReturns(time.Date(2001, 01, 01, 0, 0, 0, 0, time.UTC))
+							fakeCheck.EndTimeReturns(time.Date(2002, 01, 01, 0, 0, 0, 0, time.UTC))
+
+							dbCheckFactory.TryCreateCheckReturns(fakeCheck, true, nil)
+						})
+
+						It("notify checker", func() {
+							Expect(dbCheckFactory.NotifyCheckerCallCount()).To(Equal(1))
+						})
+
+						It("returns 201", func() {
+							Expect(response.StatusCode).To(Equal(http.StatusCreated))
+							Expect(ioutil.ReadAll(response.Body)).To(MatchJSON(`{
+                 "id": 10,
+								 "status": "started",
+								 "create_time": 946684800,
+								 "start_time": 978307200,
+								 "end_time": 1009843200
+							}`))
+						})
 					})
 				})
 			})
@@ -1435,7 +1533,6 @@ var _ = Describe("Resources API", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 				})
 			})
-
 		})
 
 		Context("when unauthorized", func() {

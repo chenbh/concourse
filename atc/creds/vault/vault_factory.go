@@ -6,35 +6,38 @@ import (
 	"github.com/concourse/concourse/atc/creds"
 )
 
-// The vaultFactory will return a vault implementation of creds.Variables.
+// The vaultFactory will return a vault implementation of vars.Variables.
 type vaultFactory struct {
-	sr       SecretReader
-	prefix   string
-	loggedIn <-chan struct{}
+	sr              SecretReader
+	prefix          string
+	sharedPath      string
+	lookupTemplates []*creds.SecretTemplate
+	loggedIn        <-chan struct{}
 }
 
-func NewVaultFactory(sr SecretReader, loggedIn <-chan struct{}, prefix string) *vaultFactory {
+func NewVaultFactory(sr SecretReader, loggedIn <-chan struct{}, prefix string, lookupTemplates []*creds.SecretTemplate, sharedPath string) *vaultFactory {
 	factory := &vaultFactory{
-		sr:       sr,
-		prefix:   prefix,
-		loggedIn: loggedIn,
+		sr:               sr,
+		prefix:           prefix,
+		lookupTemplates: lookupTemplates,
+		sharedPath:       sharedPath,
+		loggedIn:         loggedIn,
 	}
 
 	return factory
 }
 
-// NewVariables will block until the loggedIn channel passed to the
-// constructor signals a successful login.
-func (factory *vaultFactory) NewVariables(teamName string, pipelineName string) creds.Variables {
+// NewSecrets will block until the loggedIn channel passed to the constructor signals a successful login.
+func (factory *vaultFactory) NewSecrets() creds.Secrets {
 	select {
 	case <-factory.loggedIn:
 	case <-time.After(5 * time.Second):
 	}
 
 	return &Vault{
-		SecretReader: factory.sr,
-		PathPrefix:   factory.prefix,
-		TeamName:     teamName,
-		PipelineName: pipelineName,
+		SecretReader:    factory.sr,
+		Prefix:          factory.prefix,
+		LookupTemplates: factory.lookupTemplates,
+		SharedPath:      factory.sharedPath,
 	}
 }

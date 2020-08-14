@@ -168,13 +168,13 @@ var _ = Describe("Worker Lifecycle", func() {
 					switch s {
 					case db.BuildStatusPending:
 					case db.BuildStatusStarted:
-						_, err = dbBuild.Start("exec.v2", "{}", atc.Plan{})
+						_, err = dbBuild.Start(atc.Plan{})
 						Expect(err).ToNot(HaveOccurred())
 					default:
 						err = dbBuild.Finish(s)
 						Expect(err).ToNot(HaveOccurred())
 					}
-					_, err = dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID(4), defaultTeam.ID()), db.ContainerMetadata{})
+					_, err = dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID("4"), defaultTeam.ID()), db.ContainerMetadata{})
 					Expect(err).ToNot(HaveOccurred())
 
 					_, found, err := workerFactory.GetWorker(atcWorker.Name)
@@ -200,14 +200,14 @@ var _ = Describe("Worker Lifecycle", func() {
 				switch s {
 				case db.BuildStatusPending:
 				case db.BuildStatusStarted:
-					_, err := dbBuild.Start("exec.v2", "{}", atc.Plan{})
+					_, err := dbBuild.Start(atc.Plan{})
 					Expect(err).ToNot(HaveOccurred())
 				default:
 					err := dbBuild.Finish(s)
 					Expect(err).ToNot(HaveOccurred())
 				}
 
-				_, err := dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID(4), defaultTeam.ID()), db.ContainerMetadata{})
+				_, err := dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID("4"), defaultTeam.ID()), db.ContainerMetadata{})
 				Expect(err).ToNot(HaveOccurred())
 
 				_, found, err := workerFactory.GetWorker(atcWorker.Name)
@@ -231,7 +231,7 @@ var _ = Describe("Worker Lifecycle", func() {
 								Interruptible: false,
 							},
 						},
-					}, db.ConfigVersion(0), db.PipelineUnpaused)
+					}, db.ConfigVersion(0), false)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(created).To(BeTrue())
 
@@ -263,7 +263,7 @@ var _ = Describe("Worker Lifecycle", func() {
 								Interruptible: true,
 							},
 						},
-					}, db.ConfigVersion(0), db.PipelineUnpaused)
+					}, db.ConfigVersion(0), false)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(created).To(BeTrue())
 
@@ -412,14 +412,14 @@ var _ = Describe("Worker Lifecycle", func() {
 					switch s {
 					case db.BuildStatusPending:
 					case db.BuildStatusStarted:
-						_, err := dbBuild.Start("exec.v2", "{}", atc.Plan{})
+						_, err := dbBuild.Start(atc.Plan{})
 						Expect(err).ToNot(HaveOccurred())
 					default:
 						err := dbBuild.Finish(s)
 						Expect(err).ToNot(HaveOccurred())
 					}
 
-					_, err = dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID(4), defaultTeam.ID()), db.ContainerMetadata{})
+					_, err = dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID("4"), defaultTeam.ID()), db.ContainerMetadata{})
 					Expect(err).ToNot(HaveOccurred())
 
 					_, found, err := workerFactory.GetWorker(atcWorker.Name)
@@ -446,14 +446,14 @@ var _ = Describe("Worker Lifecycle", func() {
 				switch s {
 				case db.BuildStatusPending:
 				case db.BuildStatusStarted:
-					_, err := dbBuild.Start("exec.v2", "{}", atc.Plan{})
+					_, err := dbBuild.Start(atc.Plan{})
 					Expect(err).ToNot(HaveOccurred())
 				default:
 					err := dbBuild.Finish(s)
 					Expect(err).ToNot(HaveOccurred())
 				}
 
-				_, err := dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID(4), defaultTeam.ID()), db.ContainerMetadata{})
+				_, err := dbWorker.CreateContainer(db.NewBuildStepContainerOwner(dbBuild.ID(), atc.PlanID("4"), defaultTeam.ID()), db.ContainerMetadata{})
 				Expect(err).ToNot(HaveOccurred())
 
 				_, found, err := workerFactory.GetWorker(atcWorker.Name)
@@ -478,7 +478,7 @@ var _ = Describe("Worker Lifecycle", func() {
 								Interruptible: false,
 							},
 						},
-					}, db.ConfigVersion(0), db.PipelineUnpaused)
+					}, db.ConfigVersion(0), false)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(created).To(BeTrue())
 
@@ -510,7 +510,7 @@ var _ = Describe("Worker Lifecycle", func() {
 								Interruptible: true,
 							},
 						},
-					}, db.ConfigVersion(0), db.PipelineUnpaused)
+					}, db.ConfigVersion(0), false)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(created).To(BeTrue())
 

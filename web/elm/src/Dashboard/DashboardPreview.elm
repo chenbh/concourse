@@ -1,139 +1,139 @@
-module Dashboard.DashboardPreview exposing (view)
+module Dashboard.DashboardPreview exposing (groupByRank, view)
 
 import Concourse
-import Concourse.BuildStatus
-import Debug
+import Concourse.PipelineStatus exposing (PipelineStatus(..), StatusDetails(..))
+import Dashboard.Styles as Styles
 import Dict exposing (Dict)
+import HoverState
 import Html exposing (Html)
-import Html.Attributes exposing (attribute, class, classList, href)
+import Html.Attributes exposing (attribute, class, href)
+import Html.Events exposing (onMouseEnter, onMouseLeave)
+import List.Extra
+import Message.Message exposing (DomID(..), Message(..))
 import Routes
 
 
-view : List Concourse.Job -> Html msg
-view jobs =
-    let
-        groups =
-            jobGroups jobs
-
-        width =
-            Dict.size groups
-
-        height =
-            Maybe.withDefault 0 <| List.maximum (List.map List.length (Dict.values groups))
-    in
+view : HoverState.HoverState -> List (List Concourse.Job) -> Html Message
+view hovered layers =
     Html.div
-        [ classList
-            [ ( "pipeline-grid", True )
-            , ( "pipeline-grid-wide", width > 12 )
-            , ( "pipeline-grid-tall", height > 12 )
-            , ( "pipeline-grid-super-wide", width > 24 )
-            , ( "pipeline-grid-super-tall", height > 24 )
-            ]
-        ]
-    <|
-        List.map
-            (\jobs ->
-                List.map viewJob jobs
-                    |> Html.div [ class "parallel-grid" ]
-            )
-            (Dict.values groups)
+        (class "pipeline-grid" :: Styles.pipelinePreviewGrid)
+        (List.map (viewJobLayer hovered) layers)
 
 
-viewJob : Concourse.Job -> Html msg
-viewJob job =
+viewJobLayer : HoverState.HoverState -> List Concourse.Job -> Html Message
+viewJobLayer hovered jobs =
+    Html.div [ class "parallel-grid" ] (List.map (viewJob hovered) jobs)
+
+
+viewJob : HoverState.HoverState -> Concourse.Job -> Html Message
+viewJob hovered job =
     let
-        jobStatus =
-            case job.finishedBuild of
-                Just fb ->
-                    Concourse.BuildStatus.show fb.status
-
-                Nothing ->
-                    "no-builds"
-
-        isJobRunning =
-            (/=) job.nextBuild Nothing
-
+        latestBuild : Maybe Concourse.Build
         latestBuild =
             if job.nextBuild == Nothing then
                 job.finishedBuild
 
             else
                 job.nextBuild
+
+        buildRoute : Routes.Route
+        buildRoute =
+            case latestBuild of
+                Nothing ->
+                    Routes.jobRoute job
+
+                Just build ->
+                    Routes.buildRoute build.id build.name build.job
+
+        jobId =
+            { jobName = job.name
+            , pipelineName = job.pipelineName
+            , teamName = job.teamName
+            }
     in
     Html.div
-        [ classList
-            [ ( "node " ++ jobStatus, True )
-            , ( "running", isJobRunning )
-            , ( "paused", job.paused )
-            ]
-        , attribute "data-tooltip" job.name
-        ]
-    <|
-        case latestBuild of
-            Nothing ->
-                [ Html.a [ href <| Routes.toString <| Routes.jobRoute job ] [ Html.text "" ] ]
-
-            Just build ->
-                [ Html.a [ href <| Routes.toString <| Routes.buildRoute build ] [ Html.text "" ] ]
-
-
-jobGroups : List Concourse.Job -> Dict Int (List Concourse.Job)
-jobGroups jobs =
-    let
-        jobLookup =
-            jobByName <| List.foldl (\job byName -> Dict.insert job.name job byName) Dict.empty jobs
-    in
-    Dict.foldl
-        (\jobName depth byDepth ->
-            Dict.update depth
-                (\jobsA ->
-                    Just (jobLookup jobName :: Maybe.withDefault [] jobsA)
-                )
-                byDepth
+        (attribute "data-tooltip" job.name
+            :: Styles.jobPreview job (HoverState.isHovered (JobPreview jobId) hovered)
+            ++ [ onMouseEnter <| Hover <| Just <| JobPreview jobId
+               , onMouseLeave <| Hover Nothing
+               ]
         )
-        Dict.empty
-        (jobDepths jobs Dict.empty)
+        [ Html.a
+            (href (Routes.toString buildRoute) :: Styles.jobPreviewLink)
+            [ Html.text "" ]
+        ]
 
 
-jobByName : Dict String Concourse.Job -> String -> Concourse.Job
-jobByName jobs job =
-    case Dict.get job jobs of
-        Just a ->
-            a
-
-        Nothing ->
-            Debug.crash "impossible"
+type alias Job a b =
+    { a
+        | name : String
+        , inputs : List { b | passed : List String }
+    }
 
 
-jobDepths : List Concourse.Job -> Dict String Int -> Dict String Int
-jobDepths jobs dict =
+groupByRank : List (Job a b) -> List (List (Job a b))
+groupByRank jobs =
+    let
+        depths =
+            jobDepths Dict.empty Dict.empty jobs
+    in
+    depths
+        |> Dict.values
+        |> List.sort
+        |> List.Extra.unique
+        |> List.map
+            (\d ->
+                jobs
+                    |> List.filter (\j -> Dict.get j.name depths == Just d)
+            )
+
+
+jobDepths :
+    Dict String { value : Int, uncertainty : Int }
+    -> Dict String Int
+    -> List (Job a b)
+    -> Dict String Int
+jobDepths calculations depths jobs =
     case jobs of
         [] ->
-            dict
+            depths
 
         job :: otherJobs ->
             let
-                passedJobs =
+                dependencies =
                     List.concatMap .passed job.inputs
+
+                values =
+                    List.filterMap
+                        (\jobName -> Dict.get jobName depths)
+                        dependencies
+
+                new =
+                    { value =
+                        values
+                            |> List.maximum
+                            |> Maybe.map ((+) 1)
+                            |> Maybe.withDefault 0
+                    , uncertainty = List.length otherJobs
+                    }
+
+                totalConfidence =
+                    List.length values
+                        == List.length dependencies
+
+                neverGonnaGetBetter =
+                    Dict.get job.name calculations
+                        |> Maybe.map (\oldCalc -> oldCalc.uncertainty <= new.uncertainty)
+                        |> Maybe.withDefault False
             in
-            case List.length passedJobs of
-                0 ->
-                    jobDepths otherJobs <| Dict.insert job.name 0 dict
+            if totalConfidence || neverGonnaGetBetter then
+                jobDepths
+                    (Dict.remove job.name calculations)
+                    (Dict.insert job.name new.value depths)
+                    otherJobs
 
-                _ ->
-                    let
-                        passedJobDepths =
-                            List.map (\passedJob -> Dict.get passedJob dict) passedJobs
-                    in
-                    if List.member Nothing passedJobDepths then
-                        jobDepths (List.append otherJobs [ job ]) dict
-
-                    else
-                        let
-                            depths =
-                                List.map (\depth -> Maybe.withDefault 0 depth) passedJobDepths
-
-                            maxPassedJobDepth =
-                                Maybe.withDefault 0 <| List.maximum depths
-                        in
-                        jobDepths otherJobs <| Dict.insert job.name (maxPassedJobDepth + 1) dict
+            else
+                jobDepths
+                    (Dict.insert job.name new calculations)
+                    depths
+                    (otherJobs ++ [ job ])

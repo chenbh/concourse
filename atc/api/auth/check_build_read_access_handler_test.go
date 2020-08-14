@@ -2,16 +2,16 @@ package auth_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/concourse/concourse/atc/auditor/auditorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -46,7 +46,7 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
+		fakeAccessor.CreateReturns(fakeaccess, nil)
 		server = httptest.NewServer(handler)
 
 		request, err := http.NewRequest("POST", server.URL+"?:build_id=55", nil)
@@ -103,8 +103,16 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 
 	Context("AnyJobHandler", func() {
 		BeforeEach(func() {
-			checkBuildReadAccessHandler := handlerFactory.AnyJobHandler(delegate, auth.UnauthorizedRejector{})
-			handler = accessor.NewHandler(checkBuildReadAccessHandler, fakeAccessor, "some-action")
+			innerHandler := handlerFactory.AnyJobHandler(delegate, auth.UnauthorizedRejector{})
+
+			handler = accessor.NewHandler(
+				logger,
+				"some-action",
+				innerHandler,
+				fakeAccessor,
+				new(auditorfakes.FakeAuditor),
+				map[string]string{},
+			)
 		})
 
 		Context("when authenticated and accessing same team's build", func() {
@@ -211,8 +219,16 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 
 		BeforeEach(func() {
 			fakeJob = new(dbfakes.FakeJob)
-			checkBuildReadAccessHandler := handlerFactory.CheckIfPrivateJobHandler(delegate, auth.UnauthorizedRejector{})
-			handler = accessor.NewHandler(checkBuildReadAccessHandler, fakeAccessor, "some-action")
+			innerHandler := handlerFactory.CheckIfPrivateJobHandler(delegate, auth.UnauthorizedRejector{})
+
+			handler = accessor.NewHandler(
+				logger,
+				"some-action",
+				innerHandler,
+				fakeAccessor,
+				new(auditorfakes.FakeAuditor),
+				map[string]string{},
+			)
 		})
 
 		ItChecksIfJobIsPrivate := func(status int) {
@@ -225,10 +241,7 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 				Context("and job is public", func() {
 					BeforeEach(func() {
 						fakeJob.NameReturns("some-job")
-						fakeJob.ConfigReturns(atc.JobConfig{
-							Name:   "some-job",
-							Public: true,
-						})
+						fakeJob.PublicReturns(true)
 
 						pipeline.JobReturns(fakeJob, true, nil)
 					})
@@ -239,15 +252,12 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 				Context("and job is private", func() {
 					BeforeEach(func() {
 						fakeJob.NameReturns("some-job")
-						fakeJob.ConfigReturns(atc.JobConfig{
-							Name:   "some-job",
-							Public: false,
-						})
+						fakeJob.PublicReturns(false)
 
 						pipeline.JobReturns(fakeJob, true, nil)
 					})
 
-					It("returns "+string(status), func() {
+					It("returns "+fmt.Sprint(status), func() {
 						Expect(response.StatusCode).To(Equal(status))
 					})
 				})
@@ -279,7 +289,7 @@ var _ = Describe("CheckBuildReadAccessHandler", func() {
 					build.PipelineReturns(pipeline, true, nil)
 				})
 
-				It("returns "+string(status), func() {
+				It("returns "+fmt.Sprint(status), func() {
 					Expect(response.StatusCode).To(Equal(status))
 				})
 			})

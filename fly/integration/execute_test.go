@@ -12,21 +12,20 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/event"
+	"github.com/concourse/concourse/atc/testhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
-
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/event"
 )
 
 var _ = Describe("Fly CLI", func() {
@@ -39,6 +38,11 @@ var _ = Describe("Fly CLI", func() {
 	var uploadingBits <-chan struct{}
 
 	var expectedPlan atc.Plan
+	var taskPlan atc.Plan
+	var workerArtifact = atc.WorkerArtifact{
+		ID:   125,
+		Name: "some-dir",
+	}
 
 	BeforeEach(func() {
 		var err error
@@ -69,6 +73,7 @@ params:
   FOO: bar
   BAZ: buzz
   X: 1
+  EMPTY:
 
 run:
   path: find
@@ -83,36 +88,40 @@ run:
 
 		planFactory := atc.NewPlanFactory(0)
 
-		expectedPlan = planFactory.NewPlan(atc.DoPlan{
-			planFactory.NewPlan(atc.AggregatePlan{
-				planFactory.NewPlan(atc.UserArtifactPlan{
-					Name: filepath.Base(buildDir),
-				}),
-			}),
-			planFactory.NewPlan(atc.TaskPlan{
-				Name: "one-off",
-				Config: &atc.TaskConfig{
-					Platform: "some-platform",
-					ImageResource: &atc.ImageResource{
-						Type: "registry-image",
-						Source: atc.Source{
-							"repository": "ubuntu",
-						},
-					},
-					Inputs: []atc.TaskInputConfig{
-						{Name: "fixture"},
-					},
-					Params: map[string]string{
-						"FOO": "bar",
-						"BAZ": "buzz",
-						"X":   "1",
-					},
-					Run: atc.TaskRunConfig{
-						Path: "find",
-						Args: []string{"."},
+		taskPlan = planFactory.NewPlan(atc.TaskPlan{
+			Name: "one-off",
+			Config: &atc.TaskConfig{
+				Platform: "some-platform",
+				ImageResource: &atc.ImageResource{
+					Type: "registry-image",
+					Source: atc.Source{
+						"repository": "ubuntu",
 					},
 				},
+				Inputs: []atc.TaskInputConfig{
+					{Name: "fixture"},
+				},
+				Params: map[string]string{
+					"FOO":   "bar",
+					"BAZ":   "buzz",
+					"X":     "1",
+					"EMPTY": "",
+				},
+				Run: atc.TaskRunConfig{
+					Path: "find",
+					Args: []string{"."},
+				},
+			},
+		})
+
+		expectedPlan = planFactory.NewPlan(atc.DoPlan{
+			planFactory.NewPlan(atc.AggregatePlan{
+				planFactory.NewPlan(atc.ArtifactInputPlan{
+					ArtifactID: 125,
+					Name:       filepath.Base(buildDir),
+				}),
 			}),
+			taskPlan,
 		})
 	})
 
@@ -124,6 +133,29 @@ run:
 		uploading := make(chan struct{})
 		uploadingBits = uploading
 
+		atcServer.RouteToHandler("POST", "/api/v1/teams/main/artifacts",
+			ghttp.CombineHandlers(
+				func(w http.ResponseWriter, req *http.Request) {
+					close(uploading)
+
+					gr, err := gzip.NewReader(req.Body)
+					Expect(err).NotTo(HaveOccurred())
+
+					tr := tar.NewReader(gr)
+
+					hdr, err := tr.Next()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(hdr.Name).To(Equal("./"))
+
+					hdr, err = tr.Next()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(hdr.Name).To(MatchRegexp("(./)?task.yml$"))
+				},
+				ghttp.RespondWith(201, `{"id":125}`),
+			),
+		)
 		atcServer.RouteToHandler("POST", "/api/v1/teams/main/builds",
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("POST", "/api/v1/teams/main/builds"),
@@ -182,29 +214,10 @@ run:
 				},
 			),
 		)
-		atcServer.RouteToHandler("PUT", regexp.MustCompile(`/api/v1/builds/128/plan/.*/input`),
-			ghttp.CombineHandlers(
-				func(w http.ResponseWriter, req *http.Request) {
-					close(uploading)
-
-					gr, err := gzip.NewReader(req.Body)
-					Expect(err).NotTo(HaveOccurred())
-
-					tr := tar.NewReader(gr)
-
-					hdr, err := tr.Next()
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(hdr.Name).To(Equal("./"))
-
-					hdr, err = tr.Next()
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(hdr.Name).To(MatchRegexp("(./)?task.yml$"))
-				},
-				ghttp.RespondWith(200, ""),
-			),
+		atcServer.RouteToHandler("GET", "/api/v1/builds/128/artifacts",
+			ghttp.RespondWithJSONEncoded(200, []atc.WorkerArtifact{workerArtifact}),
 		)
+
 	})
 
 	It("creates a build, streams output, uploads the bits, and polls until completion", func() {
@@ -230,6 +243,94 @@ run:
 		Expect(sess.ExitCode()).To(Equal(0))
 
 		Expect(uploadingBits).To(BeClosed())
+	})
+
+	Context("when there is a pipeline job with the same input", func() {
+		BeforeEach(func() {
+			taskPlan.Task.VersionedResourceTypes = atc.VersionedResourceTypes{
+				atc.VersionedResourceType{
+					ResourceType: atc.ResourceType{
+						Name:   "resource-type",
+						Type:   "s3",
+						Source: atc.Source{},
+					},
+				},
+			}
+
+			planFactory := atc.NewPlanFactory(0)
+
+			expectedPlan = planFactory.NewPlan(atc.DoPlan{
+				planFactory.NewPlan(atc.AggregatePlan{
+					planFactory.NewPlan(atc.GetPlan{
+						Name: "fixture",
+						VersionedResourceTypes: atc.VersionedResourceTypes{
+							atc.VersionedResourceType{
+								ResourceType: atc.ResourceType{
+									Name:   "resource-type",
+									Type:   "s3",
+									Source: atc.Source{},
+								},
+							},
+						},
+					}),
+				}),
+				taskPlan,
+			})
+
+			atcServer.RouteToHandler("POST", "/api/v1/teams/main/pipelines/some-pipeline/builds",
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/api/v1/teams/main/pipelines/some-pipeline/builds"),
+					testhelpers.VerifyPlan(expectedPlan),
+					func(w http.ResponseWriter, r *http.Request) {
+						http.SetCookie(w, &http.Cookie{
+							Name:    "Some-Cookie",
+							Value:   "some-cookie-data",
+							Path:    "/",
+							Expires: time.Now().Add(1 * time.Minute),
+						})
+					},
+					ghttp.RespondWith(201, `{"id":128}`),
+				),
+			)
+			atcServer.RouteToHandler("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/inputs",
+				ghttp.RespondWithJSONEncoded(200, []atc.BuildInput{atc.BuildInput{Name: "fixture"}}),
+			)
+			atcServer.RouteToHandler("GET", "/api/v1/teams/main/pipelines/some-pipeline/resource-types",
+				ghttp.RespondWithJSONEncoded(200, atc.VersionedResourceTypes{
+					atc.VersionedResourceType{
+						ResourceType: atc.ResourceType{
+							Name:   "resource-type",
+							Type:   "s3",
+							Source: atc.Source{},
+						},
+					},
+				}),
+			)
+		})
+
+		It("creates a build, streams output, and polls until completion", func() {
+			flyCmd := exec.Command(flyPath, "-t", targetName, "e", "-c", taskConfigPath, "-j", "some-pipeline/some-job")
+			flyCmd.Dir = buildDir
+
+			sess, err := gexec.Start(flyCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(streaming).Should(BeClosed())
+
+			buildURL, _ := url.Parse(atcServer.URL())
+			buildURL.Path = path.Join(buildURL.Path, "builds/128")
+			Eventually(sess.Out).Should(gbytes.Say("executing build 128 at %s", buildURL.String()))
+
+			events <- event.Log{Payload: "sup"}
+
+			Eventually(sess.Out).Should(gbytes.Say("sup"))
+
+			close(events)
+
+			<-sess.Exited
+			Expect(sess.ExitCode()).To(Equal(0))
+		})
+
 	})
 
 	Context("when the build config is invalid", func() {
@@ -314,7 +415,7 @@ run: {}
 				It("by default apply .gitignore", func() {
 					uploading := make(chan struct{})
 					uploadingBits = uploading
-					atcServer.RouteToHandler("PUT", regexp.MustCompile(`/api/v1/builds/128/plan/.*/input`),
+					atcServer.RouteToHandler("POST", "/api/v1/teams/main/artifacts",
 						ghttp.CombineHandlers(
 							func(w http.ResponseWriter, req *http.Request) {
 								close(uploading)
@@ -338,7 +439,7 @@ run: {}
 
 								Expect(matchFound).To(Equal(false))
 							},
-							ghttp.RespondWith(200, ""),
+							ghttp.RespondWith(201, `{"id":125}`),
 						),
 					)
 
@@ -364,10 +465,12 @@ run: {}
 				It("uploading with everything", func() {
 					uploading := make(chan struct{})
 					uploadingBits = uploading
-					atcServer.RouteToHandler("PUT", regexp.MustCompile(`/api/v1/builds/128/plan/.*/input`),
+					atcServer.RouteToHandler("POST", "/api/v1/teams/main/artifacts",
 						ghttp.CombineHandlers(
 							func(w http.ResponseWriter, req *http.Request) {
 								close(uploading)
+
+								Expect(req.FormValue("platform")).To(Equal("some-platform"))
 
 								gr, err := gzip.NewReader(req.Body)
 								Expect(err).NotTo(HaveOccurred())
@@ -388,7 +491,7 @@ run: {}
 
 								Expect(matchFound).To(Equal(true))
 							},
-							ghttp.RespondWith(200, ""),
+							ghttp.RespondWith(201, `{"id":125}`),
 						),
 					)
 					flyCmd := exec.Command(flyPath, "-t", targetName, "e", "-c", taskConfigPath, "--include-ignored")
@@ -537,6 +640,7 @@ params:
   FOO: bar
   BAZ: buzz
   X: 1
+  EMPTY:
 
 run:
   path: find
@@ -626,6 +730,7 @@ params:
   FOO: bar
   BAZ: buzz
   X: 1
+  EMPTY:
 
 run:
   path: find
@@ -727,9 +832,10 @@ run:
 	Context("when parameters are specified in the environment", func() {
 		BeforeEach(func() {
 			(*expectedPlan.Do)[1].Task.Config.Params = map[string]string{
-				"FOO": "newbar",
-				"BAZ": "buzz",
-				"X":   "",
+				"FOO":   "newbar",
+				"BAZ":   "buzz",
+				"X":     "",
+				"EMPTY": "",
 			}
 		})
 

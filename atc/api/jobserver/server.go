@@ -5,38 +5,31 @@ import (
 	"github.com/concourse/concourse/atc/api/auth"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/scheduler"
 )
-
-//go:generate counterfeiter . SchedulerFactory
-
-type SchedulerFactory interface {
-	BuildScheduler(db.Pipeline, string, creds.Variables) scheduler.BuildScheduler
-}
 
 type Server struct {
 	logger lager.Logger
 
-	schedulerFactory SchedulerFactory
-	externalURL      string
-	rejector         auth.Rejector
-	variablesFactory creds.VariablesFactory
-	jobFactory       db.JobFactory
+	externalURL   string
+	rejector      auth.Rejector
+	secretManager creds.Secrets
+	jobFactory    db.JobFactory
+	checkFactory  db.CheckFactory
 }
 
 func NewServer(
 	logger lager.Logger,
-	schedulerFactory SchedulerFactory,
 	externalURL string,
-	variablesFactory creds.VariablesFactory,
+	secretManager creds.Secrets,
 	jobFactory db.JobFactory,
+	checkFactory db.CheckFactory,
 ) *Server {
 	return &Server{
-		logger:           logger,
-		schedulerFactory: schedulerFactory,
-		externalURL:      externalURL,
-		rejector:         auth.UnauthorizedRejector{},
-		variablesFactory: variablesFactory,
-		jobFactory:       jobFactory,
+		logger:        logger,
+		externalURL:   externalURL,
+		rejector:      auth.UnauthorizedRejector{},
+		secretManager: secretManager,
+		jobFactory:    jobFactory,
+		checkFactory:  checkFactory,
 	}
 }

@@ -1,58 +1,22 @@
 package configserver
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/concourse/concourse/atc/exec"
-	"io"
 	"io/ioutil"
-	"mime"
-	"mime/multipart"
 	"net/http"
-	"strings"
-
-	boshtemplate "github.com/cloudfoundry/bosh-cli/director/template"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/configvalidate"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/exec"
+	"github.com/concourse/concourse/vars"
 	"github.com/hashicorp/go-multierror"
-	"github.com/mitchellh/mapstructure"
 	"github.com/tedsuo/rata"
-	"gopkg.in/yaml.v2"
 )
-
-var (
-	ErrStatusUnsupportedMediaType = errors.New("content-type is not supported")
-	ErrCannotParseContentType     = errors.New("content-type header could not be parsed")
-	ErrMalformedRequestPayload    = errors.New("data in body could not be decoded")
-	ErrFailedToConstructDecoder   = errors.New("decoder could not be constructed")
-	ErrCouldNotDecode             = errors.New("data could not be decoded into config structure")
-	ErrInvalidPausedValue         = errors.New("invalid paused value")
-)
-
-type ExtraKeysError struct {
-	extraKeys []string
-}
-
-func (eke ExtraKeysError) Error() string {
-	msg := &bytes.Buffer{}
-
-	fmt.Fprintln(msg, "unknown/extra keys:")
-	for _, unusedKey := range eke.extraKeys {
-		fmt.Fprintf(msg, "  - %s\n", unusedKey)
-	}
-
-	return msg.String()
-}
-
-type SaveConfigResponse struct {
-	Errors   []string      `json:"errors,omitempty"`
-	Warnings []atc.Warning `json:"warnings,omitempty"`
-}
 
 func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	session := s.logger.Session("set-config")
@@ -69,64 +33,59 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Sscanf(configVersionStr, "%d", &version)
 		if err != nil {
 			session.Error("malformed-config-version", err)
-			s.handleBadRequest(w, []string{fmt.Sprintf("config version is malformed: %s", err)}, session)
+			s.handleBadRequest(w, fmt.Sprintf("config version is malformed: %s", err))
 			return
 		}
 	}
 
-	config, pausedState, err := saveConfigRequestUnmarshaler(r)
-	switch err {
-	case ErrStatusUnsupportedMediaType:
+	var config atc.Config
+	switch r.Header.Get("Content-type") {
+	case "application/json", "application/x-yaml":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			s.handleBadRequest(w, fmt.Sprintf("read failed: %s", err))
+			return
+		}
+
+		err = atc.UnmarshalConfig(body, &config)
+		if err != nil {
+			session.Error("malformed-request-payload", err, lager.Data{
+				"content-type": r.Header.Get("Content-Type"),
+			})
+
+			s.handleBadRequest(w, fmt.Sprintf("malformed config: %s", err))
+			return
+		}
+	default:
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
-	case ErrMalformedRequestPayload:
-		session.Error("malformed-request-payload", err, lager.Data{
-			"content-type": r.Header.Get("Content-Type"),
-		})
-
-		s.handleBadRequest(w, []string{"malformed config"}, session)
-		return
-	case ErrFailedToConstructDecoder:
-		session.Error("failed-to-construct-decoder", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	case ErrCouldNotDecode:
-		session.Error("could-not-decode", err)
-		s.handleBadRequest(w, []string{"failed to decode config"}, session)
-		return
-	case ErrInvalidPausedValue:
-		session.Error("invalid-paused-value", err)
-		s.handleBadRequest(w, []string{"invalid paused value"}, session)
-		return
-	default:
-		if err != nil {
-			if eke, ok := err.(ExtraKeysError); ok {
-				s.handleBadRequest(w, []string{eke.Error()}, session)
-			} else {
-				session.Error("unexpected-error", err)
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
 	}
 
-	warnings, errorMessages := config.Validate()
+	warnings, errorMessages := configvalidate.Validate(config)
 	if len(errorMessages) > 0 {
-		session.Error("ignoring-invalid-config", err)
-		s.handleBadRequest(w, errorMessages, session)
+		session.Info("ignoring-invalid-config", lager.Data{"errors": errorMessages})
+		s.handleBadRequest(w, errorMessages...)
 		return
 	}
 
 	pipelineName := rata.Param(r, "pipeline_name")
+	warning := atc.ValidateIdentifier(pipelineName, "pipeline")
+	if warning != nil {
+		warnings = append(warnings, *warning)
+	}
+
 	teamName := rata.Param(r, "team_name")
+	warning = atc.ValidateIdentifier(teamName, "team")
+	if warning != nil {
+		warnings = append(warnings, *warning)
+	}
 
 	if checkCredentials {
-		variables := s.variablesFactory.NewVariables(teamName, pipelineName)
+		variables := creds.NewVariables(s.secretManager, teamName, pipelineName, false)
 
 		errs := validateCredParams(variables, config, session)
 		if errs != nil {
-			s.handleBadRequest(w, []string{errs.Error()}, session)
+			s.handleBadRequest(w, fmt.Sprintf("credential validation failed\n\n%s", errs))
 			return
 		}
 	}
@@ -146,12 +105,18 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, created, err := team.SavePipeline(pipelineName, config, version, pausedState)
+	_, created, err := team.SavePipeline(pipelineName, config, version, true)
 	if err != nil {
 		session.Error("failed-to-save-config", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "failed to save config: %s", err)
 		return
+	}
+
+	if !created {
+		if err = s.teamFactory.NotifyResourceScanner(); err != nil {
+			session.Error("failed-to-notify-resource-scanner", err)
+		}
 	}
 
 	session.Info("saved")
@@ -164,11 +129,11 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	s.writeSaveConfigResponse(w, SaveConfigResponse{Warnings: warnings}, session)
+	s.writeSaveConfigResponse(w, atc.SaveConfigResponse{Warnings: warnings})
 }
 
 // Simply validate that the credentials exist; don't do anything with the actual secrets
-func validateCredParams(credMgrVars creds.Variables, config atc.Config, session lager.Logger) error {
+func validateCredParams(credMgrVars vars.Variables, config atc.Config, session lager.Logger) error {
 	var errs error
 
 	for _, resourceType := range config.ResourceTypes {
@@ -191,40 +156,47 @@ func validateCredParams(credMgrVars creds.Variables, config atc.Config, session 
 	}
 
 	for _, job := range config.Jobs {
-		for _, plan := range job.Plan {
-			_, err := creds.NewParams(credMgrVars, plan.Params).Evaluate()
-			if err != nil {
-				errs = multierror.Append(errs, err)
-			}
-
-			if plan.TaskConfigPath != "" {
-				// external task - we can't really validate much right now, because task yaml will be
-				// retrieved in runtime during job execution. but we can validate vars and params which will be
-				// passed to this task
-				err = creds.NewTaskParamsValidator(credMgrVars, plan.TaskConfig.Params).Validate()
+		_ = job.StepConfig().Visit(atc.StepRecursor{
+			OnTask: func(step *atc.TaskStep) error {
+				_, err := creds.NewParams(credMgrVars, step.Params).Evaluate()
 				if err != nil {
 					errs = multierror.Append(errs, err)
 				}
 
-				err = creds.NewTaskVarsValidator(credMgrVars, plan.TaskVars).Validate()
-				if err != nil {
-					errs = multierror.Append(errs, err)
+				if step.ConfigPath != "" {
+					// external task - we can't really validate much right now, because task yaml will be
+					// retrieved in runtime during job execution. but we can validate vars and params which will be
+					// passed to this task
+					err = creds.NewTaskParamsValidator(credMgrVars, step.Params).Validate()
+					if err != nil {
+						errs = multierror.Append(errs, err)
+					}
+
+					err = creds.NewTaskVarsValidator(credMgrVars, step.Vars).Validate()
+					if err != nil {
+						errs = multierror.Append(errs, err)
+					}
+
+				} else if step.Config != nil {
+					// embedded task - we can fully validate it, interpolating with cred mgr variables
+					var taskConfigSource exec.TaskConfigSource
+					embeddedTaskVars := []vars.Variables{credMgrVars}
+					taskConfigSource = exec.StaticConfigSource{Config: step.Config}
+					taskConfigSource = exec.InterpolateTemplateConfigSource{
+						ConfigSource:  taskConfigSource,
+						Vars:          embeddedTaskVars,
+						ExpectAllKeys: true,
+					}
+					taskConfigSource = exec.ValidatingConfigSource{ConfigSource: taskConfigSource}
+					_, err = taskConfigSource.FetchConfig(context.TODO(), session, nil)
+					if err != nil {
+						errs = multierror.Append(errs, err)
+					}
 				}
 
-			} else if plan.TaskConfig != nil {
-				// embedded task - we can fully validate it, interpolating with cred mgr variables
-				var taskConfigSource exec.TaskConfigSource
-				embeddedTaskVars := []boshtemplate.Variables{credMgrVars}
-				taskConfigSource = exec.StaticConfigSource{Config: plan.TaskConfig}
-				taskConfigSource = exec.InterpolateTemplateConfigSource{ConfigSource: taskConfigSource, Vars: embeddedTaskVars}
-				taskConfigSource = exec.ValidatingConfigSource{ConfigSource: taskConfigSource}
-				_, err = taskConfigSource.FetchConfig(session, nil)
-				if err != nil {
-					errs = multierror.Append(errs, err)
-				}
-			}
-
-		}
+				return nil
+			},
+		})
 	}
 
 	if errs != nil {
@@ -234,18 +206,17 @@ func validateCredParams(credMgrVars creds.Variables, config atc.Config, session 
 	return errs
 }
 
-func (s *Server) handleBadRequest(w http.ResponseWriter, errorMessages []string, session lager.Logger) {
+func (s *Server) handleBadRequest(w http.ResponseWriter, errorMessages ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	s.writeSaveConfigResponse(w, SaveConfigResponse{
+	s.writeSaveConfigResponse(w, atc.SaveConfigResponse{
 		Errors: errorMessages,
-	}, session)
+	})
 }
 
-func (s *Server) writeSaveConfigResponse(w http.ResponseWriter, saveConfigResponse SaveConfigResponse, session lager.Logger) {
+func (s *Server) writeSaveConfigResponse(w http.ResponseWriter, saveConfigResponse atc.SaveConfigResponse) {
 	responseJSON, err := json.Marshal(saveConfigResponse)
 	if err != nil {
-		session.Error("failed-to-marshal-validation-response", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "failed to generate error response: %s", err)
 		return
@@ -253,119 +224,7 @@ func (s *Server) writeSaveConfigResponse(w http.ResponseWriter, saveConfigRespon
 
 	_, err = w.Write(responseJSON)
 	if err != nil {
-		session.Error("failed-to-write-validation-response", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-}
-
-func requestToConfig(contentType string, requestBody io.ReadCloser, configStructure interface{}) (db.PipelinePausedState, error) {
-	pausedState := db.PipelineNoChange
-
-	mediaType, params, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		return db.PipelineNoChange, ErrCannotParseContentType
-	}
-
-	switch mediaType {
-	case "application/json":
-		err := json.NewDecoder(requestBody).Decode(configStructure)
-		if err != nil {
-			return db.PipelineNoChange, ErrMalformedRequestPayload
-		}
-
-	case "application/x-yaml":
-		body, err := ioutil.ReadAll(requestBody)
-		if err == nil {
-			err = yaml.Unmarshal(body, configStructure)
-		}
-
-		if err != nil {
-			return db.PipelineNoChange, ErrMalformedRequestPayload
-		}
-
-	case "multipart/form-data":
-		multipartReader := multipart.NewReader(requestBody, params["boundary"])
-
-		for {
-			part, err := multipartReader.NextPart()
-
-			if err == io.EOF {
-				break
-			}
-
-			if err != nil {
-				return db.PipelineNoChange, err
-			}
-
-			if part.FormName() == "paused" {
-				pausedValue, err := ioutil.ReadAll(part)
-				if err != nil {
-					return db.PipelineNoChange, err
-				}
-
-				if string(pausedValue) == "true" {
-					pausedState = db.PipelinePaused
-				} else if string(pausedValue) == "false" {
-					pausedState = db.PipelineUnpaused
-				} else {
-					return db.PipelineNoChange, ErrInvalidPausedValue
-				}
-			} else {
-				partContentType := part.Header.Get("Content-type")
-				_, err := requestToConfig(partContentType, part, configStructure)
-				if err != nil {
-					return db.PipelineNoChange, ErrMalformedRequestPayload
-				}
-			}
-		}
-	default:
-		return db.PipelineNoChange, ErrStatusUnsupportedMediaType
-	}
-
-	return pausedState, nil
-}
-
-func saveConfigRequestUnmarshaler(r *http.Request) (atc.Config, db.PipelinePausedState, error) {
-	var configStructure interface{}
-	pausedState, err := requestToConfig(r.Header.Get("Content-Type"), r.Body, &configStructure)
-	if err != nil {
-		return atc.Config{}, db.PipelineNoChange, err
-	}
-
-	var config atc.Config
-	var md mapstructure.Metadata
-	msConfig := &mapstructure.DecoderConfig{
-		Metadata:         &md,
-		Result:           &config,
-		WeaklyTypedInput: true,
-		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			atc.SanitizeDecodeHook,
-			atc.VersionConfigDecodeHook,
-			atc.InputsConfigDecodeHook,
-			atc.ContainerLimitsDecodeHook,
-		),
-	}
-
-	decoder, err := mapstructure.NewDecoder(msConfig)
-	if err != nil {
-		return atc.Config{}, db.PipelineNoChange, ErrFailedToConstructDecoder
-	}
-
-	if err := decoder.Decode(configStructure); err != nil {
-		return atc.Config{}, db.PipelineNoChange, ErrCouldNotDecode
-	}
-
-	nestedUnused := []string{}
-	for _, unused := range md.Unused {
-		if strings.Contains(unused, ".") {
-			nestedUnused = append(nestedUnused, unused)
-		}
-	}
-
-	if len(nestedUnused) != 0 {
-		return atc.Config{}, db.PipelineNoChange, ExtraKeysError{extraKeys: nestedUnused}
-	}
-
-	return config, pausedState, nil
 }

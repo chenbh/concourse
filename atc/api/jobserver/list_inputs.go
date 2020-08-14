@@ -12,9 +12,8 @@ import (
 func (s *Server) ListJobInputs(pipeline db.Pipeline) http.Handler {
 	logger := s.logger.Session("list-job-inputs")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		jobName := r.FormValue(":job_name")
-
-		variables := s.variablesFactory.NewVariables(pipeline.TeamName(), pipeline.Name())
 
 		job, found, err := pipeline.Job(jobName)
 		if err != nil {
@@ -28,8 +27,6 @@ func (s *Server) ListJobInputs(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		scheduler := s.schedulerFactory.BuildScheduler(pipeline, s.externalURL, variables)
-
 		resources, err := pipeline.Resources()
 		if err != nil {
 			logger.Error("failed-to-get-resources", err)
@@ -37,13 +34,7 @@ func (s *Server) ListJobInputs(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		err = scheduler.SaveNextInputMapping(logger, job, resources)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		buildInputs, found, err := job.GetNextBuildInputs()
+		buildInputs, found, err := job.GetFullNextBuildInputs()
 		if err != nil {
 			logger.Error("failed-to-get-next-build-inputs", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -55,23 +46,37 @@ func (s *Server) ListJobInputs(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		jobInputs := job.Config().Inputs()
-		presentedBuildInputs := make([]atc.BuildInput, len(buildInputs))
+		jobConfig, err := job.Config()
+		if err != nil {
+			logger.Error("failed-to-get-job-config", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		jobInputs := jobConfig.Inputs()
+
+		inputs := make([]atc.BuildInput, len(buildInputs))
+
 		for i, input := range buildInputs {
-			var config atc.JobInput
+			var config atc.JobInputParams
 			for _, jobInput := range jobInputs {
 				if jobInput.Name == input.Name {
 					config = jobInput
 					break
 				}
 			}
-			resource, _ := resources.Lookup(config.Resource)
 
-			presentedBuildInputs[i] = present.BuildInput(input, config, resource)
+			resource, found := resources.Lookup(config.Resource)
+			if !found {
+				logger.Debug("resource-is-not-found")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			inputs[i] = present.BuildInput(input, config, resource)
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(presentedBuildInputs)
+		err = json.NewEncoder(w).Encode(inputs)
 		if err != nil {
 			logger.Error("failed-to-encode-build-inputs", err)
 			w.WriteHeader(http.StatusInternalServerError)

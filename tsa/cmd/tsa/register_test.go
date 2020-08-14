@@ -53,7 +53,6 @@ var _ = Describe("Register", func() {
 
 		atcServer.RouteToHandler("POST", "/api/v1/workers", func(w http.ResponseWriter, r *http.Request) {
 			var worker atc.Worker
-			Expect(accessFactory.Create(r, "some-action").IsAuthenticated()).To(BeTrue())
 
 			err := json.NewDecoder(r.Body).Decode(&worker)
 			Expect(err).NotTo(HaveOccurred())
@@ -66,7 +65,6 @@ var _ = Describe("Register", func() {
 
 		atcServer.RouteToHandler("PUT", "/api/v1/workers/some-worker/heartbeat", func(w http.ResponseWriter, r *http.Request) {
 			var worker atc.Worker
-			Expect(accessFactory.Create(r, "some-action").IsAuthenticated()).To(BeTrue())
 
 			err := json.NewDecoder(r.Body).Decode(&worker)
 			Expect(err).NotTo(HaveOccurred())
@@ -435,12 +433,13 @@ var _ = Describe("Register", func() {
 				Expect(res.StatusCode).To(Equal(http.StatusTeapot))
 
 				By("exiting successfully")
-				Eventually(registerErr).Should(Receive(BeNil()))
+				// https://golang.org/src/net/http/transport.go -> IdleConnTimeout is 90s in the DefaultTransport used by gclient.BasicGardenClientWithRequestTimeout
+				Eventually(registerErr, time.Second*100).Should(Receive(BeNil()))
 			})
 
 			Context("with a drain timeout", func() {
 				BeforeEach(func() {
-					opts.DrainTimeout = 5 * time.Second
+					opts.ConnectionDrainTimeout = 5 * time.Second
 				})
 
 				It("breaks connections after the configured drain timeout", func() {
@@ -468,8 +467,8 @@ var _ = Describe("Register", func() {
 
 					By("waiting for connections to be idle before exiting")
 					before := time.Now()
-					Expect(<-registerErr).To(Equal(tsa.ErrDrainTimeout))
-					Expect(time.Now().Sub(before)).To(BeNumerically("~", opts.DrainTimeout, time.Second))
+					Expect(<-registerErr).To(Equal(tsa.ErrConnectionDrainTimeout))
+					Expect(time.Now().Sub(before)).To(BeNumerically("~", opts.ConnectionDrainTimeout, time.Second))
 				})
 			})
 		})
@@ -477,7 +476,6 @@ var _ = Describe("Register", func() {
 		Context("when the ATC returns a 404 for the heartbeat", func() {
 			BeforeEach(func() {
 				atcServer.RouteToHandler("PUT", "/api/v1/workers/some-worker/heartbeat", func(w http.ResponseWriter, r *http.Request) {
-					Expect(accessFactory.Create(r, "some-action").IsAuthenticated()).To(BeTrue())
 					w.WriteHeader(404)
 				})
 			})

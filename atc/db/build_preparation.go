@@ -1,33 +1,33 @@
 package db
 
-import "fmt"
-
 type BuildPreparationStatus string
 
 const (
-	BuildPreparationStatusUnknown     BuildPreparationStatus = "unknown"
 	BuildPreparationStatusBlocking    BuildPreparationStatus = "blocking"
 	BuildPreparationStatusNotBlocking BuildPreparationStatus = "not_blocking"
 )
+
+const MissingBuildInput string = "input is not included in resolved candidates"
 
 type MissingInputReasons map[string]string
 
 const (
 	NoVersionsSatisfiedPassedConstraints string = "no versions satisfy passed constraints"
 	NoVersionsAvailable                  string = "no versions available"
+	NoResourceCheckFinished              string = "checking for latest available versions"
 	PinnedVersionUnavailable             string = "pinned version %s is not available"
 )
 
-func (mir MissingInputReasons) RegisterPassedConstraint(inputName string) {
-	mir[inputName] = NoVersionsSatisfiedPassedConstraints
+func (m MissingInputReasons) RegisterMissingInput(inputName string) {
+	m[inputName] = MissingBuildInput
 }
 
-func (mir MissingInputReasons) RegisterNoVersions(inputName string) {
-	mir[inputName] = NoVersionsAvailable
+func (m MissingInputReasons) RegisterResolveError(inputName string, resolveErr string) {
+	m[inputName] = resolveErr
 }
 
-func (mir MissingInputReasons) RegisterPinnedVersionUnavailable(inputName string, version string) {
-	mir[inputName] = fmt.Sprintf(PinnedVersionUnavailable, version)
+func (m MissingInputReasons) RegisterNoResourceCheckFinished(inputName string) {
+	m[inputName] = NoResourceCheckFinished
 }
 
 type BuildPreparation struct {

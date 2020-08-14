@@ -2,19 +2,10 @@
 @import (reference) "typography.less";
 
 body {
-  font-family: 'Inconsolata', monospace;
-  letter-spacing: (0.085em * @scale);
-  font-size: 12px;
-  line-height: 1.4;
   margin: 0;
   background: @base02;
   color: @base05;
-}
-
-pre {
-  font-family: 'Inconsolata', monospace;
-  letter-spacing: (0.085em * @scale);
-  word-wrap: break-word;
+  scrollbar-color: #555 rgba(0,0,0,0);
 }
 
 a,
@@ -24,7 +15,18 @@ body a {
   text-decoration: none;
 }
 
-h3 {
-  font-size: 14px;
+::-webkit-scrollbar {
+  width: 10px;
 }
 
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #707070;
+}

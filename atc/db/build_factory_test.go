@@ -1,9 +1,10 @@
 package db_test
 
 import (
-	"github.com/concourse/concourse/atc/db"
+	"time"
 
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/db"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -67,7 +68,7 @@ var _ = Describe("BuildFactory", func() {
 			DescribeTable("completed and past the grace period",
 				func(status db.BuildStatus, matcher types.GomegaMatcher) {
 					//set grace period to 0 for this test
-					buildFactory = db.NewBuildFactory(dbConn, lockFactory, 0)
+					buildFactory = db.NewBuildFactory(dbConn, lockFactory, 0, 0)
 					b, err := defaultTeam.CreateOneOffBuild()
 					Expect(err).NotTo(HaveOccurred())
 
@@ -121,7 +122,7 @@ var _ = Describe("BuildFactory", func() {
 							Name: "some-other-job",
 						},
 					},
-				}, db.ConfigVersion(0), db.PipelineUnpaused)
+				}, db.ConfigVersion(0), false)
 				Expect(err).NotTo(HaveOccurred())
 
 				j, found, err := p.Job("some-other-job")
@@ -198,7 +199,7 @@ var _ = Describe("BuildFactory", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(i).To(BeTrue())
 
-				_, err = b.Start("exec.v2", `{"so":"meta"}`, atc.Plan{})
+				_, err = b.Start(atc.Plan{})
 				Expect(err).NotTo(HaveOccurred())
 
 				err = buildFactory.MarkNonInterceptibleBuilds()
@@ -208,9 +209,96 @@ var _ = Describe("BuildFactory", func() {
 				Expect(i).To(BeTrue())
 			})
 		})
+		Context("GC failed builds", func() {
+			It("marks failed builds non-interceptible after failed-grace-period", func() {
+				buildFactory = db.NewBuildFactory(dbConn, lockFactory, 0, 2*time.Second) // 1 second could create a flaky test
+				build, err := defaultJob.CreateBuild()
+				Expect(err).NotTo(HaveOccurred())
+
+				err = build.Finish(db.BuildStatusFailed)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = buildFactory.MarkNonInterceptibleBuilds()
+				Expect(err).NotTo(HaveOccurred())
+
+				var i bool
+				i, err = build.Interceptible()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(i).To(BeTrue())
+
+				time.Sleep(3 * time.Second) // Wait is too long, only second granularity, better method?
+
+				err = buildFactory.MarkNonInterceptibleBuilds()
+				Expect(err).NotTo(HaveOccurred())
+
+				i, err = build.Interceptible()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(i).To(BeFalse())
+			})
+		})
 	})
 
 	Describe("VisibleBuilds", func() {
+		var err error
+		var build1 db.Build
+		var build2 db.Build
+		var build3 db.Build
+		var build4 db.Build
+		var build5 db.Build
+
+		BeforeEach(func() {
+			build1, err = team.CreateOneOffBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
+			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
+			Expect(err).NotTo(HaveOccurred())
+
+			privateJob, found, err := privatePipeline.Job("some-job")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(found).To(BeTrue())
+
+			build2, err = privateJob.CreateBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			publicPipeline, _, err := team.SavePipeline("public-pipeline", config, db.ConfigVersion(1), false)
+			Expect(err).NotTo(HaveOccurred())
+			err = publicPipeline.Expose()
+			Expect(err).NotTo(HaveOccurred())
+
+			publicJob, found, err := publicPipeline.Job("some-job")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(found).To(BeTrue())
+
+			build3, err = publicJob.CreateBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			otherTeam, err := teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+			Expect(err).NotTo(HaveOccurred())
+
+			build4, err = otherTeam.CreateOneOffBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			build5, err = privateJob.RerunBuild(build2)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns visible builds for the given teams", func() {
+			builds, _, err := buildFactory.VisibleBuilds([]string{"some-team"}, db.Page{Limit: 10})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(builds).To(HaveLen(4))
+
+			buildIDs := []int{}
+			for _, build := range builds {
+				buildIDs = append(buildIDs, build.ID())
+			}
+			Expect(buildIDs).To(Equal([]int{build3.ID(), build5.ID(), build2.ID(), build1.ID()}))
+			Expect(builds).NotTo(ContainElement(build4))
+		})
+	})
+
+	Describe("AllBuilds", func() {
 		var err error
 		var build1 db.Build
 		var build2 db.Build
@@ -222,7 +310,7 @@ var _ = Describe("BuildFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
-			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), db.PipelineUnpaused)
+			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 
 			privateJob, found, err := privatePipeline.Job("some-job")
@@ -232,7 +320,7 @@ var _ = Describe("BuildFactory", func() {
 			build2, err = privateJob.CreateBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			publicPipeline, _, err := team.SavePipeline("public-pipeline", config, db.ConfigVersion(1), db.PipelineUnpaused)
+			publicPipeline, _, err := team.SavePipeline("public-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 			err = publicPipeline.Expose()
 			Expect(err).NotTo(HaveOccurred())
@@ -251,13 +339,12 @@ var _ = Describe("BuildFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns visible builds for the given teams", func() {
-			builds, _, err := buildFactory.VisibleBuilds([]string{"some-team"}, db.Page{Limit: 10})
+		It("returns all builds from all teams private and public pipelines", func() {
+			builds, _, err := buildFactory.AllBuilds(db.Page{Limit: 10})
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(builds).To(HaveLen(3))
-			Expect(builds).To(ConsistOf(build1, build2, build3))
-			Expect(builds).NotTo(ContainElement(build4))
+			Expect(builds).To(HaveLen(4))
+			Expect(builds).To(ConsistOf(build1, build2, build3, build4))
 		})
 	})
 
@@ -269,7 +356,7 @@ var _ = Describe("BuildFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
-			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), db.PipelineUnpaused)
+			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 
 			privateJob, found, err := privatePipeline.Job("some-job")
@@ -279,7 +366,7 @@ var _ = Describe("BuildFactory", func() {
 			_, err = privateJob.CreateBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			publicPipeline, _, err := team.SavePipeline("public-pipeline", config, db.ConfigVersion(1), db.PipelineUnpaused)
+			publicPipeline, _, err := team.SavePipeline("public-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 			err = publicPipeline.Expose()
 			Expect(err).NotTo(HaveOccurred())
@@ -311,7 +398,7 @@ var _ = Describe("BuildFactory", func() {
 						Name: "some-job",
 					},
 				},
-			}, db.ConfigVersion(0), db.PipelineUnpaused)
+			}, db.ConfigVersion(0), false)
 			Expect(err).NotTo(HaveOccurred())
 
 			job, found, err := pipeline.Job("some-job")
@@ -330,7 +417,7 @@ var _ = Describe("BuildFactory", func() {
 			build4DB, err = job.CreateBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			started, err := build2DB.Start("some-engine", `{"so":"meta"}`, atc.Plan{})
+			started, err := build2DB.Start(atc.Plan{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(started).To(BeTrue())
 
@@ -366,7 +453,7 @@ var _ = Describe("BuildFactory", func() {
 						Name: "some-job",
 					},
 				},
-			}, db.ConfigVersion(0), db.PipelineUnpaused)
+			}, db.ConfigVersion(0), false)
 			Expect(err).NotTo(HaveOccurred())
 
 			job, found, err := pipeline.Job("some-job")
@@ -382,11 +469,11 @@ var _ = Describe("BuildFactory", func() {
 			_, err = team.CreateOneOffBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			started, err := build1DB.Start("some-engine", `{"so":"meta"}`, atc.Plan{})
+			started, err := build1DB.Start(atc.Plan{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(started).To(BeTrue())
 
-			started, err = build2DB.Start("some-engine", `{"so":"meta"}`, atc.Plan{})
+			started, err = build2DB.Start(atc.Plan{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(started).To(BeTrue())
 		})
@@ -401,6 +488,69 @@ var _ = Describe("BuildFactory", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(builds).To(ConsistOf(build1DB, build2DB))
+		})
+	})
+
+	Describe("AllBuilds by date", func() {
+		var build1DB db.Build
+		var build2DB db.Build
+
+		BeforeEach(func() {
+			pipeline, _, err := team.SavePipeline("other-pipeline", atc.Config{
+				Jobs: atc.JobConfigs{
+					{
+						Name: "some-job",
+					},
+				},
+			}, db.ConfigVersion(0), false)
+			Expect(err).NotTo(HaveOccurred())
+
+			job, found, err := pipeline.Job("some-job")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(found).To(BeTrue())
+
+			build1DB, err = team.CreateOneOffBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			build2DB, err = job.CreateBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = team.CreateOneOffBuild()
+			Expect(err).NotTo(HaveOccurred())
+
+			started, err := build1DB.Start(atc.Plan{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(started).To(BeTrue())
+
+			started, err = build2DB.Start(atc.Plan{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(started).To(BeTrue())
+		})
+
+		Describe("with a future date as Page.Since", func() {
+			It("should return nothing", func() {
+				page := db.Page{
+					Limit:   10,
+					Since:   int(time.Now().Unix() + 10),
+					UseDate: true,
+				}
+				builds, _, err := buildFactory.AllBuilds(page)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(builds)).To(Equal(0))
+			})
+		})
+
+		Describe("with a very old date as Page.Until", func() {
+			It("should return nothing", func() {
+				page := db.Page{
+					Limit:   10,
+					Until:   int(time.Now().Unix() - 10000),
+					UseDate: true,
+				}
+				builds, _, err := buildFactory.AllBuilds(page)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(builds)).To(Equal(0))
+			})
 		})
 	})
 })

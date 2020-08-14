@@ -1,8 +1,6 @@
 package exec
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -12,8 +10,12 @@ import (
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/resource"
+	"github.com/concourse/concourse/atc/runtime"
 	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/tracing"
+	"github.com/concourse/concourse/vars"
 )
 
 type ErrPipelineNotFound struct {
@@ -35,220 +37,193 @@ func (e ErrResourceNotFound) Error() string {
 //go:generate counterfeiter . GetDelegate
 
 type GetDelegate interface {
-	BuildStepDelegate
+	ImageVersionDetermined(db.UsedResourceCache) error
+	RedactImageSource(source atc.Source) (atc.Source, error)
 
-	Finished(lager.Logger, ExitStatus, VersionInfo)
+	Stdout() io.Writer
+	Stderr() io.Writer
+
+	Variables() vars.CredVarsTracker
+
+	Initializing(lager.Logger)
+	Starting(lager.Logger)
+	Finished(lager.Logger, ExitStatus, runtime.VersionResult)
+	SelectedWorker(lager.Logger, string)
+	Errored(lager.Logger, string)
+
+	UpdateVersion(lager.Logger, atc.GetPlan, runtime.VersionResult)
 }
 
 // GetStep will fetch a version of a resource on a worker that supports the
 // resource type.
 type GetStep struct {
-	build db.Build
-
-	name          string
-	resourceType  string
-	resource      string
-	source        creds.Source
-	params        creds.Params
-	versionSource VersionSource
-	tags          atc.Tags
-
-	delegate GetDelegate
-
-	resourceFetcher        resource.Fetcher
-	teamID                 int
-	buildID                int
-	planID                 atc.PlanID
-	containerMetadata      db.ContainerMetadata
-	dbResourceCacheFactory db.ResourceCacheFactory
-	stepMetadata           StepMetadata
-
-	resourceTypes creds.VersionedResourceTypes
-
-	succeeded bool
+	planID               atc.PlanID
+	plan                 atc.GetPlan
+	metadata             StepMetadata
+	containerMetadata    db.ContainerMetadata
+	resourceFactory      resource.ResourceFactory
+	resourceCacheFactory db.ResourceCacheFactory
+	strategy             worker.ContainerPlacementStrategy
+	workerClient         worker.Client
+	delegate             GetDelegate
+	succeeded            bool
 }
 
 func NewGetStep(
-	build db.Build,
-
-	name string,
-	resourceType string,
-	resource string,
-	source creds.Source,
-	params creds.Params,
-	versionSource VersionSource,
-	tags atc.Tags,
-
-	delegate GetDelegate,
-
-	resourceFetcher resource.Fetcher,
-	teamID int,
-	buildID int,
 	planID atc.PlanID,
+	plan atc.GetPlan,
+	metadata StepMetadata,
 	containerMetadata db.ContainerMetadata,
-	dbResourceCacheFactory db.ResourceCacheFactory,
-	stepMetadata StepMetadata,
-
-	resourceTypes creds.VersionedResourceTypes,
+	resourceFactory resource.ResourceFactory,
+	resourceCacheFactory db.ResourceCacheFactory,
+	strategy worker.ContainerPlacementStrategy,
+	delegate GetDelegate,
+	client worker.Client,
 ) Step {
 	return &GetStep{
-		build: build,
-
-		name:          name,
-		resourceType:  resourceType,
-		resource:      resource,
-		source:        source,
-		params:        params,
-		versionSource: versionSource,
-		tags:          tags,
-
-		delegate: delegate,
-
-		resourceFetcher:        resourceFetcher,
-		teamID:                 teamID,
-		buildID:                buildID,
-		planID:                 planID,
-		containerMetadata:      containerMetadata,
-		dbResourceCacheFactory: dbResourceCacheFactory,
-		stepMetadata:           stepMetadata,
-
-		resourceTypes: resourceTypes,
+		planID:               planID,
+		plan:                 plan,
+		metadata:             metadata,
+		containerMetadata:    containerMetadata,
+		resourceFactory:      resourceFactory,
+		resourceCacheFactory: resourceCacheFactory,
+		strategy:             strategy,
+		delegate:             delegate,
+		workerClient:         client,
 	}
 }
-
-// Run ultimately registers the configured resource version's ArtifactSource
-// under the configured SourceName. How it actually does this is determined by
-// a few factors.
-//
-// First, a worker that supports the given resource type is chosen, and a
-// container is created on the worker.
-//
-// If the worker has a VolumeManager, and its cache is already warmed, the
-// cache will be mounted into the container, and no fetching will be performed.
-// The container will be used to stream the contents of the cache to later
-// steps that require the artifact but are running on a worker that does not
-// have the cache.
-//
-// If the worker does not have a VolumeManager, or if the worker does have a
-// VolumeManager but a cache for the version of the resource is not present,
-// the specified version of the resource will be fetched. As long as running
-// the fetch script works, Run will return nil regardless of its exit status.
-//
-// If the worker has a VolumeManager but did not have the cache initially, the
-// fetched ArtifactSource is initialized, thus warming the worker's cache.
-//
-// At the end, the resulting ArtifactSource (either from using the cache or
-// fetching the resource) is registered under the step's SourceName.
 func (step *GetStep) Run(ctx context.Context, state RunState) error {
+	ctx, span := tracing.StartSpan(ctx, "get", tracing.Attrs{
+		"team":     step.metadata.TeamName,
+		"pipeline": step.metadata.PipelineName,
+		"job":      step.metadata.JobName,
+		"build":    step.metadata.BuildName,
+		"resource": step.plan.Resource,
+		"name":     step.plan.Name,
+	})
+
+	err := step.run(ctx, state)
+	tracing.End(span, err)
+
+	return err
+}
+
+func (step *GetStep) run(ctx context.Context, state RunState) error {
 	logger := lagerctx.FromContext(ctx)
+	logger = logger.Session("get-step", lager.Data{
+		"step-name": step.plan.Name,
+		"job-id":    step.metadata.JobID,
+	})
 
-	version, err := step.versionSource.Version(state)
+	step.delegate.Initializing(logger)
+
+	variables := step.delegate.Variables()
+
+	source, err := creds.NewSource(variables, step.plan.Source).Evaluate()
 	if err != nil {
 		return err
 	}
 
-	source, err := step.source.Evaluate()
+	params, err := creds.NewParams(variables, step.plan.Params).Evaluate()
 	if err != nil {
 		return err
 	}
 
-	params, err := step.params.Evaluate()
+	resourceTypes, err := creds.NewVersionedResourceTypes(variables, step.plan.VersionedResourceTypes).Evaluate()
 	if err != nil {
 		return err
 	}
 
-	resourceCache, err := step.dbResourceCacheFactory.FindOrCreateResourceCache(
-		logger,
-		db.ForBuild(step.buildID),
-		step.resourceType,
+	version, err := NewVersionSourceFromPlan(&step.plan).Version(state)
+	if err != nil {
+		return err
+	}
+
+	containerSpec := worker.ContainerSpec{
+		ImageSpec: worker.ImageSpec{
+			ResourceType: step.plan.Type,
+		},
+		TeamID: step.metadata.TeamID,
+		Env:    step.metadata.Env(),
+	}
+	tracing.Inject(ctx, &containerSpec)
+
+	workerSpec := worker.WorkerSpec{
+		ResourceType:  step.plan.Type,
+		Tags:          step.plan.Tags,
+		TeamID:        step.metadata.TeamID,
+		ResourceTypes: resourceTypes,
+	}
+
+	imageSpec := worker.ImageFetcherSpec{
+		ResourceTypes: resourceTypes,
+		Delegate:      step.delegate,
+	}
+
+	resourceCache, err := step.resourceCacheFactory.FindOrCreateResourceCache(
+		db.ForBuild(step.metadata.BuildID),
+		step.plan.Type,
 		version,
 		source,
 		params,
-		step.resourceTypes,
+		resourceTypes,
 	)
 	if err != nil {
 		logger.Error("failed-to-create-resource-cache", err)
 		return err
 	}
 
-	resourceInstance := resource.NewResourceInstance(
-		resource.ResourceType(step.resourceType),
-		version,
+	processSpec := runtime.ProcessSpec{
+		Path:         "/opt/resource/in",
+		Args:         []string{resource.ResourcesDir("get")},
+		StdoutWriter: step.delegate.Stdout(),
+		StderrWriter: step.delegate.Stderr(),
+	}
+
+	resourceToGet := step.resourceFactory.NewResource(
 		source,
 		params,
-		step.resourceTypes,
-		resourceCache,
-		db.NewBuildStepContainerOwner(step.buildID, step.planID, step.teamID),
+		version,
 	)
 
-	versionedSource, err := step.resourceFetcher.Fetch(
+	containerOwner := db.NewBuildStepContainerOwner(step.metadata.BuildID, step.planID, step.metadata.TeamID)
+
+	getResult, err := step.workerClient.RunGetStep(
 		ctx,
 		logger,
-		resource.Session{
-			Metadata: step.containerMetadata,
-		},
-		step.tags,
-		step.teamID,
-		step.resourceTypes,
-		resourceInstance,
-		step.stepMetadata,
+		containerOwner,
+		containerSpec,
+		workerSpec,
+		step.strategy,
+		step.containerMetadata,
+		imageSpec,
+		processSpec,
 		step.delegate,
+		resourceCache,
+		resourceToGet,
 	)
 	if err != nil {
-		logger.Error("failed-to-fetch-resource", err)
-
-		if err, ok := err.(resource.ErrResourceScriptFailed); ok {
-			step.delegate.Finished(logger, ExitStatus(err.ExitStatus), VersionInfo{})
-			return nil
-		}
-
 		return err
 	}
 
-	state.Artifacts().RegisterSource(worker.ArtifactName(step.name), &getArtifactSource{
-		resourceInstance: resourceInstance,
-		versionedSource:  versionedSource,
-	})
+	if getResult.ExitStatus == 0 {
+		state.ArtifactRepository().RegisterArtifact(
+			build.ArtifactName(step.plan.Name),
+			getResult.GetArtifact,
+		)
 
-	if step.resource != "" {
-		pipeline, found, err := step.build.Pipeline()
-		if err != nil {
-			logger.Error("failed-to-find-pipeline", err, lager.Data{"name": step.name, "pipeline-name": step.build.PipelineName(), "pipeline-id": step.build.PipelineID()})
-			return err
+		if step.plan.Resource != "" {
+			step.delegate.UpdateVersion(logger, step.plan, getResult.VersionResult)
 		}
 
-		if !found {
-			logger.Debug("pipeline-not-found", lager.Data{"name": step.name, "pipeline-name": step.build.PipelineName(), "pipeline-id": step.build.PipelineID()})
-			return ErrPipelineNotFound{step.build.PipelineName()}
-		}
-
-		resource, found, err := pipeline.Resource(step.resource)
-		if err != nil {
-			logger.Error("failed-to-find-resource", err, lager.Data{"name": step.name, "pipeline-name": step.build.PipelineName(), "resource": step.resource})
-			return err
-		}
-
-		if !found {
-			logger.Debug("resource-not-found", lager.Data{"name": step.name, "pipeline-name": step.build.PipelineName(), "resource": step.resource})
-			return ErrResourceNotFound{step.resource}
-		}
-
-		// Find or Save* the version used in the get step, and update the Metadata
-		// *saving will occur when the resource's config has changed, but it hasn't
-		// checked yet, so the resource config versions don't exist
-		_, err = resource.SaveUncheckedVersion(versionedSource.Version(), db.NewResourceConfigMetadataFields(versionedSource.Metadata()), resourceCache.ResourceConfig(), step.resourceTypes)
-		if err != nil {
-			logger.Error("failed-to-save-resource-config-version", err, lager.Data{"name": step.name, "resource": step.resource, "version": versionedSource.Version()})
-			return err
-		}
+		step.succeeded = true
 	}
 
-	step.succeeded = true
-
-	step.delegate.Finished(logger, 0, VersionInfo{
-		Version:  versionedSource.Version(),
-		Metadata: versionedSource.Metadata(),
-	})
+	step.delegate.Finished(
+		logger,
+		ExitStatus(getResult.ExitStatus),
+		getResult.VersionResult,
+	)
 
 	return nil
 }
@@ -256,52 +231,4 @@ func (step *GetStep) Run(ctx context.Context, state RunState) error {
 // Succeeded returns true if the resource was successfully fetched.
 func (step *GetStep) Succeeded() bool {
 	return step.succeeded
-}
-
-type getArtifactSource struct {
-	resourceInstance resource.ResourceInstance
-	versionedSource  resource.VersionedSource
-}
-
-// VolumeOn locates the cache for the GetStep's resource and version on the
-// given worker.
-func (s *getArtifactSource) VolumeOn(logger lager.Logger, worker worker.Worker) (worker.Volume, bool, error) {
-	return s.resourceInstance.FindOn(logger.Session("volume-on"), worker)
-}
-
-// StreamTo streams the resource's data to the destination.
-func (s *getArtifactSource) StreamTo(logger lager.Logger, destination worker.ArtifactDestination) error {
-	out, err := s.versionedSource.StreamOut(".")
-	if err != nil {
-		return err
-	}
-
-	defer out.Close()
-
-	return destination.StreamIn(".", out)
-}
-
-// StreamFile streams a single file out of the resource.
-func (s *getArtifactSource) StreamFile(logger lager.Logger, path string) (io.ReadCloser, error) {
-	out, err := s.versionedSource.StreamOut(path)
-	if err != nil {
-		return nil, err
-	}
-
-	gzReader, err := gzip.NewReader(out)
-	if err != nil {
-		return nil, FileNotFoundError{Path: path}
-	}
-
-	tarReader := tar.NewReader(gzReader)
-
-	_, err = tarReader.Next()
-	if err != nil {
-		return nil, FileNotFoundError{Path: path}
-	}
-
-	return fileReadCloser{
-		Reader: tarReader,
-		Closer: out,
-	}, nil
 }

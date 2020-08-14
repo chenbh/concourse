@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
+	. "github.com/concourse/concourse/atc/testhelpers"
 	"github.com/tedsuo/rata"
 
 	. "github.com/onsi/ginkgo"
@@ -19,17 +19,10 @@ import (
 var _ = Describe("cc.xml", func() {
 	var (
 		requestGenerator *rata.RequestGenerator
-		fakeaccess       *accessorfakes.FakeAccess
 	)
 
 	BeforeEach(func() {
 		requestGenerator = rata.NewRequestGenerator(server.URL, atc.Routes)
-
-		fakeaccess = new(accessorfakes.FakeAccess)
-	})
-
-	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
 	})
 
 	Describe("GET /api/v1/teams/:team_name/cc.xml", func() {
@@ -47,8 +40,8 @@ var _ = Describe("cc.xml", func() {
 
 		Context("when authorized", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("when the team is found", func() {
@@ -69,17 +62,13 @@ var _ = Describe("cc.xml", func() {
 					})
 
 					Context("when a job is found", func() {
-						var fakeJob *dbfakes.FakeJob
 						var endTime time.Time
 						BeforeEach(func() {
-							fakeJob = new(dbfakes.FakeJob)
-							fakeJob.PipelineNameReturns("something-else")
-							fakeJob.TeamNameReturns("a-team")
-							fakeJob.NameReturns("some-job")
-
-							fakePipeline.DashboardReturns(db.Dashboard{
+							fakePipeline.DashboardReturns(atc.Dashboard{
 								{
-									Job: fakeJob,
+									Name:         "some-job",
+									PipelineName: "something-else",
+									TeamName:     "a-team",
 								},
 							}, nil)
 
@@ -88,14 +77,16 @@ var _ = Describe("cc.xml", func() {
 
 						Context("when the last build is successful", func() {
 							BeforeEach(func() {
-								succeededBuild := new(dbfakes.FakeBuild)
-								succeededBuild.StatusReturns(db.BuildStatusSucceeded)
-								succeededBuild.NameReturns("42")
-								succeededBuild.EndTimeReturns(endTime)
-								fakePipeline.DashboardReturns(db.Dashboard{
+								fakePipeline.DashboardReturns(atc.Dashboard{
 									{
-										Job:           fakeJob,
-										FinishedBuild: succeededBuild,
+										Name:         "some-job",
+										PipelineName: "something-else",
+										TeamName:     "a-team",
+										FinishedBuild: &atc.DashboardBuild{
+											Name:    "42",
+											Status:  "succeeded",
+											EndTime: endTime,
+										},
 									},
 								}, nil)
 							})
@@ -105,7 +96,10 @@ var _ = Describe("cc.xml", func() {
 							})
 
 							It("returns Content-Type 'application/xml'", func() {
-								Expect(response.Header.Get("Content-Type")).To(Equal("application/xml"))
+								expectedHeaderEntries := map[string]string{
+									"Content-Type": "application/xml",
+								}
+								Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 							})
 
 							It("returns the CC.xml", func() {
@@ -122,14 +116,16 @@ var _ = Describe("cc.xml", func() {
 
 						Context("when the last build is aborted", func() {
 							BeforeEach(func() {
-								abortedBuild := new(dbfakes.FakeBuild)
-								abortedBuild.StatusReturns(db.BuildStatusAborted)
-								abortedBuild.NameReturns("42")
-								abortedBuild.EndTimeReturns(endTime)
-								fakePipeline.DashboardReturns(db.Dashboard{
+								fakePipeline.DashboardReturns(atc.Dashboard{
 									{
-										Job:           fakeJob,
-										FinishedBuild: abortedBuild,
+										Name:         "some-job",
+										PipelineName: "something-else",
+										TeamName:     "a-team",
+										FinishedBuild: &atc.DashboardBuild{
+											Name:    "42",
+											Status:  "aborted",
+											EndTime: endTime,
+										},
 									},
 								}, nil)
 							})
@@ -148,14 +144,16 @@ var _ = Describe("cc.xml", func() {
 
 						Context("when the last build is errored", func() {
 							BeforeEach(func() {
-								erroredBuild := new(dbfakes.FakeBuild)
-								erroredBuild.StatusReturns(db.BuildStatusErrored)
-								erroredBuild.NameReturns("42")
-								erroredBuild.EndTimeReturns(endTime)
-								fakePipeline.DashboardReturns(db.Dashboard{
+								fakePipeline.DashboardReturns(atc.Dashboard{
 									{
-										Job:           fakeJob,
-										FinishedBuild: erroredBuild,
+										Name:         "some-job",
+										PipelineName: "something-else",
+										TeamName:     "a-team",
+										FinishedBuild: &atc.DashboardBuild{
+											Name:    "42",
+											Status:  "errored",
+											EndTime: endTime,
+										},
 									},
 								}, nil)
 							})
@@ -174,14 +172,16 @@ var _ = Describe("cc.xml", func() {
 
 						Context("when the last build is failed", func() {
 							BeforeEach(func() {
-								failedBuild := new(dbfakes.FakeBuild)
-								failedBuild.StatusReturns(db.BuildStatusFailed)
-								failedBuild.NameReturns("42")
-								failedBuild.EndTimeReturns(endTime)
-								fakePipeline.DashboardReturns(db.Dashboard{
+								fakePipeline.DashboardReturns(atc.Dashboard{
 									{
-										Job:           fakeJob,
-										FinishedBuild: failedBuild,
+										Name:         "some-job",
+										PipelineName: "something-else",
+										TeamName:     "a-team",
+										FinishedBuild: &atc.DashboardBuild{
+											Name:    "42",
+											Status:  "failed",
+											EndTime: endTime,
+										},
 									},
 								}, nil)
 							})
@@ -200,18 +200,17 @@ var _ = Describe("cc.xml", func() {
 
 						Context("when a next build exists", func() {
 							BeforeEach(func() {
-								finishedBuild := new(dbfakes.FakeBuild)
-								finishedBuild.StatusReturns(db.BuildStatusSucceeded)
-								finishedBuild.NameReturns("42")
-								finishedBuild.EndTimeReturns(endTime)
-
-								nextBuild := new(dbfakes.FakeBuild)
-
-								fakePipeline.DashboardReturns(db.Dashboard{
+								fakePipeline.DashboardReturns(atc.Dashboard{
 									{
-										Job:           fakeJob,
-										FinishedBuild: finishedBuild,
-										NextBuild:     nextBuild,
+										Name:         "some-job",
+										PipelineName: "something-else",
+										TeamName:     "a-team",
+										FinishedBuild: &atc.DashboardBuild{
+											Name:    "42",
+											Status:  "succeeded",
+											EndTime: endTime,
+										},
+										NextBuild: &atc.DashboardBuild{},
 									},
 								}, nil)
 							})
@@ -240,7 +239,7 @@ var _ = Describe("cc.xml", func() {
 
 					Context("when no job is found", func() {
 						BeforeEach(func() {
-							fakePipeline.DashboardReturns(db.Dashboard{}, nil)
+							fakePipeline.DashboardReturns(atc.Dashboard{}, nil)
 						})
 
 						It("returns 200", func() {
@@ -317,7 +316,7 @@ var _ = Describe("cc.xml", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401", func() {

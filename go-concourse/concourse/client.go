@@ -18,10 +18,9 @@ type Client interface {
 	Build(buildID string) (atc.Build, bool, error)
 	BuildEvents(buildID string) (Events, error)
 	BuildResources(buildID int) (atc.BuildInputsOutputs, bool, error)
+	ListBuildArtifacts(buildID string) ([]atc.WorkerArtifact, error)
 	AbortBuild(buildID string) error
 	BuildPlan(buildID int) (atc.PublicBuildPlan, bool, error)
-	SendInputToBuildPlan(buildID int, planID atc.PlanID, src io.Reader) (bool, error)
-	ReadOutputFromBuildPlan(buildID int, planID atc.PlanID) (io.ReadCloser, bool, error)
 	SaveWorker(atc.Worker, *time.Duration) (*atc.Worker, error)
 	ListWorkers() ([]atc.Worker, error)
 	PruneWorker(workerName string) error
@@ -29,18 +28,24 @@ type Client interface {
 	GetInfo() (atc.Info, error)
 	GetCLIReader(arch, platform string) (io.ReadCloser, http.Header, error)
 	ListPipelines() ([]atc.Pipeline, error)
+	ListAllJobs() ([]atc.Job, error)
 	ListTeams() ([]atc.Team, error)
+	FindTeam(teamName string) (Team, error)
 	Team(teamName string) Team
-	UserInfo() (map[string]interface{}, error)
+	UserInfo() (atc.UserInfo, error)
+	ListActiveUsersSince(since time.Time) ([]atc.User, error)
+	Check(checkID string) (atc.Check, bool, error)
 }
 
 type client struct {
-	connection internal.Connection
+	connection internal.Connection //Deprecated
+	httpAgent  internal.HTTPAgent
 }
 
 func NewClient(apiURL string, httpClient *http.Client, tracing bool) Client {
 	return &client{
 		connection: internal.NewConnection(apiURL, httpClient, tracing),
+		httpAgent:  internal.NewHTTPAgent(apiURL, httpClient, tracing),
 	}
 }
 

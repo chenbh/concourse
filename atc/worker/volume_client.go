@@ -39,6 +39,13 @@ type VolumeClient interface {
 		int,
 		string,
 	) (Volume, error)
+	CreateVolume(
+		lager.Logger,
+		VolumeSpec,
+		int,
+		string,
+		db.VolumeType,
+	) (Volume, error)
 	FindVolumeForResourceCache(
 		lager.Logger,
 		db.UsedResourceCache,
@@ -65,6 +72,23 @@ type VolumeClient interface {
 	LookupVolume(lager.Logger, string) (Volume, bool, error)
 }
 
+type VolumeSpec struct {
+	Strategy   baggageclaim.Strategy
+	Properties VolumeProperties
+	Privileged bool
+	TTL        time.Duration
+}
+
+func (spec VolumeSpec) baggageclaimVolumeSpec() baggageclaim.VolumeSpec {
+	return baggageclaim.VolumeSpec{
+		Strategy:   spec.Strategy,
+		Privileged: spec.Privileged,
+		Properties: baggageclaim.VolumeProperties(spec.Properties),
+	}
+}
+
+type VolumeProperties map[string]string
+
 type ErrCreatedVolumeNotFound struct {
 	Handle     string
 	WorkerName string
@@ -81,6 +105,7 @@ type volumeClient struct {
 	lockFactory                     lock.LockFactory
 	dbVolumeRepository              db.VolumeRepository
 	dbWorkerBaseResourceTypeFactory db.WorkerBaseResourceTypeFactory
+	dbTaskCacheFactory              db.TaskCacheFactory
 	dbWorkerTaskCacheFactory        db.WorkerTaskCacheFactory
 	clock                           clock.Clock
 	dbWorker                        db.Worker
@@ -94,6 +119,7 @@ func NewVolumeClient(
 	lockFactory lock.LockFactory,
 	dbVolumeRepository db.VolumeRepository,
 	dbWorkerBaseResourceTypeFactory db.WorkerBaseResourceTypeFactory,
+	dbTaskCacheFactory db.TaskCacheFactory,
 	dbWorkerTaskCacheFactory db.WorkerTaskCacheFactory,
 ) VolumeClient {
 	return &volumeClient{
@@ -101,6 +127,7 @@ func NewVolumeClient(
 		lockFactory:                     lockFactory,
 		dbVolumeRepository:              dbVolumeRepository,
 		dbWorkerBaseResourceTypeFactory: dbWorkerBaseResourceTypeFactory,
+		dbTaskCacheFactory:              dbTaskCacheFactory,
 		dbWorkerTaskCacheFactory:        dbWorkerTaskCacheFactory,
 		clock:                           clock,
 		dbWorker:                        dbWorker,
@@ -142,6 +169,25 @@ func (c *volumeClient) FindOrCreateCOWVolumeForContainer(
 		},
 		func() (db.CreatingVolume, error) {
 			return parent.CreateChildForContainer(container, mountPath)
+		},
+	)
+}
+
+func (c *volumeClient) CreateVolume(
+	logger lager.Logger,
+	volumeSpec VolumeSpec,
+	teamID int,
+	workerName string,
+	volumeType db.VolumeType,
+) (Volume, error) {
+	return c.findOrCreateVolume(
+		logger.Session("find-or-create-volume-for-artifact"),
+		volumeSpec,
+		func() (db.CreatingVolume, db.CreatedVolume, error) {
+			return nil, nil, nil
+		},
+		func() (db.CreatingVolume, error) {
+			return c.dbVolumeRepository.CreateVolume(teamID, workerName, volumeType)
 		},
 	)
 }
@@ -209,11 +255,18 @@ func (c *volumeClient) CreateVolumeForTaskCache(
 	stepName string,
 	path string,
 ) (Volume, error) {
-	taskCache, err := c.dbWorkerTaskCacheFactory.FindOrCreate(jobID, stepName, path, c.dbWorker.Name())
+	usedTaskCache, err := c.dbTaskCacheFactory.FindOrCreate(jobID, stepName, path)
 	if err != nil {
 		logger.Error("failed-to-find-or-create-task-cache-in-db", err)
 		return nil, err
 	}
+
+	workerTaskCache := db.WorkerTaskCache{
+		WorkerName: c.dbWorker.Name(),
+		TaskCache:  usedTaskCache,
+	}
+
+	usedWorkerTaskCache, err := c.dbWorkerTaskCacheFactory.FindOrCreate(workerTaskCache)
 
 	return c.findOrCreateVolume(
 		logger.Session("find-or-create-volume-for-container"),
@@ -222,7 +275,7 @@ func (c *volumeClient) CreateVolumeForTaskCache(
 			return nil, nil, nil
 		},
 		func() (db.CreatingVolume, error) {
-			return c.dbVolumeRepository.CreateTaskCacheVolume(teamID, taskCache)
+			return c.dbVolumeRepository.CreateTaskCacheVolume(teamID, usedWorkerTaskCache)
 		},
 	)
 }
@@ -273,7 +326,7 @@ func (c *volumeClient) FindVolumeForTaskCache(
 	stepName string,
 	path string,
 ) (Volume, bool, error) {
-	taskCache, found, err := c.dbWorkerTaskCacheFactory.Find(jobID, stepName, path, c.dbWorker.Name())
+	usedTaskCache, found, err := c.dbTaskCacheFactory.Find(jobID, stepName, path)
 	if err != nil {
 		logger.Error("failed-to-lookup-task-cache-in-db", err)
 		return nil, false, err
@@ -283,13 +336,13 @@ func (c *volumeClient) FindVolumeForTaskCache(
 		return nil, false, nil
 	}
 
-	_, dbVolume, err := c.dbVolumeRepository.FindTaskCacheVolume(teamID, taskCache)
+	dbVolume, found, err := c.dbVolumeRepository.FindTaskCacheVolume(teamID, c.dbWorker.Name(), usedTaskCache)
 	if err != nil {
-		logger.Error("failed-to-lookup-tasl-cache-volume-in-db", err)
+		logger.Error("failed-to-lookup-task-cache-volume-in-db", err)
 		return nil, false, err
 	}
 
-	if dbVolume == nil {
+	if !found {
 		return nil, false, nil
 	}
 

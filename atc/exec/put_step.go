@@ -2,6 +2,7 @@ package exec
 
 import (
 	"context"
+	"io"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
@@ -9,77 +10,68 @@ import (
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/resource"
+	"github.com/concourse/concourse/atc/runtime"
 	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/tracing"
+	"github.com/concourse/concourse/vars"
 )
 
 //go:generate counterfeiter . PutDelegate
 
 type PutDelegate interface {
-	BuildStepDelegate
+	ImageVersionDetermined(db.UsedResourceCache) error
+	RedactImageSource(source atc.Source) (atc.Source, error)
 
-	Finished(lager.Logger, ExitStatus, VersionInfo)
+	Stdout() io.Writer
+	Stderr() io.Writer
+
+	Variables() vars.CredVarsTracker
+
+	Initializing(lager.Logger)
+	Starting(lager.Logger)
+	Finished(lager.Logger, ExitStatus, runtime.VersionResult)
+	SelectedWorker(lager.Logger, string)
+	Errored(lager.Logger, string)
+
+	SaveOutput(lager.Logger, atc.PutPlan, atc.Source, atc.VersionedResourceTypes, runtime.VersionResult)
 }
 
 // PutStep produces a resource version using preconfigured params and any data
 // available in the worker.ArtifactRepository.
 type PutStep struct {
-	build db.Build
-
-	name         string
-	resourceType string
-	resource     string
-	source       creds.Source
-	params       creds.Params
-	tags         atc.Tags
-	inputs       PutInputs
-
-	delegate              PutDelegate
+	planID                atc.PlanID
+	plan                  atc.PutPlan
+	metadata              StepMetadata
+	containerMetadata     db.ContainerMetadata
 	resourceFactory       resource.ResourceFactory
 	resourceConfigFactory db.ResourceConfigFactory
-	planID                atc.PlanID
-	containerMetadata     db.ContainerMetadata
-	stepMetadata          StepMetadata
-
-	resourceTypes creds.VersionedResourceTypes
-
-	versionInfo VersionInfo
-	succeeded   bool
+	strategy              worker.ContainerPlacementStrategy
+	workerClient          worker.Client
+	delegate              PutDelegate
+	succeeded             bool
 }
 
 func NewPutStep(
-	build db.Build,
-	name string,
-	resourceType string,
-	resourceName string,
-	source creds.Source,
-	params creds.Params,
-	tags atc.Tags,
-	inputs PutInputs,
-	delegate PutDelegate,
+	planID atc.PlanID,
+	plan atc.PutPlan,
+	metadata StepMetadata,
+	containerMetadata db.ContainerMetadata,
 	resourceFactory resource.ResourceFactory,
 	resourceConfigFactory db.ResourceConfigFactory,
-	planID atc.PlanID,
-	containerMetadata db.ContainerMetadata,
-	stepMetadata StepMetadata,
-	resourceTypes creds.VersionedResourceTypes,
-) *PutStep {
+	strategy worker.ContainerPlacementStrategy,
+	workerClient worker.Client,
+	delegate PutDelegate,
+) Step {
 	return &PutStep{
-		build: build,
-
-		resourceType:          resourceType,
-		name:                  name,
-		resource:              resourceName,
-		source:                source,
-		params:                params,
-		tags:                  tags,
-		inputs:                inputs,
-		delegate:              delegate,
+		planID:                planID,
+		plan:                  plan,
+		metadata:              metadata,
+		containerMetadata:     containerMetadata,
 		resourceFactory:       resourceFactory,
 		resourceConfigFactory: resourceConfigFactory,
-		planID:                planID,
-		containerMetadata:     containerMetadata,
-		stepMetadata:          stepMetadata,
-		resourceTypes:         resourceTypes,
+		workerClient:          workerClient,
+		strategy:              strategy,
+		delegate:              delegate,
 	}
 }
 
@@ -92,105 +84,147 @@ func NewPutStep(
 // The resource's put script is then invoked. If the context is canceled, the
 // script will be interrupted.
 func (step *PutStep) Run(ctx context.Context, state RunState) error {
-	logger := lagerctx.FromContext(ctx)
+	ctx, span := tracing.StartSpan(ctx, "put", tracing.Attrs{
+		"team":     step.metadata.TeamName,
+		"pipeline": step.metadata.PipelineName,
+		"job":      step.metadata.JobName,
+		"build":    step.metadata.BuildName,
+		"resource": step.plan.Resource,
+		"name":     step.plan.Name,
+	})
 
-	containerInputs, err := step.inputs.FindAll(state.Artifacts())
+	err := step.run(ctx, state)
+	tracing.End(span, err)
+
+	return err
+}
+
+func (step *PutStep) run(ctx context.Context, state RunState) error {
+	logger := lagerctx.FromContext(ctx)
+	logger = logger.Session("put-step", lager.Data{
+		"step-name": step.plan.Name,
+		"job-id":    step.metadata.JobID,
+	})
+
+	step.delegate.Initializing(logger)
+
+	variables := step.delegate.Variables()
+
+	source, err := creds.NewSource(variables, step.plan.Source).Evaluate()
+	if err != nil {
+		return err
+	}
+
+	params, err := creds.NewParams(variables, step.plan.Params).Evaluate()
+	if err != nil {
+		return err
+	}
+
+	resourceTypes, err := creds.NewVersionedResourceTypes(variables, step.plan.VersionedResourceTypes).Evaluate()
+	if err != nil {
+		return err
+	}
+
+	var putInputs PutInputs
+	if step.plan.Inputs == nil {
+		// Put step defaults to all inputs if not specified
+		putInputs = NewAllInputs()
+	} else if step.plan.Inputs.All {
+		putInputs = NewAllInputs()
+	} else if step.plan.Inputs.Detect {
+		putInputs = NewDetectInputs(step.plan.Params)
+	} else {
+		// Covers both cases where inputs are specified and when there are no
+		// inputs specified and "all" field is given a false boolean, which will
+		// result in no inputs attached
+		putInputs = NewSpecificInputs(step.plan.Inputs.Specified)
+	}
+
+	containerInputs, err := putInputs.FindAll(state.ArtifactRepository())
 	if err != nil {
 		return err
 	}
 
 	containerSpec := worker.ContainerSpec{
 		ImageSpec: worker.ImageSpec{
-			ResourceType: step.resourceType,
+			ResourceType: step.plan.Type,
 		},
-		Tags:   step.tags,
-		TeamID: step.build.TeamID(),
+		Tags:   step.plan.Tags,
+		TeamID: step.metadata.TeamID,
 
-		Dir: resource.ResourcesDir("put"),
+		Dir: step.containerMetadata.WorkingDirectory,
 
-		Env: step.stepMetadata.Env(),
+		Env: step.metadata.Env(),
 
-		Inputs: containerInputs,
+		ArtifactByPath: containerInputs,
 	}
+	tracing.Inject(ctx, &containerSpec)
 
 	workerSpec := worker.WorkerSpec{
-		ResourceType:  step.resourceType,
-		Tags:          step.tags,
-		TeamID:        step.build.TeamID(),
-		ResourceTypes: step.resourceTypes,
+		ResourceType:  step.plan.Type,
+		Tags:          step.plan.Tags,
+		TeamID:        step.metadata.TeamID,
+		ResourceTypes: resourceTypes,
 	}
 
-	putResource, err := step.resourceFactory.NewResource(
+	owner := db.NewBuildStepContainerOwner(step.metadata.BuildID, step.planID, step.metadata.TeamID)
+
+	containerSpec.BindMounts = []worker.BindMountSource{
+		&worker.CertsVolumeMount{Logger: logger},
+	}
+
+	imageSpec := worker.ImageFetcherSpec{
+		ResourceTypes: resourceTypes,
+		Delegate:      step.delegate,
+	}
+
+	processSpec := runtime.ProcessSpec{
+		Path:         "/opt/resource/out",
+		Args:         []string{resource.ResourcesDir("put")},
+		StdoutWriter: step.delegate.Stdout(),
+		StderrWriter: step.delegate.Stderr(),
+	}
+
+	resourceToPut := step.resourceFactory.NewResource(source, params, nil)
+
+	result, err := step.workerClient.RunPutStep(
 		ctx,
 		logger,
-		db.NewBuildStepContainerOwner(step.build.ID(), step.planID, step.build.TeamID()),
-		step.containerMetadata,
+		owner,
 		containerSpec,
 		workerSpec,
-		step.resourceTypes,
+		step.strategy,
+		step.containerMetadata,
+		imageSpec,
+		processSpec,
 		step.delegate,
+		resourceToPut,
 	)
-	if err != nil {
-		return err
-	}
-
-	source, err := step.source.Evaluate()
-	if err != nil {
-		return err
-	}
-
-	params, err := step.params.Evaluate()
-	if err != nil {
-		return err
-	}
-
-	versionedSource, err := putResource.Put(
-		ctx,
-		resource.IOConfig{
-			Stdout: step.delegate.Stdout(),
-			Stderr: step.delegate.Stderr(),
-		},
-		source,
-		params,
-	)
-
 	if err != nil {
 		logger.Error("failed-to-put-resource", err)
-
-		if err, ok := err.(resource.ErrResourceScriptFailed); ok {
-			step.delegate.Finished(logger, ExitStatus(err.ExitStatus), VersionInfo{})
-			return nil
-		}
-
 		return err
 	}
 
-	step.versionInfo = VersionInfo{
-		Version:  versionedSource.Version(),
-		Metadata: versionedSource.Metadata(),
+	if result.ExitStatus != 0 {
+		step.delegate.Finished(logger, ExitStatus(result.ExitStatus), runtime.VersionResult{})
+		return nil
 	}
 
-	if step.resource != "" {
-		logger = logger.WithData(lager.Data{"step": step.name, "resource": step.resource, "resource-type": step.resourceType, "version": step.versionInfo.Version})
-		err = step.build.SaveOutput(logger, step.resourceType, source, step.resourceTypes, step.versionInfo.Version, db.NewResourceConfigMetadataFields(step.versionInfo.Metadata), step.name, step.resource)
-		if err != nil {
-			logger.Error("failed-to-save-output", err)
-			return err
-		}
+	versionResult := result.VersionResult
+	// step.plan.Resource maps to an actual resource that may have been used outside of a pipeline context.
+	// Hence, if it was used outside the pipeline context, we don't want to save the output.
+	if step.plan.Resource != "" {
+		step.delegate.SaveOutput(logger, step.plan, source, resourceTypes, versionResult)
 	}
 
-	state.StoreResult(step.planID, step.versionInfo)
+	state.StoreResult(step.planID, versionResult)
 
 	step.succeeded = true
 
-	step.delegate.Finished(logger, 0, step.versionInfo)
+	step.delegate.Finished(logger, 0, versionResult)
 
 	return nil
-}
 
-// VersionInfo returns the info of the pushed version.
-func (step *PutStep) VersionInfo() VersionInfo {
-	return step.versionInfo
 }
 
 // Succeeded returns true if the resource script exited successfully.

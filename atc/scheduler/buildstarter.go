@@ -1,12 +1,13 @@
 package scheduler
 
 import (
+	"context"
+	"fmt"
+
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/engine"
-	"github.com/concourse/concourse/atc/scheduler/inputmapper"
-	"github.com/concourse/concourse/atc/scheduler/maxinflight"
+	"github.com/concourse/concourse/atc/metric"
 )
 
 //go:generate counterfeiter . BuildStarter
@@ -14,186 +15,224 @@ import (
 type BuildStarter interface {
 	TryStartPendingBuildsForJob(
 		logger lager.Logger,
-		job db.Job,
-		resources db.Resources,
-		resourceTypes atc.VersionedResourceTypes,
-		nextPendingBuilds []db.Build,
-	) error
+		job db.SchedulerJob,
+		inputs db.InputConfigs,
+	) (bool, error)
 }
 
-//go:generate counterfeiter . BuildFactory
+//go:generate counterfeiter . BuildPlanner
 
-type BuildFactory interface {
-	Create(atc.JobConfig, atc.ResourceConfigs, atc.VersionedResourceTypes, []db.BuildInput) (atc.Plan, error)
+type BuildPlanner interface {
+	Create(atc.StepConfig, db.SchedulerResources, atc.VersionedResourceTypes, []db.BuildInput) (atc.Plan, error)
+}
+
+type Build interface {
+	db.Build
+
+	IsReadyToDetermineInputs(lager.Logger) (bool, error)
+	BuildInputs(context.Context) ([]db.BuildInput, bool, error)
 }
 
 func NewBuildStarter(
-	pipeline db.Pipeline,
-	maxInFlightUpdater maxinflight.Updater,
-	factory BuildFactory,
-	scanner Scanner,
-	inputMapper inputmapper.InputMapper,
-	execEngine engine.Engine,
+	planner BuildPlanner,
+	algorithm Algorithm,
 ) BuildStarter {
 	return &buildStarter{
-		pipeline:           pipeline,
-		maxInFlightUpdater: maxInFlightUpdater,
-		factory:            factory,
-		scanner:            scanner,
-		inputMapper:        inputMapper,
-		execEngine:         execEngine,
+		planner:   planner,
+		algorithm: algorithm,
 	}
 }
 
 type buildStarter struct {
-	pipeline           db.Pipeline
-	maxInFlightUpdater maxinflight.Updater
-	factory            BuildFactory
-	execEngine         engine.Engine
-	scanner            Scanner
-	inputMapper        inputmapper.InputMapper
+	planner   BuildPlanner
+	algorithm Algorithm
 }
 
 func (s *buildStarter) TryStartPendingBuildsForJob(
 	logger lager.Logger,
-	job db.Job,
-	resources db.Resources,
-	resourceTypes atc.VersionedResourceTypes,
-	nextPendingBuildsForJob []db.Build,
-) error {
-	for _, nextPendingBuild := range nextPendingBuildsForJob {
-		started, err := s.tryStartNextPendingBuild(logger, nextPendingBuild, job, resources, resourceTypes)
+	job db.SchedulerJob,
+	jobInputs db.InputConfigs,
+) (bool, error) {
+	nextPendingBuilds, err := job.GetPendingBuilds()
+	if err != nil {
+		return false, fmt.Errorf("get pending builds: %w", err)
+	}
+
+	buildsToSchedule := s.constructBuilds(job, jobInputs, nextPendingBuilds)
+
+	var needsRetry bool
+	for _, nextSchedulableBuild := range buildsToSchedule {
+		results, err := s.tryStartNextPendingBuild(logger, nextSchedulableBuild, job)
 		if err != nil {
-			return err
+			return false, err
 		}
 
-		if !started {
-			break // stop scheduling next builds after failing to schedule a build
+		if results.finished {
+			// If the build is successfully aborted, errored or started, continue
+			// onto the next pending build
+			continue
+		}
+
+		if !results.scheduled || !results.readyToDetermineInputs {
+			// If max in flight is reached or a manually triggered build has not
+			// checked all resources, stop scheduling and retry later
+			needsRetry = true
+			break
+		}
+
+		if !results.inputsDetermined {
+			if nextSchedulableBuild.RerunOf() != 0 {
+				// If it is a rerun build, continue on to next build. We don't want to
+				// stop scheduling other builds because of a rerun build cannot
+				// determine inputs
+				continue
+			} else {
+				// If it is a regular scheduler build, stop scheduling because it is
+				// failing to determine inputs
+				break
+			}
 		}
 	}
 
-	return nil
+	return needsRetry, nil
+}
+
+func (s *buildStarter) constructBuilds(job db.Job, jobInputs db.InputConfigs, builds []db.Build) []Build {
+	var buildsToSchedule []Build
+
+	for _, nextPendingBuild := range builds {
+		if nextPendingBuild.IsManuallyTriggered() {
+			buildsToSchedule = append(buildsToSchedule, &manualTriggerBuild{
+				Build:     nextPendingBuild,
+				algorithm: s.algorithm,
+				job:       job,
+				jobInputs: jobInputs,
+			})
+		} else if nextPendingBuild.RerunOf() != 0 {
+			buildsToSchedule = append(buildsToSchedule, &rerunBuild{
+				Build: nextPendingBuild,
+			})
+		} else {
+			buildsToSchedule = append(buildsToSchedule, &schedulerBuild{
+				Build: nextPendingBuild,
+			})
+		}
+	}
+
+	return buildsToSchedule
+}
+
+type startResults struct {
+	finished               bool
+	scheduled              bool
+	readyToDetermineInputs bool
+	inputsDetermined       bool
 }
 
 func (s *buildStarter) tryStartNextPendingBuild(
 	logger lager.Logger,
-	nextPendingBuild db.Build,
-	job db.Job,
-	resources db.Resources,
-	resourceTypes atc.VersionedResourceTypes,
-) (bool, error) {
+	nextPendingBuild Build,
+	job db.SchedulerJob,
+) (startResults, error) {
 	logger = logger.Session("try-start-next-pending-build", lager.Data{
 		"build-id":   nextPendingBuild.ID(),
 		"build-name": nextPendingBuild.Name(),
 	})
 
-	reachedMaxInFlight, err := s.maxInFlightUpdater.UpdateMaxInFlightReached(logger, job, nextPendingBuild.ID())
-	if err != nil {
-		return false, err
-	}
-	if reachedMaxInFlight {
-		return false, nil
-	}
+	if nextPendingBuild.IsAborted() {
+		logger.Debug("cancel-aborted-pending-build")
 
-	if nextPendingBuild.IsManuallyTriggered() {
-		jobBuildInputs := job.Config().Inputs()
-		for _, input := range jobBuildInputs {
-			scanLog := logger.Session("scan", lager.Data{
-				"input":    input.Name,
-				"resource": input.Resource,
-			})
-
-			err := s.scanner.Scan(scanLog, input.Resource)
-			if err != nil {
-				return false, err
-			}
-		}
-
-		versions, err := s.pipeline.LoadVersionsDB()
+		err := nextPendingBuild.Finish(db.BuildStatusAborted)
 		if err != nil {
-			logger.Error("failed-to-load-versions-db", err)
-			return false, err
+			return startResults{}, fmt.Errorf("finish aborted build: %w", err)
 		}
 
-		_, err = s.inputMapper.SaveNextInputMapping(logger, versions, job, resources)
-		if err != nil {
-			return false, err
-		}
-
-		dbResourceTypes, err := s.pipeline.ResourceTypes()
-		if err != nil {
-			return false, err
-		}
-		resourceTypes = dbResourceTypes.Deserialize()
+		return startResults{
+			finished: true,
+		}, nil
 	}
 
-	buildInputs, found, err := job.GetNextBuildInputs()
+	scheduled, err := job.ScheduleBuild(nextPendingBuild)
 	if err != nil {
-		logger.Error("failed-to-get-next-build-inputs", err)
-		return false, err
-	}
-	if !found {
-		return false, nil
+		return startResults{}, fmt.Errorf("schedule build: %w", err)
 	}
 
-	pipelinePaused, err := s.pipeline.CheckPaused()
+	if !scheduled {
+		logger.Debug("build-not-scheduled")
+		return startResults{
+			scheduled: scheduled,
+		}, nil
+	}
+
+	readyToDetermineInputs, err := nextPendingBuild.IsReadyToDetermineInputs(logger)
 	if err != nil {
-		logger.Error("failed-to-check-if-pipeline-is-paused", err)
-		return false, err
-	}
-	if pipelinePaused {
-		return false, nil
+		return startResults{}, fmt.Errorf("ready to determine inputs: %w", err)
 	}
 
-	if job.Paused() {
-		return false, nil
+	if !readyToDetermineInputs {
+		return startResults{
+			scheduled:              scheduled,
+			readyToDetermineInputs: readyToDetermineInputs,
+		}, nil
 	}
 
-	updated, err := nextPendingBuild.Schedule()
+	buildInputs, inputsDetermined, err := nextPendingBuild.BuildInputs(context.TODO())
 	if err != nil {
-		logger.Error("failed-to-update-build-to-scheduled", err)
-		return false, err
+		return startResults{}, fmt.Errorf("get build inputs: %w", err)
 	}
 
-	if !updated {
-		logger.Debug("build-already-scheduled")
-		return false, nil
+	if !inputsDetermined {
+		logger.Debug("build-inputs-not-found")
+
+		// don't retry when build inputs are not found because this is due to the
+		// inputs being unsatisfiable
+		return startResults{
+			scheduled:              scheduled,
+			readyToDetermineInputs: readyToDetermineInputs,
+			inputsDetermined:       inputsDetermined,
+		}, nil
 	}
 
-	err = nextPendingBuild.UseInputs(buildInputs)
+	config, err := job.Config()
 	if err != nil {
-		return false, err
+		return startResults{}, fmt.Errorf("config: %w", err)
 	}
 
-	resourceConfigs := atc.ResourceConfigs{}
-	for _, v := range resources {
-		resourceConfigs = append(resourceConfigs, atc.ResourceConfig{
-			Name:   v.Name(),
-			Type:   v.Type(),
-			Source: v.Source(),
-			Tags:   v.Tags(),
-		})
-	}
-
-	plan, err := s.factory.Create(job.Config(), resourceConfigs, resourceTypes, buildInputs)
+	plan, err := s.planner.Create(config.StepConfig(), job.Resources, job.ResourceTypes, buildInputs)
 	if err != nil {
+		logger.Error("failed-to-create-build-plan", err)
+
 		// Don't use ErrorBuild because it logs a build event, and this build hasn't started
-		err := nextPendingBuild.Finish(db.BuildStatusErrored)
-		if err != nil {
+		if err = nextPendingBuild.Finish(db.BuildStatusErrored); err != nil {
 			logger.Error("failed-to-mark-build-as-errored", err)
+			return startResults{}, fmt.Errorf("finish build: %w", err)
 		}
-		return false, nil
+
+		return startResults{
+			finished: true,
+		}, nil
 	}
 
-	createdBuild, err := s.execEngine.CreateBuild(logger, nextPendingBuild, plan)
+	started, err := nextPendingBuild.Start(plan)
 	if err != nil {
-		logger.Error("failed-to-create-build", err)
-		return false, nil
+		logger.Error("failed-to-mark-build-as-started", err)
+		return startResults{}, fmt.Errorf("start build: %w", err)
 	}
 
-	logger.Info("starting")
+	if !started {
+		if err = nextPendingBuild.Finish(db.BuildStatusAborted); err != nil {
+			logger.Error("failed-to-mark-build-as-finished", err)
+			return startResults{}, fmt.Errorf("finish build: %w", err)
+		}
 
-	go createdBuild.Resume(logger)
+		return startResults{
+			finished: true,
+		}, nil
+	}
 
-	return true, nil
+	metric.BuildsStarted.Inc()
+
+	return startResults{
+		finished: true,
+	}, nil
 }

@@ -12,7 +12,8 @@ import (
 )
 
 type RenderOptions struct {
-	ShowTimestamp bool
+	ShowTimestamp            bool
+	IgnoreEventParsingErrors bool
 }
 
 func Render(dst io.Writer, src eventstream.EventStream, options RenderOptions) int {
@@ -25,9 +26,11 @@ func Render(dst io.Writer, src eventstream.EventStream, options RenderOptions) i
 		if err != nil {
 			if err == io.EOF {
 				return exitStatus
+			} else if options.IgnoreEventParsingErrors && isEventParseError(err) {
+				continue
 			} else {
 				dstImpl.SetTimestamp(0)
-				fmt.Fprintf(dstImpl, "failed to parse next event: %s\n", err)
+				fmt.Fprintf(dstImpl, "failed to parse next event: %s\n", ui.ErroredColor.Sprint(err))
 				return 255
 			}
 		}
@@ -37,9 +40,9 @@ func Render(dst io.Writer, src eventstream.EventStream, options RenderOptions) i
 			dstImpl.SetTimestamp(e.Time)
 			fmt.Fprintf(dstImpl, "%s", e.Payload)
 
-		case event.LogV50:
-			dstImpl.SetTimestamp(0)
-			fmt.Fprintf(dstImpl, "%s", e.Payload)
+		case event.SelectedWorker:
+			dstImpl.SetTimestamp(e.Time)
+			fmt.Fprintf(dstImpl, "\x1b[1mselected worker:\x1b[0m %s\n", e.WorkerName)
 
 		case event.InitializeTask:
 			dstImpl.SetTimestamp(e.Time)
@@ -98,4 +101,13 @@ func Render(dst io.Writer, src eventstream.EventStream, options RenderOptions) i
 			return exitStatus
 		}
 	}
+}
+
+func isEventParseError(err error) bool {
+	if _, ok := err.(event.UnknownEventTypeError); ok {
+		return true
+	} else if _, ok := err.(event.UnknownEventVersionError); ok {
+		return true
+	}
+	return false
 }

@@ -2,18 +2,20 @@ package image
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/concourse/concourse/atc/compression"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/resource"
+	"github.com/concourse/concourse/atc/runtime"
 	"github.com/concourse/concourse/atc/worker"
+	"github.com/hashicorp/go-multierror"
 )
 
 const ImageMetadataFile = "metadata.json"
@@ -29,12 +31,12 @@ var ErrImageGetDidNotProduceVolume = errors.New("fetching the image did not prod
 type ImageResourceFetcherFactory interface {
 	NewImageResourceFetcher(
 		worker.Worker,
-		resource.ResourceFactory,
 		worker.ImageResource,
 		atc.Version,
 		int,
-		creds.VersionedResourceTypes,
+		atc.VersionedResourceTypes,
 		worker.ImageFetchingDelegate,
+		compression.Compression,
 	) ImageResourceFetcher
 }
 
@@ -50,50 +52,54 @@ type ImageResourceFetcher interface {
 }
 
 type imageResourceFetcherFactory struct {
-	resourceFetcherFactory  resource.FetcherFactory
+	resourceFactory         resource.ResourceFactory
 	dbResourceCacheFactory  db.ResourceCacheFactory
 	dbResourceConfigFactory db.ResourceConfigFactory
+	resourceFetcher         worker.Fetcher
 }
 
 func NewImageResourceFetcherFactory(
-	resourceFetcherFactory resource.FetcherFactory,
+	resourceFactory resource.ResourceFactory,
 	dbResourceCacheFactory db.ResourceCacheFactory,
 	dbResourceConfigFactory db.ResourceConfigFactory,
+	resourceFetcher worker.Fetcher,
 ) ImageResourceFetcherFactory {
 	return &imageResourceFetcherFactory{
-		resourceFetcherFactory:  resourceFetcherFactory,
+		resourceFactory:         resourceFactory,
 		dbResourceCacheFactory:  dbResourceCacheFactory,
 		dbResourceConfigFactory: dbResourceConfigFactory,
+		resourceFetcher:         resourceFetcher,
 	}
 }
 
 func (f *imageResourceFetcherFactory) NewImageResourceFetcher(
 	worker worker.Worker,
-	resourceFactory resource.ResourceFactory,
 	imageResource worker.ImageResource,
 	version atc.Version,
 	teamID int,
-	customTypes creds.VersionedResourceTypes,
+	customTypes atc.VersionedResourceTypes,
 	imageFetchingDelegate worker.ImageFetchingDelegate,
+	compression compression.Compression,
 ) ImageResourceFetcher {
 	return &imageResourceFetcher{
-		resourceFetcher:         f.resourceFetcherFactory.FetcherFor(worker),
-		resourceFactory:         resourceFactory,
+		worker:                  worker,
+		resourceFetcher:         f.resourceFetcher,
+		resourceFactory:         f.resourceFactory,
 		dbResourceCacheFactory:  f.dbResourceCacheFactory,
 		dbResourceConfigFactory: f.dbResourceConfigFactory,
 
-		worker:                worker,
 		imageResource:         imageResource,
 		version:               version,
 		teamID:                teamID,
 		customTypes:           customTypes,
 		imageFetchingDelegate: imageFetchingDelegate,
+		compression:           compression,
 	}
 }
 
 type imageResourceFetcher struct {
 	worker                  worker.Worker
-	resourceFetcher         resource.Fetcher
+	resourceFetcher         worker.Fetcher
 	resourceFactory         resource.ResourceFactory
 	dbResourceCacheFactory  db.ResourceCacheFactory
 	dbResourceConfigFactory db.ResourceConfigFactory
@@ -101,8 +107,9 @@ type imageResourceFetcher struct {
 	imageResource         worker.ImageResource
 	version               atc.Version
 	teamID                int
-	customTypes           creds.VersionedResourceTypes
+	customTypes           atc.VersionedResourceTypes
 	imageFetchingDelegate worker.ImageFetchingDelegate
+	compression           compression.Compression
 }
 
 func (i *imageResourceFetcher) Fetch(
@@ -121,22 +128,13 @@ func (i *imageResourceFetcher) Fetch(
 		}
 	}
 
-	source, err := i.imageResource.Source.Evaluate()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	var params atc.Params
-	if i.imageResource.Params != nil {
-		params = *i.imageResource.Params
-	}
+	params := i.imageResource.Params
 
 	resourceCache, err := i.dbResourceCacheFactory.FindOrCreateResourceCache(
-		logger,
 		db.ForContainer(container.ID()),
 		i.imageResource.Type,
 		version,
-		source,
+		i.imageResource.Source,
 		params,
 		i.customTypes,
 	)
@@ -145,68 +143,90 @@ func (i *imageResourceFetcher) Fetch(
 		return nil, nil, nil, err
 	}
 
-	resourceInstance := resource.NewResourceInstance(
-		resource.ResourceType(i.imageResource.Type),
-		version,
-		source,
-		params,
-		i.customTypes,
-		resourceCache,
-		db.NewImageGetContainerOwner(container, i.teamID),
-	)
-
 	err = i.imageFetchingDelegate.ImageVersionDetermined(resourceCache)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	getSess := resource.Session{
-		Metadata: db.ContainerMetadata{
-			Type: db.ContainerTypeGet,
-		},
+	containerMetadata := db.ContainerMetadata{
+		Type: db.ContainerTypeGet,
 	}
 
-	versionedSource, err := i.resourceFetcher.Fetch(
+	containerSpec := worker.ContainerSpec{
+		ImageSpec: worker.ImageSpec{
+			ResourceType: i.imageResource.Type,
+		},
+		TeamID: i.teamID,
+	}
+
+	processSpec := runtime.ProcessSpec{
+		Path:         "/opt/resource/in",
+		Args:         []string{resource.ResourcesDir("get")},
+		StdoutWriter: i.imageFetchingDelegate.Stdout(),
+		StderrWriter: i.imageFetchingDelegate.Stderr(),
+	}
+	res := i.resourceFactory.NewResource(
+		i.imageResource.Source,
+		params,
+		version,
+	)
+
+	sign, err := res.Signature()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	lockName := lockName(sign, i.worker.Name())
+	imageFetcherSpec := worker.ImageFetcherSpec{
+		ResourceTypes: i.customTypes,
+		Delegate:      i.imageFetchingDelegate,
+	}
+
+	_, volume, err := i.resourceFetcher.Fetch(
 		ctx,
 		logger.Session("init-image"),
-		getSess,
-		i.worker.Tags(),
-		i.teamID,
-		i.customTypes,
-		resourceInstance,
-		resource.EmptyMetadata{},
-		i.imageFetchingDelegate,
+		containerMetadata,
+		i.worker,
+		containerSpec,
+		processSpec,
+		res,
+		db.NewImageGetContainerOwner(container, i.teamID),
+		imageFetcherSpec,
+		resourceCache,
+		lockName,
 	)
+
 	if err != nil {
 		logger.Error("failed-to-fetch-image", err)
 		return nil, nil, nil, err
 	}
 
-	volume := versionedSource.Volume()
 	if volume == nil {
 		return nil, nil, nil, ErrImageGetDidNotProduceVolume
 	}
 
-	reader, err := versionedSource.StreamOut(ImageMetadataFile)
+	reader, err := volume.StreamOut(ctx, ImageMetadataFile, i.compression.Encoding())
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	gzReader, err := gzip.NewReader(reader)
+	compressionReader, err := i.compression.NewReader(reader)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	tarReader := tar.NewReader(gzReader)
+	tarReader := tar.NewReader(compressionReader)
 
 	_, err = tarReader.Next()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("could not read file \"%s\" from tar", ImageMetadataFile)
 	}
 
-	releasingReader := &readCloser{
-		Reader: tarReader,
-		Closer: reader,
+	releasingReader := &fileReadMultiCloser{
+		reader: tarReader,
+		closers: []io.Closer{
+			reader,
+			compressionReader,
+		},
 	}
 
 	return volume, releasingReader, version, nil
@@ -216,41 +236,40 @@ func (i *imageResourceFetcher) ensureVersionOfType(
 	ctx context.Context,
 	logger lager.Logger,
 	container db.CreatingContainer,
-	resourceType creds.VersionedResourceType,
+	resourceType atc.VersionedResourceType,
 ) error {
+	containerSpec := worker.ContainerSpec{
+		ImageSpec: worker.ImageSpec{
+			ResourceType: resourceType.Name,
+		},
+		TeamID: i.teamID,
+		BindMounts: []worker.BindMountSource{
+			&worker.CertsVolumeMount{Logger: logger},
+		},
+	}
 
-	checkResourceType, err := i.resourceFactory.NewResource(
+	owner := db.NewImageCheckContainerOwner(container, i.teamID)
+
+	resourceTypeContainer, err := i.worker.FindOrCreateContainer(
 		ctx,
 		logger,
-		db.NewImageCheckContainerOwner(container, i.teamID),
+		worker.NoopImageFetchingDelegate{},
+		owner,
 		db.ContainerMetadata{
 			Type: db.ContainerTypeCheck,
 		},
-		worker.ContainerSpec{
-			ImageSpec: worker.ImageSpec{
-				ResourceType: resourceType.Name,
-			},
-			TeamID: i.teamID,
-			Tags:   i.worker.Tags(),
-		},
-		worker.WorkerSpec{
-			ResourceType:  resourceType.Name,
-			Tags:          i.worker.Tags(),
-			ResourceTypes: i.customTypes,
-		},
+		containerSpec,
 		i.customTypes,
-		worker.NoopImageFetchingDelegate{},
 	)
 	if err != nil {
 		return err
 	}
 
-	source, err := resourceType.Source.Evaluate()
-	if err != nil {
-		return err
+	processSpec := runtime.ProcessSpec{
+		Path: "/opt/resource/check",
 	}
-
-	versions, err := checkResourceType.Check(context.TODO(), source, nil)
+	checkResourceType := i.resourceFactory.NewResource(resourceType.Source, nil, resourceType.Version)
+	versions, err := checkResourceType.Check(context.TODO(), processSpec, resourceTypeContainer)
 	if err != nil {
 		return err
 	}
@@ -284,38 +303,34 @@ func (i *imageResourceFetcher) getLatestVersion(
 		ImageSpec: worker.ImageSpec{
 			ResourceType: i.imageResource.Type,
 		},
-		Tags:   i.worker.Tags(),
 		TeamID: i.teamID,
+		BindMounts: []worker.BindMountSource{
+			&worker.CertsVolumeMount{Logger: logger},
+		},
 	}
 
-	workerSpec := worker.WorkerSpec{
-		ResourceType:  i.imageResource.Type,
-		Tags:          i.worker.Tags(),
-		ResourceTypes: i.customTypes,
-	}
+	owner := db.NewImageCheckContainerOwner(container, i.teamID)
 
-	source, err := i.imageResource.Source.Evaluate()
-	if err != nil {
-		return nil, err
-	}
-
-	checkingResource, err := i.resourceFactory.NewResource(
+	imageContainer, err := i.worker.FindOrCreateContainer(
 		ctx,
 		logger,
-		db.NewImageCheckContainerOwner(container, i.teamID),
+		i.imageFetchingDelegate,
+		owner,
 		db.ContainerMetadata{
 			Type: db.ContainerTypeCheck,
 		},
 		resourceSpec,
-		workerSpec,
 		i.customTypes,
-		i.imageFetchingDelegate,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	versions, err := checkingResource.Check(context.TODO(), source, nil)
+	processSpec := runtime.ProcessSpec{
+		Path: "/opt/resource/check",
+	}
+	checkingResource := i.resourceFactory.NewResource(i.imageResource.Source, nil, i.imageResource.Version)
+	versions, err := checkingResource.Check(context.TODO(), processSpec, imageContainer)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +342,29 @@ func (i *imageResourceFetcher) getLatestVersion(
 	return versions[0], nil
 }
 
-type readCloser struct {
-	io.Reader
-	io.Closer
+type fileReadMultiCloser struct {
+	reader  io.Reader
+	closers []io.Closer
+}
+
+func (frc fileReadMultiCloser) Read(p []byte) (n int, err error) {
+	return frc.reader.Read(p)
+}
+
+func (frc fileReadMultiCloser) Close() error {
+	var closeErrors error
+
+	for _, closer := range frc.closers {
+		err := closer.Close()
+		if err != nil {
+			closeErrors = multierror.Append(closeErrors, err)
+		}
+	}
+
+	return closeErrors
+}
+
+func lockName(resourceJson []byte, workerName string) string {
+	jsonRes := append(resourceJson, []byte(workerName)...)
+	return fmt.Sprintf("%x", sha256.Sum256(jsonRes))
 }

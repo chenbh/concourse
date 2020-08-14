@@ -2,6 +2,7 @@ module Application.Application exposing
     ( Flags
     , Model
     , handleCallback
+    , handleDelivery
     , init
     , locationMsg
     , subscriptions
@@ -9,353 +10,487 @@ module Application.Application exposing
     , view
     )
 
-import Application.Msgs as Msgs exposing (Msg(..), NavIndex)
-import Build.Msgs
-import Callback exposing (Callback(..))
-import Dashboard.Msgs
-import Effects exposing (Effect(..), LayoutDispatch(..))
-import Html exposing (Html)
+import Application.Models exposing (Session)
+import Application.Styles as Styles
+import Browser
+import Concourse
+import EffectTransformer exposing (ET)
+import HoverState
+import Html
+import Html.Attributes exposing (id, style)
 import Http
-import Navigation
-import Resource.Msgs
+import Message.Callback exposing (Callback(..))
+import Message.Effects as Effects exposing (Effect(..))
+import Message.Message as Message
+import Message.Subscription
+    exposing
+        ( Delivery(..)
+        , Interval(..)
+        , Subscription(..)
+        )
+import Message.TopLevelMessage as Msgs exposing (TopLevelMessage(..))
+import RemoteData
 import Routes
-import SubPage.Msgs
+import ScreenSize
+import Set
+import SideBar.SideBar as SideBar
 import SubPage.SubPage as SubPage
-import Subscription exposing (Subscription(..))
-import TopBar.Msgs
+import Time
+import Tooltip
+import Url
 import UserState exposing (UserState(..))
 
 
 type alias Flags =
     { turbulenceImgSrc : String
     , notFoundImgSrc : String
-    , csrfToken : String
+    , csrfToken : Concourse.CSRFToken
     , authToken : String
     , pipelineRunningKeyframes : String
     }
-
-
-anyNavIndex : NavIndex
-anyNavIndex =
-    -1
 
 
 type alias Model =
-    { navIndex : NavIndex
-    , subModel : SubPage.Model
-    , turbulenceImgSrc : String
-    , notFoundImgSrc : String
-    , csrfToken : String
-    , authToken : String
-    , pipelineRunningKeyframes : String
+    { subModel : SubPage.Model
     , route : Routes.Route
-    , userState : UserState
+    , session : Session
     }
 
 
-init : Flags -> Navigation.Location -> ( Model, List ( LayoutDispatch, Effect ) )
-init flags location =
+init : Flags -> Url.Url -> ( Model, List Effect )
+init flags url =
     let
         route =
-            Routes.parsePath location
+            Routes.parsePath url
+                |> Maybe.withDefault
+                    (Routes.Dashboard
+                        { searchType = Routes.Normal ""
+                        , dashboardView = Routes.ViewNonArchivedPipelines
+                        }
+                    )
 
-        ( subModel, subEffects ) =
-            SubPage.init
-                { turbulencePath = flags.turbulenceImgSrc
-                , csrfToken = flags.csrfToken
-                , authToken = flags.authToken
-                , pipelineRunningKeyframes = flags.pipelineRunningKeyframes
-                }
-                route
-
-        navIndex =
-            1
-
-        model =
-            { navIndex = navIndex
-            , subModel = subModel
+        session =
+            { userState = UserStateUnknown
+            , hovered = HoverState.NoHover
+            , clusterName = ""
+            , version = ""
             , turbulenceImgSrc = flags.turbulenceImgSrc
             , notFoundImgSrc = flags.notFoundImgSrc
             , csrfToken = flags.csrfToken
             , authToken = flags.authToken
             , pipelineRunningKeyframes = flags.pipelineRunningKeyframes
+            , expandedTeamsInAllPipelines = Set.empty
+            , collapsedTeamsInFavorites = Set.empty
+            , pipelines = RemoteData.NotAsked
+            , sideBarState =
+                { isOpen = False
+                , width = 275
+                }
+            , draggingSideBar = False
+            , screenSize = ScreenSize.Desktop
+            , timeZone = Time.utc
+            , favoritedPipelines = Set.empty
+            }
+
+        ( subModel, subEffects ) =
+            SubPage.init session route
+
+        model =
+            { subModel = subModel
+            , session = session
             , route = route
-            , userState = UserStateUnknown
             }
 
         handleTokenEffect =
             -- We've refreshed on the page and we're not
             -- getting it from query params
             if flags.csrfToken == "" then
-                ( Layout, LoadToken )
+                [ LoadToken ]
 
             else
-                ( Layout, SaveToken flags.csrfToken )
-
-        stripCSRFTokenParamCmd =
-            if flags.csrfToken == "" then
-                []
-
-            else
-                [ ( Layout, Effects.ModifyUrl <| Routes.toString route ) ]
+                [ SaveToken flags.csrfToken
+                , Effects.ModifyUrl <| Routes.toString route
+                ]
     in
     ( model
-    , [ ( Layout, FetchUser ), handleTokenEffect ]
-        ++ stripCSRFTokenParamCmd
-        ++ List.map (\ef -> ( SubPage navIndex, ef )) subEffects
+    , [ FetchUser
+      , GetScreenSize
+      , LoadSideBarState
+      , LoadFavoritedPipelines
+      , FetchClusterInfo
+      ]
+        ++ handleTokenEffect
+        ++ subEffects
     )
 
 
-locationMsg : Navigation.Location -> Msg
-locationMsg =
-    RouteChanged << Routes.parsePath
+locationMsg : Url.Url -> TopLevelMessage
+locationMsg url =
+    case Routes.parsePath url of
+        Just route ->
+            DeliveryReceived <| RouteChanged route
+
+        Nothing ->
+            Msgs.Callback EmptyCallback
 
 
-handleCallback :
-    LayoutDispatch
-    -> Callback
-    -> Model
-    -> ( Model, List ( LayoutDispatch, Effect ) )
-handleCallback disp callback model =
-    case disp of
-        SubPage navIndex ->
-            case callback of
-                ResourcesFetched (Ok fetchedResources) ->
-                    if validNavIndex model.navIndex navIndex then
-                        subpageHandleCallback model callback navIndex
+handleCallback : Callback -> Model -> ( Model, List Effect )
+handleCallback callback model =
+    case callback of
+        BuildTriggered (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                    else
-                        ( model, [] )
+        BuildAborted (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                BuildTriggered (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        PausedToggled (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                BuildAborted (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        JobBuildsFetched (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                PausedToggled (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        InputToFetched (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                JobBuildsFetched (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        OutputOfFetched (Err err) ->
+            redirectToLoginIfNecessary err ( model, [] )
 
-                InputToFetched (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        PipelineToggled _ (Err err) ->
+            subpageHandleCallback callback ( model, [] )
+                |> redirectToLoginIfNecessary err
 
-                OutputOfFetched (Err err) ->
-                    ( model, redirectToLoginIfNecessary err navIndex )
+        VisibilityChanged _ _ (Err err) ->
+            subpageHandleCallback callback ( model, [] )
+                |> redirectToLoginIfNecessary err
 
-                LoggedOut (Ok ()) ->
-                    subpageHandleCallback { model | userState = UserStateLoggedOut } callback navIndex
+        LoggedOut (Ok ()) ->
+            let
+                session =
+                    model.session
 
-                APIDataFetched (Ok ( time, data )) ->
-                    subpageHandleCallback
-                        { model | userState = data.user |> Maybe.map UserStateLoggedIn |> Maybe.withDefault UserStateLoggedOut }
-                        callback
-                        navIndex
+                newSession =
+                    { session | userState = UserStateLoggedOut }
+            in
+            subpageHandleCallback callback ( { model | session = newSession }, [] )
 
-                APIDataFetched (Err err) ->
-                    subpageHandleCallback { model | userState = UserStateLoggedOut } callback navIndex
+        AllTeamsFetched (Err err) ->
+            let
+                session =
+                    model.session
 
-                -- otherwise, pass down
-                _ ->
-                    subpageHandleCallback model callback navIndex
+                newSession =
+                    { session | userState = UserStateLoggedOut }
+            in
+            subpageHandleCallback callback ( { model | session = newSession }, [] )
+                |> redirectToLoginIfNecessary err
 
-        Layout ->
-            case callback of
-                UserFetched (Ok user) ->
-                    subpageHandleCallback { model | userState = UserStateLoggedIn user } callback model.navIndex
+        UserFetched (Ok user) ->
+            let
+                session =
+                    model.session
 
-                UserFetched (Err _) ->
-                    subpageHandleCallback { model | userState = UserStateLoggedOut } callback model.navIndex
+                newSession =
+                    { session | userState = UserStateLoggedIn user }
+            in
+            subpageHandleCallback callback ( { model | session = newSession }, [] )
 
-                _ ->
-                    ( model, [] )
+        UserFetched (Err _) ->
+            let
+                session =
+                    model.session
+
+                newSession =
+                    { session | userState = UserStateLoggedOut }
+            in
+            subpageHandleCallback callback ( { model | session = newSession }, [] )
+
+        ClusterInfoFetched (Ok { clusterName, version }) ->
+            let
+                session =
+                    model.session
+
+                newSession =
+                    { session | clusterName = clusterName, version = version }
+            in
+            subpageHandleCallback callback ( { model | session = newSession }, [] )
+
+        ScreenResized viewport ->
+            let
+                session =
+                    model.session
+
+                newSession =
+                    { session
+                        | screenSize =
+                            ScreenSize.fromWindowSize viewport.viewport.width
+                    }
+            in
+            subpageHandleCallback
+                callback
+                ( { model | session = newSession }, [] )
+
+        GotCurrentTimeZone zone ->
+            let
+                session =
+                    model.session
+
+                newSession =
+                    { session | timeZone = zone }
+            in
+            ( { model | session = newSession }, [] )
+
+        -- otherwise, pass down
+        _ ->
+            sideBarHandleCallback callback ( model, [] )
+                |> subpageHandleCallback callback
 
 
-subpageHandleCallback : Model -> Callback -> Int -> ( Model, List ( LayoutDispatch, Effect ) )
-subpageHandleCallback model callback navIndex =
+sideBarHandleCallback : Callback -> ET Model
+sideBarHandleCallback callback ( model, effects ) =
     let
-        ( subModel, effects ) =
-            SubPage.handleCallback model.csrfToken callback model.subModel
-                |> SubPage.handleNotFound model.notFoundImgSrc model.route
+        ( session, newEffects ) =
+            ( model.session, effects )
+                |> (case model.subModel of
+                        SubPage.ResourceModel { resourceIdentifier } ->
+                            SideBar.handleCallback callback <|
+                                RemoteData.Success resourceIdentifier
+
+                        SubPage.PipelineModel { pipelineLocator } ->
+                            SideBar.handleCallback callback <|
+                                RemoteData.Success pipelineLocator
+
+                        SubPage.JobModel { jobIdentifier } ->
+                            SideBar.handleCallback callback <|
+                                RemoteData.Success jobIdentifier
+
+                        SubPage.BuildModel buildModel ->
+                            SideBar.handleCallback callback
+                                (case buildModel.job of
+                                    Just j ->
+                                        RemoteData.Success j
+
+                                    Nothing ->
+                                        RemoteData.NotAsked
+                                )
+
+                        _ ->
+                            SideBar.handleCallback callback <|
+                                RemoteData.NotAsked
+                   )
+                |> Tooltip.handleCallback callback
     in
-    ( { model | subModel = subModel }
-    , List.map (\ef -> ( SubPage navIndex, ef )) effects
-    )
+    ( { model | session = session }, newEffects )
 
 
-update : Msg -> Model -> ( Model, List ( LayoutDispatch, Effect ) )
+subpageHandleCallback : Callback -> ET Model
+subpageHandleCallback callback ( model, effects ) =
+    let
+        ( subModel, newEffects ) =
+            ( model.subModel, effects )
+                |> SubPage.handleCallback callback model.session
+                |> SubPage.handleNotFound model.session.notFoundImgSrc model.route
+    in
+    ( { model | subModel = subModel }, newEffects )
+
+
+update : TopLevelMessage -> Model -> ( Model, List Effect )
 update msg model =
     case msg of
-        NewUrl route ->
-            ( model, [ ( Layout, NavigateTo route ) ] )
+        Update (Message.Hover hovered) ->
+            let
+                session =
+                    model.session
 
-        Msgs.ModifyUrl route ->
-            ( model, [ ( Layout, Effects.ModifyUrl <| Routes.toString route ) ] )
+                newHovered =
+                    case hovered of
+                        Just h ->
+                            HoverState.Hovered h
+
+                        Nothing ->
+                            HoverState.NoHover
+
+                ( newSession, sideBarEffects ) =
+                    { session | hovered = newHovered }
+                        |> SideBar.update (Message.Hover hovered)
+
+                ( subModel, subEffects ) =
+                    ( model.subModel, [] )
+                        |> SubPage.update model.session (Message.Hover hovered)
+            in
+            ( { model | subModel = subModel, session = newSession }
+            , subEffects ++ sideBarEffects
+            )
+
+        Update m ->
+            let
+                ( subModel, subEffects ) =
+                    ( model.subModel, [] )
+                        |> SubPage.update model.session m
+                        |> SubPage.handleNotFound model.session.notFoundImgSrc model.route
+
+                ( session, sessionEffects ) =
+                    SideBar.update m model.session
+            in
+            ( { model | subModel = subModel, session = session }
+            , subEffects ++ sessionEffects
+            )
+
+        Callback callback ->
+            handleCallback callback model
+
+        DeliveryReceived delivery ->
+            handleDelivery delivery model
+
+
+handleDelivery : Delivery -> Model -> ( Model, List Effect )
+handleDelivery delivery model =
+    let
+        ( newSubmodel, subPageEffects ) =
+            ( model.subModel, [] )
+                |> SubPage.handleDelivery model.session delivery
+                |> SubPage.handleNotFound model.session.notFoundImgSrc model.route
+
+        ( newModel, applicationEffects ) =
+            handleDeliveryForApplication
+                delivery
+                { model | subModel = newSubmodel }
+
+        ( newSession, sessionEffects ) =
+            ( newModel.session, [] )
+                |> SideBar.handleDelivery delivery
+    in
+    ( { newModel | session = newSession }, subPageEffects ++ applicationEffects ++ sessionEffects )
+
+
+handleDeliveryForApplication : Delivery -> Model -> ( Model, List Effect )
+handleDeliveryForApplication delivery model =
+    case delivery of
+        NonHrefLinkClicked route ->
+            ( model, [ LoadExternal route ] )
+
+        TokenReceived (Ok tokenValue) ->
+            let
+                session =
+                    model.session
+
+                newSession =
+                    { session | csrfToken = tokenValue }
+            in
+            ( { model | session = newSession }, [] )
 
         RouteChanged route ->
             urlUpdate route model
 
-        SubMsg navIndex m ->
-            if validNavIndex model.navIndex navIndex then
-                let
-                    ( subModel, subEffects ) =
-                        SubPage.update
-                            model.turbulenceImgSrc
-                            model.notFoundImgSrc
-                            model.csrfToken
-                            model.route
-                            m
-                            model.subModel
-                in
-                ( { model | subModel = subModel }
-                , List.map (\ef -> ( SubPage navIndex, ef )) subEffects
-                )
+        WindowResized width _ ->
+            let
+                session =
+                    model.session
 
-            else
-                ( model, [] )
+                newSession =
+                    { session | screenSize = ScreenSize.fromWindowSize width }
+            in
+            ( { model | session = newSession }, [] )
 
-        TokenReceived Nothing ->
+        UrlRequest request ->
+            case request of
+                Browser.Internal url ->
+                    case Routes.parsePath url of
+                        Just route ->
+                            ( model, [ NavigateTo <| Routes.toString route ] )
+
+                        Nothing ->
+                            ( model, [ LoadExternal <| Url.toString url ] )
+
+                Browser.External url ->
+                    ( model, [ LoadExternal url ] )
+
+        _ ->
             ( model, [] )
 
-        TokenReceived (Just tokenValue) ->
-            let
-                ( newSubModel, subCmd ) =
-                    SubPage.update
-                        model.turbulenceImgSrc
-                        model.notFoundImgSrc
-                        tokenValue
-                        model.route
-                        (SubPage.Msgs.NewCSRFToken tokenValue)
-                        model.subModel
-            in
-            ( { model
-                | csrfToken = tokenValue
-                , subModel = newSubModel
-              }
-            , List.map (\ef -> ( SubPage anyNavIndex, ef )) subCmd
-            )
 
-        Callback dispatch callback ->
-            handleCallback dispatch callback model
-
-        KeyDown keycode ->
-            case model.subModel of
-                SubPage.DashboardModel _ ->
-                    update
-                        (SubMsg model.navIndex <|
-                            SubPage.Msgs.DashboardMsg <|
-                                Dashboard.Msgs.FromTopBar <|
-                                    TopBar.Msgs.KeyDown keycode
-                        )
-                        model
-
-                SubPage.ResourceModel _ ->
-                    update
-                        (SubMsg model.navIndex <|
-                            SubPage.Msgs.ResourceMsg <|
-                                Resource.Msgs.KeyDowns keycode
-                        )
-                        model
-
-                _ ->
-                    ( model, [] )
-
-        KeyUp keycode ->
-            case model.subModel of
-                SubPage.BuildModel _ ->
-                    update
-                        (SubMsg model.navIndex <|
-                            SubPage.Msgs.BuildMsg <|
-                                Build.Msgs.KeyUped keycode
-                        )
-                        model
-
-                SubPage.ResourceModel _ ->
-                    update
-                        (SubMsg model.navIndex <|
-                            SubPage.Msgs.ResourceMsg <|
-                                Resource.Msgs.KeyUps keycode
-                        )
-                        model
-
-                _ ->
-                    ( model, [] )
-
-
-redirectToLoginIfNecessary : Http.Error -> NavIndex -> List ( LayoutDispatch, Effect )
-redirectToLoginIfNecessary err navIndex =
+redirectToLoginIfNecessary : Http.Error -> ET Model
+redirectToLoginIfNecessary err ( model, effects ) =
     case err of
         Http.BadStatus { status } ->
             if status.code == 401 then
-                [ ( SubPage navIndex, RedirectToLogin ) ]
+                ( model, effects ++ [ RedirectToLogin ] )
 
             else
-                []
+                ( model, effects )
 
         _ ->
-            []
+            ( model, effects )
 
 
-validNavIndex : NavIndex -> NavIndex -> Bool
-validNavIndex modelNavIndex navIndex =
-    if navIndex == anyNavIndex then
-        True
-
-    else
-        navIndex == modelNavIndex
-
-
-urlUpdate : Routes.Route -> Model -> ( Model, List ( LayoutDispatch, Effect ) )
+urlUpdate : Routes.Route -> Model -> ( Model, List Effect )
 urlUpdate route model =
     let
-        navIndex =
-            if route == model.route then
-                model.navIndex
-
-            else
-                model.navIndex + 1
-
         ( newSubmodel, subEffects ) =
             if route == model.route then
                 ( model.subModel, [] )
 
             else if routeMatchesModel route model then
-                SubPage.urlUpdate route model.subModel
+                SubPage.urlUpdate
+                    { from = model.route
+                    , to = route
+                    }
+                    ( model.subModel, [] )
 
             else
-                SubPage.init
-                    { turbulencePath = model.turbulenceImgSrc
-                    , csrfToken = model.csrfToken
-                    , authToken = model.authToken
-                    , pipelineRunningKeyframes = model.pipelineRunningKeyframes
-                    }
-                    route
+                SubPage.init model.session route
     in
-    ( { model
-        | navIndex = navIndex
-        , subModel = newSubmodel
-        , route = route
-      }
-    , List.map (\ef -> ( SubPage navIndex, ef )) subEffects
-        ++ [ ( Layout, SetFavIcon Nothing ) ]
+    ( { model | subModel = newSubmodel, route = route }
+    , subEffects ++ [ SetFavIcon Nothing ]
     )
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document TopLevelMessage
 view model =
-    Html.map (SubMsg model.navIndex) (SubPage.view model.userState model.subModel)
+    let
+        ( title, body ) =
+            SubPage.view model.session model.subModel
+    in
+    { title = title ++ " - Concourse"
+    , body =
+        List.map (Html.map Update)
+            [ SubPage.tooltip model.subModel model.session
+                |> Maybe.map (Tooltip.view model.session)
+                |> Maybe.withDefault (Html.text "")
+            , SideBar.tooltip model.session
+                |> Maybe.map (Tooltip.view model.session)
+                |> Maybe.withDefault (Html.text "")
+            , Html.div
+                (id "page-wrapper"
+                    :: style "height" "100%"
+                    :: (if model.session.draggingSideBar then
+                            Styles.disableInteraction
+
+                        else
+                            []
+                       )
+                )
+                [ body ]
+            ]
+    }
 
 
-subscriptions : Model -> List (Subscription Msg)
+subscriptions : Model -> List Subscription
 subscriptions model =
-    [ OnNewUrl NewUrl
-    , OnTokenReceived TokenReceived
+    [ OnNonHrefLinkClicked
+    , OnTokenReceived
+    , OnSideBarStateReceived
+    , OnFavoritedPipelinesReceived
+    , OnWindowResize
     ]
-        ++ (SubPage.subscriptions model.subModel
-                |> List.map (Subscription.map (SubMsg model.navIndex))
+        ++ (if model.session.draggingSideBar then
+                [ OnMouse
+                , OnMouseUp
+                ]
+
+            else
+                []
            )
+        ++ SubPage.subscriptions model.subModel
 
 
 routeMatchesModel : Routes.Route -> Model -> Bool
@@ -368,6 +503,9 @@ routeMatchesModel route model =
             True
 
         ( Routes.Build _, SubPage.BuildModel _ ) ->
+            True
+
+        ( Routes.OneOffBuild _, SubPage.BuildModel _ ) ->
             True
 
         ( Routes.Job _, SubPage.JobModel _ ) ->

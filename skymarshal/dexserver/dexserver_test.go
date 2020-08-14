@@ -8,14 +8,11 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc/atccmd"
 	"github.com/concourse/concourse/skymarshal/dexserver"
-	"github.com/concourse/concourse/skymarshal/skycmd"
 	store "github.com/concourse/concourse/skymarshal/storage"
 	"github.com/concourse/dex/server"
 	"github.com/concourse/dex/storage"
 	"github.com/concourse/flag"
-	"github.com/jessevdk/go-flags"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -104,11 +101,9 @@ var _ = Describe("Dex Server", func() {
 
 			Context("when the user's password is provided as a bcrypt hash", func() {
 				BeforeEach(func() {
-					config.Flags = skycmd.AuthFlags{
-						LocalUsers: map[string]string{
-							"some-user-0": "$2a$10$3veRX245rLrpOKrgu7jIyOEKF5Km5tY86bZql6/oTMssgPO/6XJju",
-							"some-user-1": "$2a$10$31qaZYMqx7mplkLoMrpPHeF3xf5eN37Zyv3e/QdPUs6S6IqrDA9Du",
-						},
+					config.Users = map[string]string{
+						"some-user-0": "$2a$10$3veRX245rLrpOKrgu7jIyOEKF5Km5tY86bZql6/oTMssgPO/6XJju",
+						"some-user-1": "$2a$10$31qaZYMqx7mplkLoMrpPHeF3xf5eN37Zyv3e/QdPUs6S6IqrDA9Du",
 					}
 				})
 
@@ -117,11 +112,9 @@ var _ = Describe("Dex Server", func() {
 
 			Context("when the user's password is provided in plaintext", func() {
 				BeforeEach(func() {
-					config.Flags = skycmd.AuthFlags{
-						LocalUsers: map[string]string{
-							"some-user-0": "some-password-0",
-							"some-user-1": "some-password-1",
-						},
+					config.Users = map[string]string{
+						"some-user-0": "some-password-0",
+						"some-user-1": "some-password-1",
 					}
 				})
 
@@ -134,11 +127,9 @@ var _ = Describe("Dex Server", func() {
 						Expect(err).ToNot(HaveOccurred())
 
 						// The final config will be created in the JustBeforeEach block
-						config.Flags = skycmd.AuthFlags{
-							LocalUsers: map[string]string{
-								"some-user-0": "some-password-0",
-								"some-user-1": "some-password-1-changed",
-							},
+						config.Users = map[string]string{
+							"some-user-0": "some-password-0",
+							"some-user-1": "some-password-1-changed",
 						}
 					})
 
@@ -170,10 +161,8 @@ var _ = Describe("Dex Server", func() {
 						Expect(err).ToNot(HaveOccurred())
 
 						// The final config will be created in the JustBeforeEach block
-						config.Flags = skycmd.AuthFlags{
-							LocalUsers: map[string]string{
-								"some-user-0": "some-password-0",
-							},
+						config.Users = map[string]string{
+							"some-user-0": "some-password-0",
 						}
 					})
 
@@ -192,120 +181,39 @@ var _ = Describe("Dex Server", func() {
 			})
 		})
 
-		Context("when clientId and clientSecret are configured", func() {
+		Context("when clients are configured in plain text", func() {
 			BeforeEach(func() {
-				config.ClientID = "some-client-id"
-				config.ClientSecret = "some-client-secret"
+				config.Clients = map[string]string{
+					"some-client-id": "some-client-secret",
+				}
 				config.RedirectURL = "http://example.com"
 			})
 
-			It("should contain the configured clients", func() {
+			It("should contain the configured clients with a bcrypted secret", func() {
 				clients, err := storage.ListClients()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(clients).To(HaveLen(1))
 				Expect(clients[0].ID).To(Equal("some-client-id"))
-				Expect(clients[0].Secret).To(Equal("some-client-secret"))
+				Expect(bcrypt.CompareHashAndPassword([]byte(clients[0].Secret), []byte("some-client-secret"))).NotTo(HaveOccurred())
 				Expect(clients[0].RedirectURIs).To(ContainElement("http://example.com"))
-				Expect(clients[0].Public).To(BeFalse())
 			})
 		})
 
-		Context("when oauth provider is used", func() {
-			var (
-				cmd    *atccmd.RunCommand
-				parser *flags.Parser
-			)
-
+		Context("when clients are configured in bcrypt format", func() {
 			BeforeEach(func() {
-				cmd = &atccmd.RunCommand{}
-
-				parser = flags.NewParser(cmd, flags.Default^flags.PrintErrors)
-				parser.NamespaceDelimiter = "-"
-
-				args := []string{
-					"--oauth-display-name=generic-provider-final",
-					"--oauth-client-id=client-id",
-					"--oauth-client-secret=client-secret",
-					"--oauth-auth-url=https://example.com/authorize",
-					"--oauth-token-url=https://example.com/token",
-					"--oauth-userinfo-url=https://example.com/userinfo",
+				config.Clients = map[string]string{
+					"some-client-id": "$2a$10$3veRX245rLrpOKrgu7jIyOEKF5Km5tY86bZql6/oTMssgPO/6XJju",
 				}
-				authGroup := parser.Group.Find("Authentication")
-				Expect(authGroup).ToNot(BeNil())
+				config.RedirectURL = "http://example.com"
+			})
 
-				skycmd.WireConnectors(authGroup)
-				skycmd.WireTeamConnectors(authGroup.Find("Authentication (Main Team)"))
-
-				args, err := parser.ParseArgs(args)
+			It("should contain the configured clients with the given secret", func() {
+				clients, err := storage.ListClients()
 				Expect(err).NotTo(HaveOccurred())
-
-				config.IssuerURL = "http://example.com/"
-				config.Flags = cmd.Auth.AuthFlags
-			})
-
-			It("sets up an oauth connector", func() {
-				connectors, err := storage.ListConnectors()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(len(connectors)).To(Equal(1))
-
-				Expect(connectors[0].Name).To(Equal("generic-provider-final"))
-			})
-
-			Context("when oauth params are changed", func() {
-				BeforeEach(func() {
-					// First create the first config based on the parent Context
-					serverConfig, err = dexserver.NewDexServerConfig(config)
-					Expect(err).ToNot(HaveOccurred())
-
-					// The final config will be created in the JustBeforeEach block
-					args := []string{
-						"--oauth-display-name=generic-provider-new-name",
-						"--oauth-client-id=client-id",
-						"--oauth-client-secret=client-secret",
-						"--oauth-auth-url=https://example.com/authorize",
-						"--oauth-token-url=https://example.com/token",
-						"--oauth-userinfo-url=https://example.com/userinfo",
-					}
-
-					_, err := parser.ParseArgs(args)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("should update the oauth connector", func() {
-					connectors, err := storage.ListConnectors()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(len(connectors)).To(Equal(1))
-
-					Expect(connectors[0].Name).To(Equal("generic-provider-new-name"))
-				})
-
-			})
-
-			Context("when oauth params are then removed", func() {
-				BeforeEach(func() {
-					// First create the first config based on the parent Context
-					serverConfig, err = dexserver.NewDexServerConfig(config)
-					Expect(err).ToNot(HaveOccurred())
-
-					// The final config will be created in the JustBeforeEach block
-					args := []string{
-						"--oauth-display-name=",
-						"--oauth-client-id=",
-						"--oauth-client-secret=",
-						"--oauth-auth-url=",
-						"--oauth-token-url=",
-						"--oauth-userinfo-url=",
-					}
-
-					_, err := parser.ParseArgs(args)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("should remove the oauth connector", func() {
-					connectors, err := storage.ListConnectors()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(len(connectors)).To(BeZero())
-				})
+				Expect(clients).To(HaveLen(1))
+				Expect(clients[0].ID).To(Equal("some-client-id"))
+				Expect(clients[0].Secret).To(Equal("$2a$10$3veRX245rLrpOKrgu7jIyOEKF5Km5tY86bZql6/oTMssgPO/6XJju"))
+				Expect(clients[0].RedirectURIs).To(ContainElement("http://example.com"))
 			})
 		})
 	})

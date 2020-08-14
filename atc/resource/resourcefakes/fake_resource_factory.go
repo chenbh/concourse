@@ -2,64 +2,48 @@
 package resourcefakes
 
 import (
-	context "context"
-	sync "sync"
+	"sync"
 
-	lager "code.cloudfoundry.org/lager"
-	creds "github.com/concourse/concourse/atc/creds"
-	db "github.com/concourse/concourse/atc/db"
-	resource "github.com/concourse/concourse/atc/resource"
-	worker "github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/resource"
 )
 
 type FakeResourceFactory struct {
-	NewResourceStub        func(context.Context, lager.Logger, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, worker.WorkerSpec, creds.VersionedResourceTypes, worker.ImageFetchingDelegate) (resource.Resource, error)
+	NewResourceStub        func(atc.Source, atc.Params, atc.Version) resource.Resource
 	newResourceMutex       sync.RWMutex
 	newResourceArgsForCall []struct {
-		arg1 context.Context
-		arg2 lager.Logger
-		arg3 db.ContainerOwner
-		arg4 db.ContainerMetadata
-		arg5 worker.ContainerSpec
-		arg6 worker.WorkerSpec
-		arg7 creds.VersionedResourceTypes
-		arg8 worker.ImageFetchingDelegate
+		arg1 atc.Source
+		arg2 atc.Params
+		arg3 atc.Version
 	}
 	newResourceReturns struct {
 		result1 resource.Resource
-		result2 error
 	}
 	newResourceReturnsOnCall map[int]struct {
 		result1 resource.Resource
-		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeResourceFactory) NewResource(arg1 context.Context, arg2 lager.Logger, arg3 db.ContainerOwner, arg4 db.ContainerMetadata, arg5 worker.ContainerSpec, arg6 worker.WorkerSpec, arg7 creds.VersionedResourceTypes, arg8 worker.ImageFetchingDelegate) (resource.Resource, error) {
+func (fake *FakeResourceFactory) NewResource(arg1 atc.Source, arg2 atc.Params, arg3 atc.Version) resource.Resource {
 	fake.newResourceMutex.Lock()
 	ret, specificReturn := fake.newResourceReturnsOnCall[len(fake.newResourceArgsForCall)]
 	fake.newResourceArgsForCall = append(fake.newResourceArgsForCall, struct {
-		arg1 context.Context
-		arg2 lager.Logger
-		arg3 db.ContainerOwner
-		arg4 db.ContainerMetadata
-		arg5 worker.ContainerSpec
-		arg6 worker.WorkerSpec
-		arg7 creds.VersionedResourceTypes
-		arg8 worker.ImageFetchingDelegate
-	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
-	fake.recordInvocation("NewResource", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
+		arg1 atc.Source
+		arg2 atc.Params
+		arg3 atc.Version
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("NewResource", []interface{}{arg1, arg2, arg3})
 	fake.newResourceMutex.Unlock()
 	if fake.NewResourceStub != nil {
-		return fake.NewResourceStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+		return fake.NewResourceStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.newResourceReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeResourceFactory) NewResourceCallCount() int {
@@ -68,43 +52,40 @@ func (fake *FakeResourceFactory) NewResourceCallCount() int {
 	return len(fake.newResourceArgsForCall)
 }
 
-func (fake *FakeResourceFactory) NewResourceCalls(stub func(context.Context, lager.Logger, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, worker.WorkerSpec, creds.VersionedResourceTypes, worker.ImageFetchingDelegate) (resource.Resource, error)) {
+func (fake *FakeResourceFactory) NewResourceCalls(stub func(atc.Source, atc.Params, atc.Version) resource.Resource) {
 	fake.newResourceMutex.Lock()
 	defer fake.newResourceMutex.Unlock()
 	fake.NewResourceStub = stub
 }
 
-func (fake *FakeResourceFactory) NewResourceArgsForCall(i int) (context.Context, lager.Logger, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, worker.WorkerSpec, creds.VersionedResourceTypes, worker.ImageFetchingDelegate) {
+func (fake *FakeResourceFactory) NewResourceArgsForCall(i int) (atc.Source, atc.Params, atc.Version) {
 	fake.newResourceMutex.RLock()
 	defer fake.newResourceMutex.RUnlock()
 	argsForCall := fake.newResourceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7, argsForCall.arg8
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeResourceFactory) NewResourceReturns(result1 resource.Resource, result2 error) {
+func (fake *FakeResourceFactory) NewResourceReturns(result1 resource.Resource) {
 	fake.newResourceMutex.Lock()
 	defer fake.newResourceMutex.Unlock()
 	fake.NewResourceStub = nil
 	fake.newResourceReturns = struct {
 		result1 resource.Resource
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
-func (fake *FakeResourceFactory) NewResourceReturnsOnCall(i int, result1 resource.Resource, result2 error) {
+func (fake *FakeResourceFactory) NewResourceReturnsOnCall(i int, result1 resource.Resource) {
 	fake.newResourceMutex.Lock()
 	defer fake.newResourceMutex.Unlock()
 	fake.NewResourceStub = nil
 	if fake.newResourceReturnsOnCall == nil {
 		fake.newResourceReturnsOnCall = make(map[int]struct {
 			result1 resource.Resource
-			result2 error
 		})
 	}
 	fake.newResourceReturnsOnCall[i] = struct {
 		result1 resource.Resource
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
 func (fake *FakeResourceFactory) Invocations() map[string][][]interface{} {

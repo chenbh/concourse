@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/worker/gclient"
 	"github.com/tedsuo/rata"
 )
 
@@ -28,11 +28,11 @@ type Heartbeater struct {
 	interval    time.Duration
 	cprInterval time.Duration
 
-	gardenClient       garden.Client
+	gardenClient       gclient.Client
 	baggageclaimClient baggageclaim.Client
 
 	atcEndpointPicker EndpointPicker
-	tokenGenerator    TokenGenerator
+	httpClient        *http.Client
 
 	registration atc.Worker
 	eventWriter  EventWriter
@@ -42,10 +42,10 @@ func NewHeartbeater(
 	clock clock.Clock,
 	interval time.Duration,
 	cprInterval time.Duration,
-	gardenClient garden.Client,
+	gardenClient gclient.Client,
 	baggageclaimClient baggageclaim.Client,
 	atcEndpointPicker EndpointPicker,
-	tokenGenerator TokenGenerator,
+	httpClient *http.Client,
 	worker atc.Worker,
 	eventWriter EventWriter,
 ) *Heartbeater {
@@ -58,7 +58,7 @@ func NewHeartbeater(
 		baggageclaimClient: baggageclaimClient,
 
 		atcEndpointPicker: atcEndpointPicker,
-		tokenGenerator:    tokenGenerator,
+		httpClient:        httpClient,
 
 		registration: worker,
 		eventWriter:  eventWriter,
@@ -130,19 +130,11 @@ func (heartbeater *Heartbeater) register(logger lager.Logger) bool {
 		return false
 	}
 
-	jwtToken, err := heartbeater.tokenGenerator.GenerateSystemToken()
-	if err != nil {
-		logger.Error("failed-to-construct-request", err)
-		return false
-	}
-
-	request.Header.Add("Authorization", "Bearer "+jwtToken)
-
 	request.URL.RawQuery = url.Values{
 		"ttl": []string{heartbeater.ttl().String()},
 	}.Encode()
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := heartbeater.httpClient.Do(request)
 	if err != nil {
 		logger.Error("failed-to-register", err)
 		return false
@@ -205,19 +197,11 @@ func (heartbeater *Heartbeater) heartbeat(logger lager.Logger) HeartbeatStatus {
 		return HeartbeatStatusUnhealthy
 	}
 
-	jwtToken, err := heartbeater.tokenGenerator.GenerateSystemToken()
-	if err != nil {
-		logger.Error("failed-to-construct-request", err)
-		return HeartbeatStatusUnhealthy
-	}
-
-	request.Header.Add("Authorization", "Bearer "+jwtToken)
-
 	request.URL.RawQuery = url.Values{
 		"ttl": []string{heartbeater.ttl().String()},
 	}.Encode()
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := heartbeater.httpClient.Do(request)
 	if err != nil {
 		logger.Error("failed-to-heartbeat", err)
 		return HeartbeatStatusUnhealthy

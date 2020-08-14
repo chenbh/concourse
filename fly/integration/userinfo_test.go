@@ -26,9 +26,15 @@ var _ = Describe("Fly CLI", func() {
 			BeforeEach(func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/sky/userinfo"),
+						ghttp.VerifyRequest("GET", "/api/v1/user"),
 						ghttp.RespondWithJSONEncoded(200, map[string]interface{}{
+							"sub":       "zero",
+							"name":      "test",
+							"user_id":   "test_id",
 							"user_name": "test_user",
+							"email":     "test_email",
+							"is_admin":  false,
+							"is_system": false,
 							"teams": map[string][]string{
 								"other_team": {"owner"},
 								"test_team":  {"owner", "viewer"},
@@ -65,7 +71,13 @@ var _ = Describe("Fly CLI", func() {
 
 					Eventually(sess).Should(gexec.Exit(0))
 					Expect(sess.Out.Contents()).To(MatchJSON(`{
+							"sub":       "zero",
+							"name":      "test",
+							"user_id":   "test_id",
 							"user_name": "test_user",
+							"email":     "test_email",
+							"is_admin":  false,
+							"is_system": false,
 							"teams": {
 								"other_team": ["owner"],
 								"test_team": ["owner", "viewer"]
@@ -79,7 +91,7 @@ var _ = Describe("Fly CLI", func() {
 			BeforeEach(func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/sky/userinfo"),
+						ghttp.VerifyRequest("GET", "/api/v1/user"),
 						ghttp.RespondWith(500, ""),
 					),
 				)

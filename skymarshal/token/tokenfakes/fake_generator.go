@@ -2,89 +2,89 @@
 package tokenfakes
 
 import (
-	sync "sync"
+	"sync"
 
-	token "github.com/concourse/concourse/skymarshal/token"
-	oauth2 "golang.org/x/oauth2"
+	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/skymarshal/token"
 )
 
 type FakeGenerator struct {
-	GenerateStub        func(map[string]interface{}) (*oauth2.Token, error)
-	generateMutex       sync.RWMutex
-	generateArgsForCall []struct {
-		arg1 map[string]interface{}
+	GenerateAccessTokenStub        func(db.Claims) (string, error)
+	generateAccessTokenMutex       sync.RWMutex
+	generateAccessTokenArgsForCall []struct {
+		arg1 db.Claims
 	}
-	generateReturns struct {
-		result1 *oauth2.Token
+	generateAccessTokenReturns struct {
+		result1 string
 		result2 error
 	}
-	generateReturnsOnCall map[int]struct {
-		result1 *oauth2.Token
+	generateAccessTokenReturnsOnCall map[int]struct {
+		result1 string
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGenerator) Generate(arg1 map[string]interface{}) (*oauth2.Token, error) {
-	fake.generateMutex.Lock()
-	ret, specificReturn := fake.generateReturnsOnCall[len(fake.generateArgsForCall)]
-	fake.generateArgsForCall = append(fake.generateArgsForCall, struct {
-		arg1 map[string]interface{}
+func (fake *FakeGenerator) GenerateAccessToken(arg1 db.Claims) (string, error) {
+	fake.generateAccessTokenMutex.Lock()
+	ret, specificReturn := fake.generateAccessTokenReturnsOnCall[len(fake.generateAccessTokenArgsForCall)]
+	fake.generateAccessTokenArgsForCall = append(fake.generateAccessTokenArgsForCall, struct {
+		arg1 db.Claims
 	}{arg1})
-	fake.recordInvocation("Generate", []interface{}{arg1})
-	fake.generateMutex.Unlock()
-	if fake.GenerateStub != nil {
-		return fake.GenerateStub(arg1)
+	fake.recordInvocation("GenerateAccessToken", []interface{}{arg1})
+	fake.generateAccessTokenMutex.Unlock()
+	if fake.GenerateAccessTokenStub != nil {
+		return fake.GenerateAccessTokenStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.generateReturns
+	fakeReturns := fake.generateAccessTokenReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeGenerator) GenerateCallCount() int {
-	fake.generateMutex.RLock()
-	defer fake.generateMutex.RUnlock()
-	return len(fake.generateArgsForCall)
+func (fake *FakeGenerator) GenerateAccessTokenCallCount() int {
+	fake.generateAccessTokenMutex.RLock()
+	defer fake.generateAccessTokenMutex.RUnlock()
+	return len(fake.generateAccessTokenArgsForCall)
 }
 
-func (fake *FakeGenerator) GenerateCalls(stub func(map[string]interface{}) (*oauth2.Token, error)) {
-	fake.generateMutex.Lock()
-	defer fake.generateMutex.Unlock()
-	fake.GenerateStub = stub
+func (fake *FakeGenerator) GenerateAccessTokenCalls(stub func(db.Claims) (string, error)) {
+	fake.generateAccessTokenMutex.Lock()
+	defer fake.generateAccessTokenMutex.Unlock()
+	fake.GenerateAccessTokenStub = stub
 }
 
-func (fake *FakeGenerator) GenerateArgsForCall(i int) map[string]interface{} {
-	fake.generateMutex.RLock()
-	defer fake.generateMutex.RUnlock()
-	argsForCall := fake.generateArgsForCall[i]
+func (fake *FakeGenerator) GenerateAccessTokenArgsForCall(i int) db.Claims {
+	fake.generateAccessTokenMutex.RLock()
+	defer fake.generateAccessTokenMutex.RUnlock()
+	argsForCall := fake.generateAccessTokenArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeGenerator) GenerateReturns(result1 *oauth2.Token, result2 error) {
-	fake.generateMutex.Lock()
-	defer fake.generateMutex.Unlock()
-	fake.GenerateStub = nil
-	fake.generateReturns = struct {
-		result1 *oauth2.Token
+func (fake *FakeGenerator) GenerateAccessTokenReturns(result1 string, result2 error) {
+	fake.generateAccessTokenMutex.Lock()
+	defer fake.generateAccessTokenMutex.Unlock()
+	fake.GenerateAccessTokenStub = nil
+	fake.generateAccessTokenReturns = struct {
+		result1 string
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeGenerator) GenerateReturnsOnCall(i int, result1 *oauth2.Token, result2 error) {
-	fake.generateMutex.Lock()
-	defer fake.generateMutex.Unlock()
-	fake.GenerateStub = nil
-	if fake.generateReturnsOnCall == nil {
-		fake.generateReturnsOnCall = make(map[int]struct {
-			result1 *oauth2.Token
+func (fake *FakeGenerator) GenerateAccessTokenReturnsOnCall(i int, result1 string, result2 error) {
+	fake.generateAccessTokenMutex.Lock()
+	defer fake.generateAccessTokenMutex.Unlock()
+	fake.GenerateAccessTokenStub = nil
+	if fake.generateAccessTokenReturnsOnCall == nil {
+		fake.generateAccessTokenReturnsOnCall = make(map[int]struct {
+			result1 string
 			result2 error
 		})
 	}
-	fake.generateReturnsOnCall[i] = struct {
-		result1 *oauth2.Token
+	fake.generateAccessTokenReturnsOnCall[i] = struct {
+		result1 string
 		result2 error
 	}{result1, result2}
 }
@@ -92,8 +92,8 @@ func (fake *FakeGenerator) GenerateReturnsOnCall(i int, result1 *oauth2.Token, r
 func (fake *FakeGenerator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.generateMutex.RLock()
-	defer fake.generateMutex.RUnlock()
+	fake.generateAccessTokenMutex.RLock()
+	defer fake.generateAccessTokenMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -2,22 +2,24 @@ package commands
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/fly/pty"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 	semisemanticversion "github.com/cppforlife/go-semi-semantic/version"
-	"github.com/mitchellh/mapstructure"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/vito/go-interact/interact"
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/oauth2"
 )
 
@@ -113,15 +115,33 @@ func (command *LoginCommand) Execute(args []string) error {
 		return err
 	}
 
+	isRawMode := pty.IsTerminal() && !command.BrowserOnly
+	if isRawMode {
+		state, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			isRawMode = false
+		} else {
+			defer func() {
+				terminal.Restore(int(os.Stdin.Fd()), state)
+				fmt.Print("\r")
+			}()
+		}
+	}
+
 	if semver.Compare(legacySemver) <= 0 && semver.Compare(devSemver) != 0 {
 		// Legacy Auth Support
-		tokenType, tokenValue, err = command.legacyAuth(target, command.BrowserOnly)
+		tokenType, tokenValue, err = command.legacyAuth(target, command.BrowserOnly, isRawMode)
 	} else {
 		if command.Username != "" && command.Password != "" {
 			tokenType, tokenValue, err = command.passwordGrant(client, command.Username, command.Password)
 		} else {
-			tokenType, tokenValue, err = command.authCodeGrant(client.URL(), command.BrowserOnly)
+			tokenType, tokenValue, err = command.authCodeGrant(client.URL(), command.BrowserOnly, isRawMode)
 		}
+	}
+
+	if errors.Is(err, pty.ErrInterrupted) {
+		fmt.Println("^C\r")
+		return nil
 	}
 
 	if err != nil {
@@ -130,9 +150,34 @@ func (command *LoginCommand) Execute(args []string) error {
 
 	fmt.Println("")
 
-	err = checkTokenTeams(tokenValue, command.TeamName)
+	verifyTarget, err := rc.NewAuthenticatedTarget("verify",
+		client.URL(),
+		command.TeamName,
+		command.Insecure,
+		&rc.TargetToken{
+			Type:  tokenType,
+			Value: tokenValue,
+		},
+		target.CACert(),
+		false)
 	if err != nil {
 		return err
+	}
+
+	userInfo, err := verifyTarget.Client().UserInfo()
+	if err != nil {
+		return err
+	}
+
+	if !userInfo.IsAdmin {
+		if userInfo.Teams != nil {
+			_, ok := userInfo.Teams[command.TeamName]
+			if !ok {
+				return errors.New("you are not a member of '" + command.TeamName + "' or the team does not exist")
+			}
+		} else {
+			return errors.New("unable to verify role on team")
+		}
 	}
 
 	return command.saveTarget(
@@ -150,7 +195,7 @@ func (command *LoginCommand) passwordGrant(client concourse.Client, username, pa
 	oauth2Config := oauth2.Config{
 		ClientID:     "fly",
 		ClientSecret: "Zmx5",
-		Endpoint:     oauth2.Endpoint{TokenURL: client.URL() + "/sky/token"},
+		Endpoint:     oauth2.Endpoint{TokenURL: client.URL() + "/sky/issuer/token"},
 		Scopes:       []string{"openid", "profile", "email", "federated:id", "groups"},
 	}
 
@@ -164,8 +209,7 @@ func (command *LoginCommand) passwordGrant(client concourse.Client, username, pa
 	return token.TokenType, token.AccessToken, nil
 }
 
-func (command *LoginCommand) authCodeGrant(targetUrl string, browserOnly bool) (string, string, error) {
-
+func (command *LoginCommand) authCodeGrant(targetUrl string, browserOnly bool, isRawMode bool) (string, string, error) {
 	var tokenStr string
 
 	stdinChannel := make(chan string)
@@ -179,16 +223,12 @@ func (command *LoginCommand) authCodeGrant(targetUrl string, browserOnly bool) (
 
 	var openURL string
 
-	fmt.Println("navigate to the following URL in your browser:")
-	fmt.Println("")
+	fmt.Println("navigate to the following URL in your browser:\r")
+	fmt.Println("\r")
 
 	openURL = fmt.Sprintf("%s/login?fly_port=%s", targetUrl, port)
 
-	fmt.Printf("  %s\n", openURL)
-	if !browserOnly {
-		fmt.Println("")
-		fmt.Printf("or enter token manually: ")
-	}
+	fmt.Printf("  %s\r\n", openURL)
 
 	if command.OpenBrowser {
 		// try to open the browser window, but don't get all hung up if it
@@ -197,7 +237,7 @@ func (command *LoginCommand) authCodeGrant(targetUrl string, browserOnly bool) (
 	}
 
 	if !browserOnly {
-		go waitForTokenInput(stdinChannel, errorChannel)
+		go waitForTokenInput(stdinChannel, errorChannel, isRawMode)
 	}
 
 	select {
@@ -211,44 +251,11 @@ func (command *LoginCommand) authCodeGrant(targetUrl string, browserOnly bool) (
 
 	segments := strings.SplitN(tokenStr, " ", 2)
 
-	return segments[0], segments[1], nil
-}
-
-func checkTokenTeams(tokenValue string, loginTeam string) error {
-	tokenContents := strings.Split(tokenValue, ".")
-	if len(tokenContents) < 2 {
-		return nil
+	if len(segments) > 1 {
+		return segments[0], segments[1], nil
+	} else {
+		return "", "", fmt.Errorf("invalid token: %v", tokenStr)
 	}
-
-	rawData, err := base64.StdEncoding.WithPadding(base64.NoPadding).DecodeString(tokenContents[1])
-	if err != nil {
-		return err
-	}
-
-	var payload map[string]interface{}
-	if err := json.Unmarshal(rawData, &payload); err != nil {
-		return err
-	}
-
-	var teamNames []string
-	teamRoles := map[string][]string{}
-	if err := mapstructure.Decode(payload["teams"], &teamRoles); err == nil {
-		for team, _ := range teamRoles {
-			teamNames = append(teamNames, team)
-		}
-	} else if err := mapstructure.Decode(payload["teams"], &teamNames); err != nil {
-		return err
-	}
-
-	for _, team := range teamNames {
-		if team == loginTeam {
-			return nil
-		}
-	}
-
-	userName, _ := payload["user_name"].(string)
-
-	return fmt.Errorf("user [%s] is not in team [%s]", userName, loginTeam)
 }
 
 func listenForTokenCallback(tokenChannel chan string, errorChannel chan error, portChannel chan string, targetUrl string) {
@@ -257,7 +264,9 @@ func listenForTokenCallback(tokenChannel chan string, errorChannel chan error, p
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", targetUrl)
 			tokenChannel <- r.FormValue("token")
-			w.WriteHeader(200)
+			if r.Header.Get("Upgrade-Insecure-Requests") != "" {
+				http.Redirect(w, r, fmt.Sprintf("%s/fly_success?noop=true", targetUrl), http.StatusFound)
+			}
 		}),
 	}
 
@@ -289,22 +298,32 @@ type tcpKeepAliveListener struct {
 	*net.TCPListener
 }
 
-func waitForTokenInput(tokenChannel chan string, errorChannel chan error) {
-	for {
-		var tokenType string
-		var tokenValue string
-		count, err := fmt.Scanf("%s %s", &tokenType, &tokenValue)
-		if err != nil {
-			if count != 2 {
-				fmt.Println("token must be of the format 'TYPE VALUE', e.g. 'Bearer ...'")
-				continue
-			}
+func waitForTokenInput(tokenChannel chan string, errorChannel chan error, isRawMode bool) {
+	fmt.Println()
 
+	for {
+		if isRawMode {
+			fmt.Print("or enter token manually (input hidden): ")
+		} else {
+			fmt.Print("or enter token manually: ")
+		}
+		tokenBytes, err := pty.ReadLine(os.Stdin)
+		token := strings.TrimSpace(string(tokenBytes))
+		if len(token) == 0 && err == io.EOF {
+			return
+		}
+		if err != nil && err != io.EOF {
 			errorChannel <- err
 			return
 		}
 
-		tokenChannel <- tokenType + " " + tokenValue
+		parts := strings.Split(token, " ")
+		if len(parts) != 2 {
+			fmt.Println("\rtoken must be of the format 'TYPE VALUE', e.g. 'Bearer ...'\r")
+			continue
+		}
+
+		tokenChannel <- token
 		break
 	}
 }
@@ -325,12 +344,12 @@ func (command *LoginCommand) saveTarget(url string, token *rc.TargetToken, caCer
 		return err
 	}
 
-	fmt.Println("target saved")
+	fmt.Println("\rtarget saved\r")
 
 	return nil
 }
 
-func (command *LoginCommand) legacyAuth(target rc.Target, browserOnly bool) (string, string, error) {
+func (command *LoginCommand) legacyAuth(target rc.Target, browserOnly bool, isRawMode bool) (string, string, error) {
 
 	httpClient := target.Client().HTTPClient()
 
@@ -408,14 +427,9 @@ func (command *LoginCommand) legacyAuth(target rc.Target, browserOnly bool) (str
 
 		theURL := fmt.Sprintf("%s&fly_local_port=%s\n", chosenMethod.AuthURL, port)
 
-		fmt.Println("navigate to the following URL in your browser:")
+		fmt.Println("navigate to the following URL in your browser:\r")
 		fmt.Println("")
-		fmt.Printf("    %s", theURL)
-
-		if !browserOnly {
-			fmt.Println("")
-			fmt.Printf("or enter token manually: ")
-		}
+		fmt.Printf("    %s\r\n", theURL)
 
 		if command.OpenBrowser {
 			// try to open the browser window, but don't get all hung up if it
@@ -424,7 +438,7 @@ func (command *LoginCommand) legacyAuth(target rc.Target, browserOnly bool) (str
 		}
 
 		if !browserOnly {
-			go waitForTokenInput(stdinChannel, errorChannel)
+			go waitForTokenInput(stdinChannel, errorChannel, isRawMode)
 		}
 
 		select {

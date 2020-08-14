@@ -1,11 +1,14 @@
 package resourceserver
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/tedsuo/rata"
 )
@@ -24,17 +27,59 @@ func (s *Server) CheckResourceType(dbPipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		scanner := s.scannerFactory.NewResourceTypeScanner(dbPipeline)
-
-		err = scanner.ScanFromVersion(logger, resourceName, reqBody.From)
-		switch err.(type) {
-		case db.ResourceTypeNotFoundError:
-			w.WriteHeader(http.StatusNotFound)
-		case error:
+		dbResourceType, found, err := dbPipeline.ResourceType(resourceName)
+		if err != nil {
+			logger.Error("failed-to-get-resource-type", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(err.Error()))
-		default:
-			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if !found {
+			logger.Debug("resource-type-not-found", lager.Data{"resource": resourceName})
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		dbResourceTypes, err := dbPipeline.ResourceTypes()
+		if err != nil {
+			logger.Error("failed-to-get-resource-types", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		check, created, err := s.checkFactory.TryCreateCheck(
+			lagerctx.NewContext(context.Background(), logger),
+			dbResourceType,
+			dbResourceTypes,
+			reqBody.From,
+			true,
+		)
+		if err != nil {
+			s.logger.Error("failed-to-create-check", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		if !created {
+			s.logger.Info("check-not-created")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = s.checkFactory.NotifyChecker()
+		if err != nil {
+			s.logger.Error("failed-to-notify-checker", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+
+		err = json.NewEncoder(w).Encode(present.Check(check))
+		if err != nil {
+			logger.Error("failed-to-encode-check", err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
 }

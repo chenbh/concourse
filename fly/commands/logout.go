@@ -14,20 +14,20 @@ type LogoutCommand struct {
 func (command *LogoutCommand) Execute(args []string) error {
 
 	if Fly.Target != "" && !command.All {
-		if err := rc.DeleteTarget(Fly.Target); err != nil {
+		if err := rc.LogoutTarget(Fly.Target); err != nil {
 			return err
 		}
 
 		fmt.Println("logged out of target: " + Fly.Target)
 	} else if Fly.Target == "" && command.All {
 
-		flyYAML, err := rc.LoadTargets()
+		targets, err := rc.LoadTargets()
 		if err != nil {
 			return err
 		}
 
-		for targetName := range flyYAML.Targets {
-			if err := rc.DeleteTarget(targetName); err != nil {
+		for targetName := range targets {
+			if err := rc.LogoutTarget(targetName); err != nil {
 				return err
 			}
 		}

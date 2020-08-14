@@ -2,13 +2,14 @@
 package workerfakes
 
 import (
-	io "io"
-	sync "sync"
+	"context"
+	"io"
+	"sync"
 
-	lager "code.cloudfoundry.org/lager"
-	baggageclaim "github.com/concourse/baggageclaim"
-	db "github.com/concourse/concourse/atc/db"
-	worker "github.com/concourse/concourse/atc/worker"
+	"code.cloudfoundry.org/lager"
+	"github.com/concourse/baggageclaim"
+	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/worker"
 )
 
 type FakeVolume struct {
@@ -46,6 +47,16 @@ type FakeVolume struct {
 	destroyReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetResourceCacheIDStub        func() int
+	getResourceCacheIDMutex       sync.RWMutex
+	getResourceCacheIDArgsForCall []struct {
+	}
+	getResourceCacheIDReturns struct {
+		result1 int
+	}
+	getResourceCacheIDReturnsOnCall map[int]struct {
+		result1 int
+	}
 	HandleStub        func() string
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
@@ -55,6 +66,20 @@ type FakeVolume struct {
 	}
 	handleReturnsOnCall map[int]struct {
 		result1 string
+	}
+	InitializeArtifactStub        func(string, int) (db.WorkerArtifact, error)
+	initializeArtifactMutex       sync.RWMutex
+	initializeArtifactArgsForCall []struct {
+		arg1 string
+		arg2 int
+	}
+	initializeArtifactReturns struct {
+		result1 db.WorkerArtifact
+		result2 error
+	}
+	initializeArtifactReturnsOnCall map[int]struct {
+		result1 db.WorkerArtifact
+		result2 error
 	}
 	InitializeResourceCacheStub        func(db.UsedResourceCache) error
 	initializeResourceCacheMutex       sync.RWMutex
@@ -127,11 +152,13 @@ type FakeVolume struct {
 	setPropertyReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StreamInStub        func(string, io.Reader) error
+	StreamInStub        func(context.Context, string, baggageclaim.Encoding, io.Reader) error
 	streamInMutex       sync.RWMutex
 	streamInArgsForCall []struct {
-		arg1 string
-		arg2 io.Reader
+		arg1 context.Context
+		arg2 string
+		arg3 baggageclaim.Encoding
+		arg4 io.Reader
 	}
 	streamInReturns struct {
 		result1 error
@@ -139,10 +166,12 @@ type FakeVolume struct {
 	streamInReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StreamOutStub        func(string) (io.ReadCloser, error)
+	StreamOutStub        func(context.Context, string, baggageclaim.Encoding) (io.ReadCloser, error)
 	streamOutMutex       sync.RWMutex
 	streamOutArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
+		arg3 baggageclaim.Encoding
 	}
 	streamOutReturns struct {
 		result1 io.ReadCloser
@@ -334,6 +363,58 @@ func (fake *FakeVolume) DestroyReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeVolume) GetResourceCacheID() int {
+	fake.getResourceCacheIDMutex.Lock()
+	ret, specificReturn := fake.getResourceCacheIDReturnsOnCall[len(fake.getResourceCacheIDArgsForCall)]
+	fake.getResourceCacheIDArgsForCall = append(fake.getResourceCacheIDArgsForCall, struct {
+	}{})
+	fake.recordInvocation("GetResourceCacheID", []interface{}{})
+	fake.getResourceCacheIDMutex.Unlock()
+	if fake.GetResourceCacheIDStub != nil {
+		return fake.GetResourceCacheIDStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getResourceCacheIDReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeVolume) GetResourceCacheIDCallCount() int {
+	fake.getResourceCacheIDMutex.RLock()
+	defer fake.getResourceCacheIDMutex.RUnlock()
+	return len(fake.getResourceCacheIDArgsForCall)
+}
+
+func (fake *FakeVolume) GetResourceCacheIDCalls(stub func() int) {
+	fake.getResourceCacheIDMutex.Lock()
+	defer fake.getResourceCacheIDMutex.Unlock()
+	fake.GetResourceCacheIDStub = stub
+}
+
+func (fake *FakeVolume) GetResourceCacheIDReturns(result1 int) {
+	fake.getResourceCacheIDMutex.Lock()
+	defer fake.getResourceCacheIDMutex.Unlock()
+	fake.GetResourceCacheIDStub = nil
+	fake.getResourceCacheIDReturns = struct {
+		result1 int
+	}{result1}
+}
+
+func (fake *FakeVolume) GetResourceCacheIDReturnsOnCall(i int, result1 int) {
+	fake.getResourceCacheIDMutex.Lock()
+	defer fake.getResourceCacheIDMutex.Unlock()
+	fake.GetResourceCacheIDStub = nil
+	if fake.getResourceCacheIDReturnsOnCall == nil {
+		fake.getResourceCacheIDReturnsOnCall = make(map[int]struct {
+			result1 int
+		})
+	}
+	fake.getResourceCacheIDReturnsOnCall[i] = struct {
+		result1 int
+	}{result1}
+}
+
 func (fake *FakeVolume) Handle() string {
 	fake.handleMutex.Lock()
 	ret, specificReturn := fake.handleReturnsOnCall[len(fake.handleArgsForCall)]
@@ -384,6 +465,70 @@ func (fake *FakeVolume) HandleReturnsOnCall(i int, result1 string) {
 	fake.handleReturnsOnCall[i] = struct {
 		result1 string
 	}{result1}
+}
+
+func (fake *FakeVolume) InitializeArtifact(arg1 string, arg2 int) (db.WorkerArtifact, error) {
+	fake.initializeArtifactMutex.Lock()
+	ret, specificReturn := fake.initializeArtifactReturnsOnCall[len(fake.initializeArtifactArgsForCall)]
+	fake.initializeArtifactArgsForCall = append(fake.initializeArtifactArgsForCall, struct {
+		arg1 string
+		arg2 int
+	}{arg1, arg2})
+	fake.recordInvocation("InitializeArtifact", []interface{}{arg1, arg2})
+	fake.initializeArtifactMutex.Unlock()
+	if fake.InitializeArtifactStub != nil {
+		return fake.InitializeArtifactStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.initializeArtifactReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeVolume) InitializeArtifactCallCount() int {
+	fake.initializeArtifactMutex.RLock()
+	defer fake.initializeArtifactMutex.RUnlock()
+	return len(fake.initializeArtifactArgsForCall)
+}
+
+func (fake *FakeVolume) InitializeArtifactCalls(stub func(string, int) (db.WorkerArtifact, error)) {
+	fake.initializeArtifactMutex.Lock()
+	defer fake.initializeArtifactMutex.Unlock()
+	fake.InitializeArtifactStub = stub
+}
+
+func (fake *FakeVolume) InitializeArtifactArgsForCall(i int) (string, int) {
+	fake.initializeArtifactMutex.RLock()
+	defer fake.initializeArtifactMutex.RUnlock()
+	argsForCall := fake.initializeArtifactArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeVolume) InitializeArtifactReturns(result1 db.WorkerArtifact, result2 error) {
+	fake.initializeArtifactMutex.Lock()
+	defer fake.initializeArtifactMutex.Unlock()
+	fake.InitializeArtifactStub = nil
+	fake.initializeArtifactReturns = struct {
+		result1 db.WorkerArtifact
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeVolume) InitializeArtifactReturnsOnCall(i int, result1 db.WorkerArtifact, result2 error) {
+	fake.initializeArtifactMutex.Lock()
+	defer fake.initializeArtifactMutex.Unlock()
+	fake.InitializeArtifactStub = nil
+	if fake.initializeArtifactReturnsOnCall == nil {
+		fake.initializeArtifactReturnsOnCall = make(map[int]struct {
+			result1 db.WorkerArtifact
+			result2 error
+		})
+	}
+	fake.initializeArtifactReturnsOnCall[i] = struct {
+		result1 db.WorkerArtifact
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeVolume) InitializeResourceCache(arg1 db.UsedResourceCache) error {
@@ -738,17 +883,19 @@ func (fake *FakeVolume) SetPropertyReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeVolume) StreamIn(arg1 string, arg2 io.Reader) error {
+func (fake *FakeVolume) StreamIn(arg1 context.Context, arg2 string, arg3 baggageclaim.Encoding, arg4 io.Reader) error {
 	fake.streamInMutex.Lock()
 	ret, specificReturn := fake.streamInReturnsOnCall[len(fake.streamInArgsForCall)]
 	fake.streamInArgsForCall = append(fake.streamInArgsForCall, struct {
-		arg1 string
-		arg2 io.Reader
-	}{arg1, arg2})
-	fake.recordInvocation("StreamIn", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 baggageclaim.Encoding
+		arg4 io.Reader
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("StreamIn", []interface{}{arg1, arg2, arg3, arg4})
 	fake.streamInMutex.Unlock()
 	if fake.StreamInStub != nil {
-		return fake.StreamInStub(arg1, arg2)
+		return fake.StreamInStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -763,17 +910,17 @@ func (fake *FakeVolume) StreamInCallCount() int {
 	return len(fake.streamInArgsForCall)
 }
 
-func (fake *FakeVolume) StreamInCalls(stub func(string, io.Reader) error) {
+func (fake *FakeVolume) StreamInCalls(stub func(context.Context, string, baggageclaim.Encoding, io.Reader) error) {
 	fake.streamInMutex.Lock()
 	defer fake.streamInMutex.Unlock()
 	fake.StreamInStub = stub
 }
 
-func (fake *FakeVolume) StreamInArgsForCall(i int) (string, io.Reader) {
+func (fake *FakeVolume) StreamInArgsForCall(i int) (context.Context, string, baggageclaim.Encoding, io.Reader) {
 	fake.streamInMutex.RLock()
 	defer fake.streamInMutex.RUnlock()
 	argsForCall := fake.streamInArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeVolume) StreamInReturns(result1 error) {
@@ -799,16 +946,18 @@ func (fake *FakeVolume) StreamInReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeVolume) StreamOut(arg1 string) (io.ReadCloser, error) {
+func (fake *FakeVolume) StreamOut(arg1 context.Context, arg2 string, arg3 baggageclaim.Encoding) (io.ReadCloser, error) {
 	fake.streamOutMutex.Lock()
 	ret, specificReturn := fake.streamOutReturnsOnCall[len(fake.streamOutArgsForCall)]
 	fake.streamOutArgsForCall = append(fake.streamOutArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("StreamOut", []interface{}{arg1})
+		arg1 context.Context
+		arg2 string
+		arg3 baggageclaim.Encoding
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("StreamOut", []interface{}{arg1, arg2, arg3})
 	fake.streamOutMutex.Unlock()
 	if fake.StreamOutStub != nil {
-		return fake.StreamOutStub(arg1)
+		return fake.StreamOutStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -823,17 +972,17 @@ func (fake *FakeVolume) StreamOutCallCount() int {
 	return len(fake.streamOutArgsForCall)
 }
 
-func (fake *FakeVolume) StreamOutCalls(stub func(string) (io.ReadCloser, error)) {
+func (fake *FakeVolume) StreamOutCalls(stub func(context.Context, string, baggageclaim.Encoding) (io.ReadCloser, error)) {
 	fake.streamOutMutex.Lock()
 	defer fake.streamOutMutex.Unlock()
 	fake.StreamOutStub = stub
 }
 
-func (fake *FakeVolume) StreamOutArgsForCall(i int) string {
+func (fake *FakeVolume) StreamOutArgsForCall(i int) (context.Context, string, baggageclaim.Encoding) {
 	fake.streamOutMutex.RLock()
 	defer fake.streamOutMutex.RUnlock()
 	argsForCall := fake.streamOutArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeVolume) StreamOutReturns(result1 io.ReadCloser, result2 error) {
@@ -923,8 +1072,12 @@ func (fake *FakeVolume) Invocations() map[string][][]interface{} {
 	defer fake.createChildForContainerMutex.RUnlock()
 	fake.destroyMutex.RLock()
 	defer fake.destroyMutex.RUnlock()
+	fake.getResourceCacheIDMutex.RLock()
+	defer fake.getResourceCacheIDMutex.RUnlock()
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
+	fake.initializeArtifactMutex.RLock()
+	defer fake.initializeArtifactMutex.RUnlock()
 	fake.initializeResourceCacheMutex.RLock()
 	defer fake.initializeResourceCacheMutex.RUnlock()
 	fake.initializeTaskCacheMutex.RLock()

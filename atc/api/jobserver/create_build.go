@@ -1,10 +1,11 @@
 package jobserver
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -28,21 +29,17 @@ func (s *Server) CreateJobBuild(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		if job.Config().DisableManualTrigger {
+		if job.DisableManualTrigger() {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
 
-		scheduler := s.schedulerFactory.BuildScheduler(pipeline, s.externalURL, s.variablesFactory.NewVariables(pipeline.TeamName(), pipeline.Name()))
-
-		resourceTypes, err := pipeline.ResourceTypes()
+		build, err := job.CreateBuild()
 		if err != nil {
-			logger.Error("failed-to-get-resource-types", err)
+			logger.Error("failed-to-create-job-build", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		versionedResourceTypes := resourceTypes.Deserialize()
 
 		resources, err := pipeline.Resources()
 		if err != nil {
@@ -51,12 +48,40 @@ func (s *Server) CreateJobBuild(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		build, _, err := scheduler.TriggerImmediately(logger, job, resources, versionedResourceTypes)
+		resourceTypes, err := pipeline.ResourceTypes()
 		if err != nil {
-			logger.Error("failed-to-trigger", err)
+			logger.Error("failed-to-get-resource-types", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "failed to trigger: %s", err)
 			return
+		}
+
+		inputs, err := job.Inputs()
+		if err != nil {
+			logger.Error("failed-to-get-job-inputs", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		for _, input := range inputs {
+			resource, found := resources.Lookup(input.Resource)
+			if found {
+				version := resource.CurrentPinnedVersion()
+				_, _, err := s.checkFactory.TryCreateCheck(
+					lagerctx.NewContext(context.Background(), logger),
+					resource,
+					resourceTypes,
+					version,
+					true,
+				)
+				if err != nil {
+					logger.Error("failed-to-create-check", err)
+				}
+			}
+		}
+
+		err = s.checkFactory.NotifyChecker()
+		if err != nil {
+			logger.Error("failed-to-notify-checker", err)
 		}
 
 		err = json.NewEncoder(w).Encode(present.Build(build))

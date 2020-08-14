@@ -1,35 +1,36 @@
 package exec_test
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/atc/exec"
+	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/exec/execfakes"
-	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/atc/runtime/runtimefakes"
 	"github.com/concourse/concourse/atc/worker/workerfakes"
-	"gopkg.in/yaml.v2"
-
-	boshtemplate "github.com/cloudfoundry/bosh-cli/director/template"
-
+	"github.com/concourse/concourse/vars"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"sigs.k8s.io/yaml"
 )
 
 var _ = Describe("TaskConfigSource", func() {
 	var (
 		taskConfig atc.TaskConfig
 		taskVars   atc.Params
-		repo       *worker.ArtifactRepository
+		repo       *build.Repository
 		logger     *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("task-config-source-test")
-		repo = worker.NewArtifactRepository()
+		repo = build.NewRepository()
 		taskConfig = atc.TaskConfig{
 			Platform:  "some-platform",
 			RootfsURI: "some-image",
@@ -39,13 +40,13 @@ var _ = Describe("TaskConfigSource", func() {
 					"a":               "b",
 					"evaluated-value": "((task-variable-name))",
 				},
-				Params: &atc.Params{
+				Params: atc.Params{
 					"some":            "params",
 					"evaluated-value": "((task-variable-name))",
 				},
-				Version: &atc.Version{"some": "version"},
+				Version: atc.Version{"some": "version"},
 			},
-			Params: map[string]string{
+			Params: atc.TaskEnv{
 				"key1": "key1-((task-variable-name))",
 				"key2": "key2-((task-variable-name))",
 			},
@@ -68,14 +69,14 @@ var _ = Describe("TaskConfigSource", func() {
 
 		It("fetches task config successfully", func() {
 			configSource := StaticConfigSource{Config: &taskConfig}
-			fetchedConfig, fetchErr := configSource.FetchConfig(logger, repo)
+			fetchedConfig, fetchErr := configSource.FetchConfig(context.TODO(), logger, repo)
 			Expect(fetchErr).ToNot(HaveOccurred())
 			Expect(fetchedConfig).To(Equal(taskConfig))
 		})
 
 		It("fetches config of nil task successfully", func() {
 			configSource := StaticConfigSource{Config: nil}
-			fetchedConfig, fetchErr := configSource.FetchConfig(logger, repo)
+			fetchedConfig, fetchErr := configSource.FetchConfig(context.TODO(), logger, repo)
 			Expect(fetchErr).ToNot(HaveOccurred())
 			Expect(fetchedConfig).To(Equal(atc.TaskConfig{}))
 		})
@@ -83,17 +84,24 @@ var _ = Describe("TaskConfigSource", func() {
 
 	Describe("FileConfigSource", func() {
 		var (
-			configSource FileConfigSource
-
-			fetchErr error
+			configSource     FileConfigSource
+			fakeWorkerClient *workerfakes.FakeClient
+			fetchErr         error
+			artifactName     string
 		)
 
 		BeforeEach(func() {
-			configSource = FileConfigSource{ConfigPath: "some/build.yml"}
+
+			artifactName = "some-artifact-name"
+			fakeWorkerClient = new(workerfakes.FakeClient)
+			configSource = FileConfigSource{
+				ConfigPath: artifactName + "/build.yml",
+				Client:     fakeWorkerClient,
+			}
 		})
 
 		JustBeforeEach(func() {
-			_, fetchErr = configSource.FetchConfig(logger, repo)
+			_, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 		})
 
 		Context("when the path does not indicate an artifact source", func() {
@@ -106,15 +114,15 @@ var _ = Describe("TaskConfigSource", func() {
 			})
 		})
 
-		Context("when the file's artifact source can be found in the repository", func() {
-			var fakeArtifactSource *workerfakes.FakeArtifactSource
+		Context("when the file's artifact can be found in the repository", func() {
+			var fakeArtifact *runtimefakes.FakeArtifact
 
 			BeforeEach(func() {
-				fakeArtifactSource = new(workerfakes.FakeArtifactSource)
-				repo.RegisterSource("some", fakeArtifactSource)
+				fakeArtifact = new(runtimefakes.FakeArtifact)
+				repo.RegisterArtifact(build.ArtifactName(artifactName), fakeArtifact)
 			})
 
-			Context("when the artifact source provides a proper file", func() {
+			Context("when the artifact provides a proper file", func() {
 				var streamedOut *gbytes.Buffer
 
 				BeforeEach(func() {
@@ -122,11 +130,12 @@ var _ = Describe("TaskConfigSource", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					streamedOut = gbytes.BufferWithBytes(marshalled)
-					fakeArtifactSource.StreamFileReturns(streamedOut, nil)
+					fakeWorkerClient.StreamFileFromArtifactReturns(streamedOut, nil)
 				})
 
-				It("fetches the file via the correct path", func() {
-					_, dest := fakeArtifactSource.StreamFileArgsForCall(0)
+				It("fetches the file via the correct artifact & path", func() {
+					_, _, artifact, dest := fakeWorkerClient.StreamFileFromArtifactArgsForCall(0)
+					Expect(artifact).To(Equal(fakeArtifact))
 					Expect(dest).To(Equal("build.yml"))
 				})
 
@@ -151,7 +160,7 @@ var _ = Describe("TaskConfigSource", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					streamedOut = gbytes.BufferWithBytes(marshalled)
-					fakeArtifactSource.StreamFileReturns(streamedOut, nil)
+					fakeWorkerClient.StreamFileFromArtifactReturns(streamedOut, nil)
 				})
 
 				It("returns an error", func() {
@@ -164,7 +173,7 @@ var _ = Describe("TaskConfigSource", func() {
 
 				BeforeEach(func() {
 					streamedOut = gbytes.BufferWithBytes([]byte("bogus"))
-					fakeArtifactSource.StreamFileReturns(streamedOut, nil)
+					fakeWorkerClient.StreamFileFromArtifactReturns(streamedOut, nil)
 				})
 
 				It("fails", func() {
@@ -187,7 +196,7 @@ intputs: []
 
 run: {path: a/file}
 `))
-					fakeArtifactSource.StreamFileReturns(streamedOut, nil)
+					fakeWorkerClient.StreamFileFromArtifactReturns(streamedOut, nil)
 				})
 
 				It("fails", func() {
@@ -203,7 +212,7 @@ run: {path: a/file}
 				disaster := errors.New("nope")
 
 				BeforeEach(func() {
-					fakeArtifactSource.StreamFileReturns(nil, disaster)
+					fakeWorkerClient.StreamFileFromArtifactReturns(nil, disaster)
 				})
 
 				It("returns the error", func() {
@@ -213,19 +222,19 @@ run: {path: a/file}
 
 			Context("when the file task is not found", func() {
 				BeforeEach(func() {
-					fakeArtifactSource.StreamFileReturns(nil, baggageclaim.ErrFileNotFound)
+					fakeWorkerClient.StreamFileFromArtifactReturns(nil, baggageclaim.ErrFileNotFound)
 				})
 
 				It("returns the error", func() {
 					Expect(fetchErr).To(HaveOccurred())
-					Expect(fetchErr.Error()).To(Equal("task config 'some/build.yml' not found"))
+					Expect(fetchErr.Error()).To(Equal(fmt.Sprintf("task config '%s/build.yml' not found", artifactName)))
 				})
 			})
 		})
 
 		Context("when the file's artifact source cannot be found in the repository", func() {
 			It("returns an UnknownArtifactSourceError", func() {
-				Expect(fetchErr).To(Equal(UnknownArtifactSourceError{SourceName: "some", ConfigPath: "some/build.yml"}))
+				Expect(fetchErr).To(Equal(UnknownArtifactSourceError{SourceName: build.ArtifactName(artifactName), ConfigPath: artifactName + "/build.yml"}))
 			})
 		})
 	})
@@ -245,7 +254,7 @@ run: {path: a/file}
 			config = atc.TaskConfig{
 				Platform:  "some-platform",
 				RootfsURI: "some-image",
-				Params:    map[string]string{"PARAM": "A", "ORIG_PARAM": "D"},
+				Params:    atc.TaskEnv{"PARAM": "A", "ORIG_PARAM": "D"},
 				Run: atc.TaskRunConfig{
 					Path: "echo",
 					Args: []string{"bananapants"},
@@ -263,7 +272,7 @@ run: {path: a/file}
 			})
 
 			JustBeforeEach(func() {
-				fetchedConfig, fetchErr = configSource.FetchConfig(logger, repo)
+				fetchedConfig, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 			})
 
 			It("succeeds", func() {
@@ -288,7 +297,7 @@ run: {path: a/file}
 			})
 
 			JustBeforeEach(func() {
-				fetchedConfig, fetchErr = configSource.FetchConfig(logger, repo)
+				fetchedConfig, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 			})
 
 			It("succeeds", func() {
@@ -296,7 +305,7 @@ run: {path: a/file}
 			})
 
 			It("returns the config with overridden parameters", func() {
-				Expect(fetchedConfig.Params).To(Equal(map[string]string{
+				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
 					"ORIG_PARAM":  "D",
 					"PARAM":       "B",
 					"EXTRA_PARAM": "C",
@@ -319,7 +328,7 @@ run: {path: a/file}
 				})
 
 				JustBeforeEach(func() {
-					fetchedConfig, fetchErr = configSource.FetchConfig(logger, repo)
+					fetchedConfig, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 				})
 
 				It("succeeds", func() {
@@ -352,14 +361,14 @@ run: {path: a/file}
 		})
 
 		JustBeforeEach(func() {
-			fetchedConfig, fetchErr = configSource.FetchConfig(logger, repo)
+			fetchedConfig, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 		})
 
 		Context("when the config is valid", func() {
 			config := atc.TaskConfig{
 				Platform:  "some-platform",
 				RootfsURI: "some-image",
-				Params:    map[string]string{"PARAM": "A"},
+				Params:    atc.TaskEnv{"PARAM": "A"},
 				Run: atc.TaskRunConfig{
 					Path: "echo",
 					Args: []string{"bananapants"},
@@ -380,7 +389,7 @@ run: {path: a/file}
 			BeforeEach(func() {
 				fakeConfigSource.FetchConfigReturns(atc.TaskConfig{
 					RootfsURI: "some-image",
-					Params:    map[string]string{"PARAM": "A"},
+					Params:    atc.TaskEnv{"PARAM": "A"},
 					Run: atc.TaskRunConfig{
 						Args: []string{"bananapants"},
 					},
@@ -410,28 +419,62 @@ run: {path: a/file}
 			configSource  TaskConfigSource
 			fetchedConfig atc.TaskConfig
 			fetchErr      error
+			expectAllKeys bool
 		)
 
 		JustBeforeEach(func() {
 			configSource = StaticConfigSource{Config: &taskConfig}
-			configSource = InterpolateTemplateConfigSource{ConfigSource: configSource, Vars: []boshtemplate.Variables{boshtemplate.StaticVariables(taskVars)}}
-			fetchedConfig, fetchErr = configSource.FetchConfig(logger, repo)
+			configSource = InterpolateTemplateConfigSource{
+				ConfigSource:  configSource,
+				Vars:          []vars.Variables{vars.StaticVariables(taskVars)},
+				ExpectAllKeys: expectAllKeys,
+			}
+			fetchedConfig, fetchErr = configSource.FetchConfig(context.TODO(), logger, repo)
 		})
 
-		It("fetches task config successfully", func() {
-			Expect(fetchErr).ToNot(HaveOccurred())
+		Context("when expect all keys", func() {
+			BeforeEach(func(){
+				expectAllKeys = true
+			})
+
+			It("fetches task config successfully", func() {
+				Expect(fetchErr).ToNot(HaveOccurred())
+			})
+
+			It("resolves task config parameters successfully", func() {
+				Expect(fetchedConfig.Run.Args).To(Equal([]string{"-al", "task-variable-value"}))
+				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
+					"key1": "key1-task-variable-value",
+					"key2": "key2-task-variable-value",
+				}))
+				Expect(fetchedConfig.ImageResource.Source).To(Equal(atc.Source{
+					"a":               "b",
+					"evaluated-value": "task-variable-value",
+				}))
+			})
 		})
 
-		It("resolves task config parameters successfully", func() {
-			Expect(fetchedConfig.Run.Args).To(Equal([]string{"-al", "task-variable-value"}))
-			Expect(fetchedConfig.Params).To(Equal(map[string]string{
-				"key1": "key1-task-variable-value",
-				"key2": "key2-task-variable-value",
-			}))
-			Expect(fetchedConfig.ImageResource.Source).To(Equal(atc.Source{
-				"a":               "b",
-				"evaluated-value": "task-variable-value",
-			}))
+		Context("when not expect all keys", func() {
+			BeforeEach(func(){
+				expectAllKeys = false
+				taskVars = atc.Params{}
+			})
+
+			It("fetches task config successfully", func() {
+				Expect(fetchErr).ToNot(HaveOccurred())
+			})
+
+			It("resolves task config parameters successfully", func() {
+				Expect(fetchedConfig.Run.Args).To(Equal([]string{"-al", "((task-variable-name))"}))
+				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
+					"key1": "key1-((task-variable-name))",
+					"key2": "key2-((task-variable-name))",
+				}))
+				Expect(fetchedConfig.ImageResource.Source).To(Equal(atc.Source{
+					"a":               "b",
+					"evaluated-value": "((task-variable-name))",
+				}))
+			})
 		})
 	})
 })

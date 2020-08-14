@@ -2,8 +2,9 @@ package displayhelpers
 
 import (
 	"fmt"
-	"github.com/concourse/concourse/go-concourse/concourse"
 	"os"
+
+	"github.com/concourse/concourse/go-concourse/concourse"
 
 	"github.com/concourse/concourse/fly/ui"
 )
@@ -34,11 +35,18 @@ func ShowWarnings(warnings []concourse.ConfigWarning) {
 	fmt.Fprintln(ui.Stderr, "")
 	PrintDeprecationWarningHeader()
 
+	warningTypes := make(map[string]bool)
 	for _, warning := range warnings {
+		warningTypes[warning.Type] = true
 		fmt.Fprintf(ui.Stderr, "  - %s\n", warning.Message)
 	}
 
 	fmt.Fprintln(ui.Stderr, "")
+
+	if warningTypes["invalid_identifier"] {
+		fmt.Fprintln(ui.Stderr, "identifier schema documentation: https://concourse-ci.org/config-basics.html#schema.identifier")
+		fmt.Fprintln(ui.Stderr, "")
+	}
 }
 
 func Failf(message string, args ...interface{}) {

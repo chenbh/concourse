@@ -4,24 +4,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/onsi/gomega/gexec"
-
 	. "github.com/concourse/concourse/topgun"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Ephemeral workers", func() {
-	var (
-		proxySession *gexec.Session
-		releaseName  string
-		namespace    string
-		atcEndpoint  string
-	)
+
+	var atc Endpoint
 
 	BeforeEach(func() {
-		releaseName = fmt.Sprintf("topgun-ew-%d-%d", GinkgoRandomSeed(), GinkgoParallelNode())
-		namespace = releaseName
+		setReleaseNameAndNamespace("ew")
 
 		deployConcourseChart(releaseName,
 			// TODO: https://github.com/concourse/concourse/issues/2827
@@ -30,25 +23,12 @@ var _ = Describe("Ephemeral workers", func() {
 			"--set=worker.replicas=1",
 			"--set=concourse.worker.baggageclaim.driver=overlay")
 
-		waitAllPodsInNamespaceToBeReady(namespace)
-
-		By("Creating the web proxy")
-		proxySession, atcEndpoint = startPortForwarding(namespace, releaseName+"-web", "8080")
-
-		By("Logging in")
-		fly.Login("test", "test", atcEndpoint)
-
-		By("waiting for a running worker")
-		Eventually(func() []Worker {
-			return getRunningWorkers(fly.GetWorkers())
-		}, 2*time.Minute, 10*time.Second).
-			ShouldNot(HaveLen(0))
+		atc = waitAndLogin(namespace, releaseName+"-web")
 	})
 
 	AfterEach(func() {
-		helmDestroy(releaseName)
-		Wait(Start(nil, "kubectl", "delete", "namespace", namespace, "--wait=false"))
-		Wait(proxySession.Interrupt())
+		cleanup(releaseName, namespace)
+		atc.Close()
 	})
 
 	It("Gets properly cleaned when getting removed and then put back on", func() {

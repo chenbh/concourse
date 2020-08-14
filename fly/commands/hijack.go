@@ -23,6 +23,7 @@ import (
 
 type HijackCommand struct {
 	Job            flaghelpers.JobFlag      `short:"j" long:"job"   value-name:"PIPELINE/JOB"   description:"Name of a job to hijack"`
+	Handle         string                   `          long:"handle"                            description:"Handle id of a job to hijack"`
 	Check          flaghelpers.ResourceFlag `short:"c" long:"check" value-name:"PIPELINE/CHECK" description:"Name of a resource's checking container to hijack"`
 	Url            string                   `short:"u" long:"url"                               description:"URL for the build, job, or check container to hijack"`
 	Build          string                   `short:"b" long:"build"                             description:"Build number within the job, or global build ID"`
@@ -32,13 +33,16 @@ type HijackCommand struct {
 	PositionalArgs struct {
 		Command []string `positional-arg-name:"command" description:"The command to run in the container (default: bash)"`
 	} `positional-args:"yes"`
+	Team string `long:"team" description:"Name of the team to which the container belongs, if different from the target default"`
 }
 
 func (command *HijackCommand) Execute([]string) error {
 	var (
-		target rc.Target
-		name   rc.TargetName
-		err    error
+		chosenContainer atc.Container
+		err             error
+		name            rc.TargetName
+		target          rc.Target
+		team            concourse.Team
 	)
 	if Fly.Target == "" && command.Url != "" {
 		u, err := url.Parse(command.Url)
@@ -63,74 +67,90 @@ func (command *HijackCommand) Execute([]string) error {
 		return err
 	}
 
-	fingerprint, err := command.getContainerFingerprint(target)
-	if err != nil {
-		return err
-	}
-
-	containers, err := command.getContainerIDs(target, fingerprint)
-	if err != nil {
-		return err
-	}
-
-	hijackableContainers := make([]atc.Container, 0)
-
-	for _, container := range containers {
-		if container.State == atc.ContainerStateCreated || container.State == atc.ContainerStateFailed {
-			hijackableContainers = append(hijackableContainers, container)
-		}
-	}
-
-	var chosenContainer atc.Container
-	if len(hijackableContainers) == 0 {
-		displayhelpers.Failf("no containers matched your search parameters!\n\nthey may have expired if your build hasn't recently finished.")
-	} else if len(hijackableContainers) > 1 {
-		var choices []interact.Choice
-		for _, container := range hijackableContainers {
-			var infos []string
-
-			if container.BuildID != 0 {
-				if container.JobName != "" {
-					infos = append(infos, fmt.Sprintf("build #%s", container.BuildName))
-				} else {
-					infos = append(infos, fmt.Sprintf("build id: %d", container.BuildID))
-				}
-			}
-
-			if container.StepName != "" {
-				infos = append(infos, fmt.Sprintf("step: %s", container.StepName))
-			}
-
-			if container.ResourceName != "" {
-				infos = append(infos, fmt.Sprintf("resource: %s", container.ResourceName))
-			}
-
-			infos = append(infos, fmt.Sprintf("type: %s", container.Type))
-
-			if container.Type == "check" {
-				infos = append(infos, fmt.Sprintf("expires in: %s", container.ExpiresIn))
-			}
-
-			if container.Attempt != "" {
-				infos = append(infos, fmt.Sprintf("attempt: %s", container.Attempt))
-			}
-
-			choices = append(choices, interact.Choice{
-				Display: strings.Join(infos, ", "),
-				Value:   container,
-			})
-		}
-
-		err = interact.NewInteraction("choose a container", choices...).Resolve(&chosenContainer)
-		if err == io.EOF {
-			return nil
-		}
-
+	if command.Team != "" {
+		team, err = target.FindTeam(command.Team)
 		if err != nil {
 			return err
 		}
 	} else {
-		chosenContainer = hijackableContainers[0]
+		team = target.Team()
+	}
+
+	if command.Handle != "" {
+		chosenContainer, err = team.GetContainer(command.Handle)
+		if err != nil {
+			displayhelpers.Failf("no containers matched the given handle id!\n\nthey may have expired if your build hasn't recently finished.")
+		}
+
+	} else {
+		fingerprint, err := command.getContainerFingerprint(target, team)
+		if err != nil {
+			return err
+		}
+
+		containers, err := command.getContainerIDs(target, fingerprint, team)
+		if err != nil {
+			return err
+		}
+
+		hijackableContainers := make([]atc.Container, 0)
+
+		for _, container := range containers {
+			if container.State == atc.ContainerStateCreated || container.State == atc.ContainerStateFailed {
+				hijackableContainers = append(hijackableContainers, container)
+			}
+		}
+
+		if len(hijackableContainers) == 0 {
+			displayhelpers.Failf("no containers matched your search parameters!\n\nthey may have expired if your build hasn't recently finished.")
+		} else if len(hijackableContainers) > 1 {
+			var choices []interact.Choice
+			for _, container := range hijackableContainers {
+				var infos []string
+
+				if container.BuildID != 0 {
+					if container.JobName != "" {
+						infos = append(infos, fmt.Sprintf("build #%s", container.BuildName))
+					} else {
+						infos = append(infos, fmt.Sprintf("build id: %d", container.BuildID))
+					}
+				}
+
+				if container.StepName != "" {
+					infos = append(infos, fmt.Sprintf("step: %s", container.StepName))
+				}
+
+				if container.ResourceName != "" {
+					infos = append(infos, fmt.Sprintf("resource: %s", container.ResourceName))
+				}
+
+				infos = append(infos, fmt.Sprintf("type: %s", container.Type))
+
+				if container.Type == "check" {
+					infos = append(infos, fmt.Sprintf("expires in: %s", container.ExpiresIn))
+				}
+
+				if container.Attempt != "" {
+					infos = append(infos, fmt.Sprintf("attempt: %s", container.Attempt))
+				}
+
+				choices = append(choices, interact.Choice{
+					Display: strings.Join(infos, ", "),
+					Value:   container,
+				})
+			}
+
+			err = interact.NewInteraction("choose a container", choices...).Resolve(&chosenContainer)
+			if err == io.EOF {
+				return nil
+			}
+
+			if err != nil {
+				return err
+			}
+		} else {
+			chosenContainer = hijackableContainers[0]
+		}
 	}
 
 	privileged := true
@@ -187,7 +207,7 @@ func (command *HijackCommand) Execute([]string) error {
 
 		h := hijacker.New(target.TLSConfig(), reqGenerator, target.Token())
 
-		return h.Hijack(target.Team().Name(), chosenContainer.ID, spec, io)
+		return h.Hijack(team.Name(), chosenContainer.ID, spec, io)
 	}()
 
 	if err != nil {
@@ -213,7 +233,7 @@ func parseUrlPath(urlPath string) map[string]string {
 	return urlMap
 }
 
-func (command *HijackCommand) getContainerFingerprintFromUrl(target rc.Target, urlParam string) (*containerFingerprint, error) {
+func (command *HijackCommand) getContainerFingerprintFromUrl(target rc.Target, urlParam string, team concourse.Team) (*containerFingerprint, error) {
 	u, err := url.Parse(urlParam)
 	if err != nil {
 		return nil, err
@@ -232,8 +252,9 @@ func (command *HijackCommand) getContainerFingerprintFromUrl(target rc.Target, u
 		return nil, err
 	}
 
-	team := urlMap["teams"]
-	if team != target.Team().Name() {
+	teamFromUrl := urlMap["teams"]
+
+	if teamFromUrl != team.Name() {
 		err = fmt.Errorf("Team in URL doesn't match the current team of the target")
 		return nil, err
 	}
@@ -248,12 +269,12 @@ func (command *HijackCommand) getContainerFingerprintFromUrl(target rc.Target, u
 	return fingerprint, nil
 }
 
-func (command *HijackCommand) getContainerFingerprint(target rc.Target) (*containerFingerprint, error) {
+func (command *HijackCommand) getContainerFingerprint(target rc.Target, team concourse.Team) (*containerFingerprint, error) {
 	var err error
 	fingerprint := &containerFingerprint{}
 
 	if command.Url != "" {
-		fingerprint, err = command.getContainerFingerprintFromUrl(target, command.Url)
+		fingerprint, err = command.getContainerFingerprintFromUrl(target, command.Url, team)
 		if err != nil {
 			return nil, err
 		}
@@ -284,13 +305,13 @@ func (command *HijackCommand) getContainerFingerprint(target rc.Target) (*contai
 	return fingerprint, nil
 }
 
-func (command *HijackCommand) getContainerIDs(target rc.Target, fingerprint *containerFingerprint) ([]atc.Container, error) {
+func (command *HijackCommand) getContainerIDs(target rc.Target, fingerprint *containerFingerprint, team concourse.Team) ([]atc.Container, error) {
 	reqValues, err := locateContainer(target.Client(), fingerprint)
 	if err != nil {
 		return nil, err
 	}
 
-	containers, err := target.Team().ListContainers(reqValues)
+	containers, err := team.ListContainers(reqValues)
 	if err != nil {
 		return nil, err
 	}

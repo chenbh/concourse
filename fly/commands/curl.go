@@ -2,17 +2,18 @@ package commands
 
 import (
 	"fmt"
-	"github.com/concourse/concourse/fly/rc"
 	"net/url"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/concourse/concourse/fly/rc"
 )
 
 type CurlCommand struct {
 	Args struct {
-		Path string   `positional-arg-name:"PATH" required:"true"`
-		Rest []string `positional-arg-name:"curl flags"`
+		Path string   `positional-arg-name:"PATH" required:"true" description:"Pass query params as normal curl path like path?key=value"`
+		Rest []string `positional-arg-name:"curl flags" description:"To pass flags to curl, pass a -- argument, so that fly can distinguish them from its own flags"`
 	} `positional-args:"yes"`
 	PrintAndExit bool `long:"print-and-exit" description:"Print curl command and exit"`
 }
@@ -57,7 +58,12 @@ func (command *CurlCommand) makeFullUrl(host, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	u.Path = path
+	p, err := url.Parse(path)
+	if err != nil {
+		return "", err
+	}
+	u.Path = p.Path
+	u.RawQuery = p.RawQuery
 	return u.String(), nil
 }
 

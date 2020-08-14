@@ -1,14 +1,15 @@
 package testflight_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("External Tasks", func() {
@@ -24,10 +25,11 @@ var _ = Describe("External Tasks", func() {
 	})
 
 	Context("when external task relies on template variables", func() {
-		BeforeEach(func() {
+		var taskFileContents string
 
+		BeforeEach(func(){
 			// we are testing an external task with two external variables - ((image_resource_type)) and ((echo_text))
-			taskFileContents := `---
+			taskFileContents = `---
 platform: linux
 
 image_resource:
@@ -38,6 +40,11 @@ run:
   path: echo
   args: [((echo_text))]
 `
+		})
+
+		JustBeforeEach(func() {
+
+
 			err := ioutil.WriteFile(
 				filepath.Join(fixture, "task.yml"),
 				[]byte(taskFileContents),
@@ -88,7 +95,7 @@ run:
 				execS := spawnFly("trigger-job", "-w", "-j", pipelineName+"/external-task-failure")
 				<-execS.Exited
 				Expect(execS).To(gexec.Exit(2))
-				Expect(execS.Out).To(gbytes.Say("Expected to find variables: echo_text"))
+				Expect(execS.Out).To(gbytes.Say("undefined vars: echo_text"))
 			})
 		})
 
@@ -121,10 +128,36 @@ echo_text: Hello World From Command Line
 				execS := spawnFlyIn(fixture, "execute", "-c", "task.yml", "-v", "image_resource_type=mock")
 				<-execS.Exited
 				Expect(execS).To(gexec.Exit(2))
-				Expect(execS.Out).To(gbytes.Say("Expected to find variables: echo_text"))
+				Expect(execS.Out).To(gbytes.Say("undefined vars: echo_text"))
 			})
 		})
 
+		Context("when vars are from load_var", func() {
+			It("successfully runs pipeline job with external task", func() {
+				execS := fly("trigger-job", "-w", "-j", pipelineName+"/external-task-vars-from-load-var")
+				Expect(execS).To(gbytes.Say("bar"))
+			})
+		})
+
+		Context("when task vars are not used, task should get vars from var_sources", func() {
+			BeforeEach(func(){
+				taskFileContents = `---
+platform: linux
+
+image_resource:
+  type: ((image_resource_type))
+  source: {mirror_self: true}
+
+run:
+  path: echo
+  args: [((vs:echo_text))]
+`
+			})
+			It("successfully runs pipeline job with external task", func() {
+				execS := fly("trigger-job", "-w", "-j", pipelineName+"/task-var-is-defined-but-task-also-needs-vars-from-var-sources")
+				Expect(execS).To(gbytes.Say("text-from-var-source"))
+			})
+		})
 	})
 
 })

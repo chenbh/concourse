@@ -2,7 +2,7 @@ package creds
 
 import (
 	"code.cloudfoundry.org/lager"
-	flags "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 )
 
 type Manager interface {
@@ -10,18 +10,21 @@ type Manager interface {
 	Validate() error
 	Health() (*HealthResponse, error)
 	Init(lager.Logger) error
+	Close(logger lager.Logger)
 
-	NewVariablesFactory(lager.Logger) (VariablesFactory, error)
+	NewSecretsFactory(lager.Logger) (SecretsFactory, error)
 }
 
 type ManagerFactory interface {
 	AddConfig(*flags.Group) Manager
+	NewInstance(interface{}) (Manager, error)
 }
 
 type Managers map[string]Manager
 
 type CredentialManagementConfig struct {
 	RetryConfig SecretRetryConfig
+	CacheConfig SecretCacheConfig
 }
 
 type HealthResponse struct {

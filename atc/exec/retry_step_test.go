@@ -5,8 +5,7 @@ import (
 	"errors"
 
 	. "github.com/concourse/concourse/atc/exec"
-	"github.com/concourse/concourse/atc/worker"
-
+	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/exec/execfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +20,7 @@ var _ = Describe("Retry Step", func() {
 		attempt2 *execfakes.FakeStep
 		attempt3 *execfakes.FakeStep
 
-		repo  *worker.ArtifactRepository
+		repo  *build.Repository
 		state *execfakes.FakeRunState
 
 		step Step
@@ -34,13 +33,34 @@ var _ = Describe("Retry Step", func() {
 		attempt2 = new(execfakes.FakeStep)
 		attempt3 = new(execfakes.FakeStep)
 
-		repo = worker.NewArtifactRepository()
+		repo = build.NewRepository()
 		state = new(execfakes.FakeRunState)
-		state.ArtifactsReturns(repo)
+		state.ArtifactRepositoryReturns(repo)
 
 		step = Retry(attempt1, attempt2, attempt3)
 	})
 
+	Context("when calling succeeded before running", func() {
+		Context("when the RetryStep is given no attempts", func() {
+			BeforeEach(func() {
+				step = Retry()
+			})
+
+			Describe("Succeeded", func() {
+				It("should return false", func() {
+					Expect(step.Succeeded()).To(BeFalse())
+				})
+			})
+		})
+
+		Context("when the RetryStep is given attempts", func() {
+			Describe("Succeeded", func() {
+				It("should return false", func() {
+					Expect(step.Succeeded()).To(BeFalse())
+				})
+			})
+		})
+	})
 	Context("when attempt 1 succeeds", func() {
 		BeforeEach(func() {
 			attempt1.SucceededReturns(true)

@@ -1,6 +1,7 @@
 package containerserver
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -88,7 +89,7 @@ func (s *Server) HijackContainer(team db.Team) http.Handler {
 			"handle": handle,
 		})
 
-		container, found, err := s.workerClient.FindContainerByHandle(hLog, team.ID(), handle)
+		container, found, err := s.workerClient.FindContainer(hLog, team.ID(), handle)
 		if err != nil {
 			hLog.Error("failed-to-find-container", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -213,7 +214,7 @@ func (s *Server) hijack(hLog lager.Logger, conn *websocket.Conn, request hijackR
 		}
 	}
 
-	process, err := request.Container.Run(garden.ProcessSpec{
+	process, err := request.Container.Run(context.Background(), garden.ProcessSpec{
 		Path: request.Process.Path,
 		Args: request.Process.Args,
 		Env:  request.Process.Env,
@@ -235,11 +236,27 @@ func (s *Server) hijack(hLog lager.Logger, conn *websocket.Conn, request hijackR
 		return
 	}
 
-	err = request.Container.MarkAsHijacked()
+	err = request.Container.UpdateLastHijack()
 	if err != nil {
-		hLog.Error("failed-to-mark-container-as-hijacked", err)
+		hLog.Error("failed-to-update-container-hijack-time", err)
 		return
 	}
+
+	go func() {
+		for {
+			select {
+			case <-s.clock.After(s.interceptUpdateInterval):
+				err = request.Container.UpdateLastHijack()
+				if err != nil {
+					hLog.Error("failed-to-update-container-hijack-time", err)
+					return
+				}
+
+			case <-cleanup:
+				return
+			}
+		}
+	}()
 
 	hLog.Info("hijacked")
 

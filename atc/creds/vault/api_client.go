@@ -1,11 +1,17 @@
 package vault
 
 import (
+	"crypto/tls"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"path"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/hashicorp/go-rootcerts"
 	vaultapi "github.com/hashicorp/vault/api"
 )
 
@@ -15,22 +21,28 @@ type APIClient struct {
 	logger lager.Logger
 
 	apiURL     string
-	tlsConfig  *vaultapi.TLSConfig
+	namespace  string
+	tlsConfig  TLSConfig
 	authConfig AuthConfig
 
 	clientValue *atomic.Value
+
+	renewable bool
 }
 
 // NewAPIClient with the associated authorization config and underlying vault client.
-func NewAPIClient(logger lager.Logger, apiURL string, tlsConfig *vaultapi.TLSConfig, authConfig AuthConfig) (*APIClient, error) {
+func NewAPIClient(logger lager.Logger, apiURL string, tlsConfig TLSConfig, authConfig AuthConfig, namespace string) (*APIClient, error) {
 	ac := &APIClient{
 		logger: logger,
 
 		apiURL:     apiURL,
+		namespace:  namespace,
 		tlsConfig:  tlsConfig,
 		authConfig: authConfig,
 
 		clientValue: &atomic.Value{},
+
+		renewable: true,
 	}
 
 	client, err := ac.baseClient()
@@ -80,8 +92,19 @@ func (ac *APIClient) Login() (time.Duration, error) {
 	}
 
 	client := ac.client()
+	loginPath := path.Join("auth", ac.authConfig.Backend, "login")
 
-	secret, err := client.Logical().Write(path.Join("auth", ac.authConfig.Backend, "login"), ac.loginParams())
+	if ac.authConfig.Backend == "ldap" || ac.authConfig.Backend == "okta" {
+		username, ok := ac.loginParams()["username"].(string)
+		if !ok {
+			err := fmt.Errorf("failed to assert username as string")
+			logger.Error("failed", err)
+			return time.Second, err
+		}
+		loginPath = path.Join("auth", ac.authConfig.Backend, "login", username)
+	}
+
+	secret, err := client.Logical().Write(loginPath, ac.loginParams())
 	if err != nil {
 		logger.Error("failed", err)
 		return time.Second, err
@@ -108,12 +131,21 @@ func (ac *APIClient) Login() (time.Duration, error) {
 // construction. Must be called after a successful login. Returns a
 // duration after which renew must be called again.
 func (ac *APIClient) Renew() (time.Duration, error) {
+	if !ac.renewable {
+		return time.Second, nil
+	}
+
 	logger := ac.logger.Session("renew")
 
 	client := ac.client()
 
 	secret, err := client.Auth().Token().RenewSelf(0)
 	if err != nil {
+		// When tests with a Vault dev server, renew is not allowed.
+		if strings.Index(err.Error(), "lease is not renewable") > 0 {
+			ac.renewable = false
+			return time.Second, nil
+		}
 		logger.Error("failed", err)
 		return time.Second, err
 	}
@@ -146,7 +178,7 @@ func (ac *APIClient) setClient(client *vaultapi.Client) {
 func (ac *APIClient) baseClient() (*vaultapi.Client, error) {
 	config := vaultapi.DefaultConfig()
 
-	err := config.ConfigureTLS(ac.tlsConfig)
+	err := ac.configureTLS(config.HttpClient.Transport.(*http.Transport).TLSClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +193,78 @@ func (ac *APIClient) baseClient() (*vaultapi.Client, error) {
 		return nil, err
 	}
 
+	if ac.namespace != "" {
+		client.SetNamespace(ac.namespace)
+	}
+
 	return client, nil
+}
+
+func (ac *APIClient) configureTLS(config *tls.Config) error {
+	if ac.tlsConfig.CACert != "" || ac.tlsConfig.CACertFile != "" || ac.tlsConfig.CAPath != "" {
+		rootConfig := &rootcerts.Config{
+			CAFile:        ac.tlsConfig.CACertFile,
+			CAPath:        ac.tlsConfig.CAPath,
+			CACertificate: []byte(ac.tlsConfig.CACert),
+		}
+
+		if err := rootcerts.ConfigureTLS(config, rootConfig); err != nil {
+			return err
+		}
+	}
+
+	if ac.tlsConfig.ClientCertFile != "" {
+		content, err := ioutil.ReadFile(ac.tlsConfig.ClientCertFile)
+		if err != nil {
+			return err
+		}
+
+		ac.tlsConfig.ClientCert = string(content)
+	}
+
+	if ac.tlsConfig.ClientKeyFile != "" {
+		content, err := ioutil.ReadFile(ac.tlsConfig.ClientKeyFile)
+		if err != nil {
+			return err
+		}
+
+		ac.tlsConfig.ClientKey = string(content)
+	}
+
+	if ac.tlsConfig.Insecure {
+		config.InsecureSkipVerify = true
+	}
+
+	var clientCert tls.Certificate
+	foundClientCert := false
+
+	switch {
+	case ac.tlsConfig.ClientCert != "" && ac.tlsConfig.ClientKey != "":
+		var err error
+		clientCert, err = tls.X509KeyPair([]byte(ac.tlsConfig.ClientCert), []byte(ac.tlsConfig.ClientKey))
+		if err != nil {
+			return err
+		}
+
+		foundClientCert = true
+	case ac.tlsConfig.ClientCert != "" || ac.tlsConfig.ClientKey != "":
+		return fmt.Errorf("both client cert and client key must be provided")
+	}
+
+	if foundClientCert {
+		// We use this function to ignore the server's preferential list of
+		// CAs, otherwise any CA used for the cert auth backend must be in the
+		// server's CA pool
+		config.GetClientCertificate = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return &clientCert, nil
+		}
+	}
+
+	if ac.tlsConfig.ServerName != "" {
+		config.ServerName = ac.tlsConfig.ServerName
+	}
+
+	return nil
 }
 
 func (ac *APIClient) clientWithToken(token string) (*vaultapi.Client, error) {

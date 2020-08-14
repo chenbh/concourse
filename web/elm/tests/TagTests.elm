@@ -13,13 +13,14 @@ tag =
     Fuzz.frequency
         [ ( 1, Fuzz.constant Tag.Owner )
         , ( 1, Fuzz.constant Tag.Member )
+        , ( 1, Fuzz.constant Tag.PipelineOperator )
         , ( 1, Fuzz.constant Tag.Viewer )
         ]
 
 
 white : String
 white =
-    "#fff"
+    "#ffffff"
 
 
 all : Test
@@ -30,21 +31,21 @@ all =
             hasStyle styles =
                 Tag.view False
                     >> Query.fromHtml
-                    >> Query.has [ style styles ]
+                    >> Query.has (List.map (\( k, v ) -> style k v) styles)
         in
         [ fuzz tag "has a white border" <|
             hasStyle [ ( "border", "1px solid " ++ white ) ]
+        , fuzz tag "is an inline-block" <|
+            hasStyle [ ( "display", "inline-block" ) ]
         , fuzz tag "has very small font" <|
             hasStyle [ ( "font-size", "0.7em" ) ]
         , fuzz tag "letters are spaced apart" <|
             hasStyle [ ( "letter-spacing", "0.2em" ) ]
         , fuzz tag "has a bit of padding above and below" <|
             hasStyle
-                [ ( "padding", "0.5em 0" )
+                [ ( "padding", "0.5em" )
                 , ( "line-height", "0.9em" )
                 ]
-        , fuzz tag "has a fixed width of 8 character widths" <|
-            hasStyle [ ( "width", "6em" ) ]
         , fuzz tag "text is horizontally centered in the white box" <|
             hasStyle [ ( "text-align", "center" ) ]
         ]

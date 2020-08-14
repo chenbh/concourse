@@ -2,43 +2,39 @@ package resource
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/runtime"
 )
-
-type putRequest struct {
-	Source atc.Source `json:"source"`
-	Params atc.Params `json:"params,omitempty"`
-}
 
 func (resource *resource) Put(
 	ctx context.Context,
-	ioConfig IOConfig,
-	source atc.Source,
-	params atc.Params,
-) (VersionedSource, error) {
-	resourceDir := ResourcesDir("put")
+	spec runtime.ProcessSpec,
+	runnable runtime.Runner,
+) (runtime.VersionResult, error) {
+	vr := runtime.VersionResult{}
 
-	vs := &putVersionedSource{
-		container:   resource.container,
-		resourceDir: resourceDir,
+	input, err := resource.Signature()
+	if err != nil {
+		return vr, err
 	}
 
-	err := resource.runScript(
+	err = runnable.RunScript(
 		ctx,
-		"/opt/resource/out",
-		[]string{resourceDir},
-		putRequest{
-			Params: params,
-			Source: source,
-		},
-		&vs.versionResult,
-		ioConfig.Stderr,
+		spec.Path,
+		spec.Args,
+		input,
+		&vr,
+		spec.StderrWriter,
 		true,
 	)
 	if err != nil {
-		return nil, err
+		return runtime.VersionResult{}, err
+	}
+	if vr.Version == nil {
+		return runtime.VersionResult{}, fmt.Errorf("resource script (%s %s) output a null version", spec.Path, strings.Join(spec.Args, " "))
 	}
 
-	return vs, nil
+	return vr, nil
 }

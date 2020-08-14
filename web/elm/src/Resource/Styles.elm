@@ -1,64 +1,75 @@
 module Resource.Styles exposing
-    ( checkStatusIcon
+    ( body
+    , checkBarStatus
+    , checkButton
+    , checkButtonIcon
+    , checkStatusIcon
     , commentBar
-    , commentBarContent
-    , commentBarHeader
     , commentBarIconContainer
     , commentBarMessageIcon
-    , commentBarPinIcon
     , commentSaveButton
     , commentText
     , commentTextArea
+    , editButton
+    , editSaveWrapper
     , enabledCheckbox
+    , headerBar
+    , headerHeight
+    , headerLastCheckedSection
+    , headerResourceName
+    , pagination
     , pinBar
     , pinBarTooltip
+    , pinBarViewVersion
     , pinButton
+    , pinButtonTooltip
     , pinIcon
+    , pinTools
     , versionHeader
     )
 
+import Assets
 import Colors
+import Html
+import Html.Attributes exposing (rows, style)
 import Pinned
 import Resource.Models as Models
+import Views.Styles
 
 
-pinBar : { isPinned : Bool } -> List ( String, String )
-pinBar { isPinned } =
+headerHeight : Int
+headerHeight =
+    60
+
+
+pinBar : Bool -> List (Html.Attribute msg)
+pinBar isPinned =
     let
-        borderColor =
+        pinBarBorderColor =
             if isPinned then
                 Colors.pinned
 
             else
-                "#3d3c3c"
+                Colors.background
     in
-    [ ( "flex-grow", "1" )
-    , ( "margin", "10px" )
-    , ( "padding-left", "7px" )
-    , ( "display", "flex" )
-    , ( "align-items", "center" )
-    , ( "position", "relative" )
-    , ( "border", "1px solid " ++ borderColor )
+    [ style "display" "flex"
+    , style "align-items" "flex-start"
+    , style "position" "relative"
+    , style "background-color" Colors.pinTools
+    , style "border" <| "1px solid" ++ pinBarBorderColor
+    , style "flex" "1"
     ]
 
 
 pinIcon :
-    { isPinned : Bool
-    , isPinnedDynamically : Bool
+    { clickable : Bool
     , hover : Bool
     }
-    -> List ( String, String )
-pinIcon { isPinned, isPinnedDynamically, hover } =
+    -> List (Html.Attribute msg)
+pinIcon { clickable, hover } =
     let
-        backgroundImage =
-            if isPinned then
-                "url(/public/images/pin-ic-white.svg)"
-
-            else
-                "url(/public/images/pin-ic-grey.svg)"
-
         cursorType =
-            if isPinnedDynamically then
+            if clickable then
                 "pointer"
 
             else
@@ -71,45 +82,51 @@ pinIcon { isPinned, isPinnedDynamically, hover } =
             else
                 "transparent"
     in
-    [ ( "background-repeat", "no-repeat" )
-    , ( "background-position", "50% 50%" )
-    , ( "height", "25px" )
-    , ( "width", "25px" )
-    , ( "margin-right", "10px" )
-    , ( "background-image", backgroundImage )
-    , ( "cursor", cursorType )
-    , ( "background-color", backgroundColor )
+    [ style "margin" "4px 5px 5px 5px"
+    , style "cursor" cursorType
+    , style "background-color" backgroundColor
+    , style "padding" "6px"
+    , style "background-size" "contain"
+    , style "background-origin" "content-box"
+    , style "min-width" "14px"
+    , style "min-height" "14px"
     ]
 
 
-pinBarTooltip : List ( String, String )
+pinBarTooltip : List (Html.Attribute msg)
 pinBarTooltip =
-    [ ( "position", "absolute" )
-    , ( "top", "-10px" )
-    , ( "left", "30px" )
-    , ( "background-color", Colors.tooltipBackground )
-    , ( "padding", "5px" )
-    , ( "z-index", "2" )
+    [ style "position" "absolute"
+    , style "top" "-10px"
+    , style "left" "30px"
+    , style "background-color" Colors.tooltipBackground
+    , style "padding" "5px"
+    , style "z-index" "2"
     ]
 
 
-checkStatusIcon : Bool -> List ( String, String )
-checkStatusIcon failingToCheck =
+pinTools : Bool -> List (Html.Attribute msg)
+pinTools isPinned =
     let
-        icon =
-            if failingToCheck then
-                "url(/public/images/ic-exclamation-triangle.svg)"
+        pinToolsBorderColor =
+            if isPinned then
+                Colors.pinned
 
             else
-                "url(/public/images/ic-success-check.svg)"
+                Colors.background
     in
-    [ ( "background-image", icon )
-    , ( "background-position", "50% 50%" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "width", "28px" )
-    , ( "height", "28px" )
-    , ( "background-size", "14px 14px" )
+    [ style "background-color" Colors.pinTools
+    , style "min-height" "28px"
+    , style "margin-bottom" "24px"
+    , style "display" "flex"
+    , style "align-items" "stretch"
+    , style "border" <| "1px solid " ++ pinToolsBorderColor
+    , style "box-sizing" "border-box"
     ]
+
+
+checkStatusIcon : List (Html.Attribute msg)
+checkStatusIcon =
+    [ style "background-size" "14px 14px" ]
 
 
 enabledCheckbox :
@@ -117,46 +134,49 @@ enabledCheckbox :
         | enabled : Models.VersionEnabledState
         , pinState : Pinned.VersionPinState
     }
-    -> List ( String, String )
+    -> List (Html.Attribute msg)
 enabledCheckbox { enabled, pinState } =
-    [ ( "margin-right", "5px" )
-    , ( "width", "25px" )
-    , ( "height", "25px" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "background-position", "50% 50%" )
-    , ( "cursor", "pointer" )
-    , ( "border", "1px solid " ++ borderColor pinState )
-    , ( "background-color", Colors.sectionHeader )
-    , ( "background-image"
-      , case enabled of
-            Models.Enabled ->
-                "url(/public/images/checkmark-ic.svg)"
+    [ style "margin-right" "5px"
+    , style "width" "25px"
+    , style "height" "25px"
+    , style "background-repeat" "no-repeat"
+    , style "background-position" "50% 50%"
+    , style "cursor" "pointer"
+    , style "border" <| "1px solid " ++ borderColor pinState
+    , style "background-color" Colors.sectionHeader
+    , style "background-image" <|
+        Assets.backgroundImage <|
+            case enabled of
+                Models.Enabled ->
+                    Just Assets.CheckmarkIcon
 
-            Models.Changing ->
-                "none"
+                Models.Changing ->
+                    Nothing
 
-            Models.Disabled ->
-                "none"
-      )
+                Models.Disabled ->
+                    Nothing
     ]
 
 
-pinButton : Pinned.VersionPinState -> List ( String, String )
+pinButton : Pinned.VersionPinState -> List (Html.Attribute msg)
 pinButton pinState =
-    [ ( "background-color", Colors.sectionHeader )
-    , ( "border", "1px solid " ++ borderColor pinState )
-    , ( "margin-right", "5px" )
-    , ( "width", "25px" )
-    , ( "height", "25px" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "background-position", "50% 50%" )
-    , ( "position", "relative" )
-    , ( "cursor"
-      , case pinState of
+    [ style "background-color" Colors.sectionHeader
+    , style "border" <| "1px solid " ++ borderColor pinState
+    , style "margin-right" "5px"
+    , style "width" "25px"
+    , style "height" "25px"
+    , style "background-repeat" "no-repeat"
+    , style "background-position" "50% 50%"
+    , style "position" "relative"
+    , style "cursor" <|
+        case pinState of
             Pinned.Enabled ->
                 "pointer"
 
             Pinned.PinnedDynamically ->
+                "pointer"
+
+            Pinned.NotThePinnedVersion ->
                 "pointer"
 
             Pinned.PinnedStatically _ ->
@@ -167,28 +187,43 @@ pinButton pinState =
 
             Pinned.InTransition ->
                 "default"
-      )
-    , ( "background-image"
-      , case pinState of
-            Pinned.InTransition ->
-                "none"
+    , style "background-image" <|
+        Assets.backgroundImage <|
+            case pinState of
+                Pinned.InTransition ->
+                    Nothing
 
-            _ ->
-                "url(/public/images/pin-ic-white.svg)"
-      )
+                _ ->
+                    Just Assets.PinIconWhite
     ]
 
 
-versionHeader : Pinned.VersionPinState -> List ( String, String )
+pinButtonTooltip : List (Html.Attribute msg)
+pinButtonTooltip =
+    [ style "position" "absolute"
+    , style "bottom" "25px"
+    , style "background-color" Colors.tooltipBackground
+    , style "z-index" "2"
+    , style "padding" "5px"
+    , style "width" "170px"
+    ]
+
+
+versionHeader : Pinned.VersionPinState -> List (Html.Attribute msg)
 versionHeader pinnedState =
-    [ ( "background-color", Colors.sectionHeader )
-    , ( "border", "1px solid " ++ borderColor pinnedState )
-    , ( "padding-left", "10px" )
-    , ( "cursor", "pointer" )
-    , ( "flex-grow", "1" )
-    , ( "display", "flex" )
-    , ( "align-items", "center" )
+    [ style "background-color" Colors.sectionHeader
+    , style "border" <| "1px solid " ++ borderColor pinnedState
+    , style "padding-left" "10px"
+    , style "cursor" "pointer"
+    , style "flex-grow" "1"
+    , style "display" "flex"
+    , style "align-items" "center"
     ]
+
+
+pinBarViewVersion : List (Html.Attribute msg)
+pinBarViewVersion =
+    [ style "margin" "8px 8px 8px 0" ]
 
 
 borderColor : Pinned.VersionPinState -> String
@@ -204,128 +239,214 @@ borderColor pinnedState =
             Colors.sectionHeader
 
 
-commentBar : List ( String, String )
-commentBar =
-    [ ( "background-color", Colors.frame )
-    , ( "position", "fixed" )
-    , ( "bottom", "0" )
-    , ( "width", "100%" )
-    , ( "height", "300px" )
-    , ( "display", "flex" )
-    , ( "justify-content", "center" )
+commentBar : Bool -> List (Html.Attribute msg)
+commentBar isPinned =
+    let
+        commentBarBorderColor =
+            if isPinned then
+                Colors.pinned
+
+            else
+                Colors.background
+    in
+    [ style "background-color" Colors.pinTools
+    , style "min-height" "25px"
+    , style "display" "flex"
+    , style "flex" "1"
+    , style "border" <| "1px solid" ++ commentBarBorderColor
     ]
 
 
-commentBarContent : List ( String, String )
-commentBarContent =
-    [ ( "width", "700px" )
-    , ( "padding", "20px 0" )
-    , ( "display", "flex" )
-    , ( "flex-direction", "column" )
-    ]
-
-
-commentBarHeader : List ( String, String )
-commentBarHeader =
-    [ ( "display", "flex" )
-    , ( "flex-shrink", "0" )
-    , ( "align-items", "flex-start" )
-    ]
-
-
-commentBarMessageIcon : List ( String, String )
+commentBarMessageIcon : List (Html.Attribute msg)
 commentBarMessageIcon =
-    let
-        messageIconUrl =
-            "url(/public/images/baseline-message.svg)"
-    in
-    [ ( "background-image", messageIconUrl )
-    , ( "background-size", "contain" )
-    , ( "width", "24px" )
-    , ( "height", "24px" )
-    , ( "margin-right", "10px" )
+    [ style "background-size" "contain"
+    , style "margin" "10px"
+    , style "flex-shrink" "0"
+    , style "background-origin" "content-box"
     ]
 
 
-commentBarPinIcon : List ( String, String )
-commentBarPinIcon =
-    let
-        pinIconUrl =
-            "url(/public/images/pin-ic-white.svg)"
-    in
-    [ ( "background-image", pinIconUrl )
-    , ( "background-position", "50% 50%" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "width", "20px" )
-    , ( "height", "20px" )
-    , ( "margin-right", "10px" )
-    ]
-
-
-commentTextArea : List ( String, String )
+commentTextArea : List (Html.Attribute msg)
 commentTextArea =
-    [ ( "background-color", "transparent" )
-    , ( "color", Colors.text )
-    , ( "outline", "none" )
-    , ( "border", "1px solid " ++ Colors.background )
-    , ( "font-size", "12px" )
-    , ( "font-family", "Inconsolata, monospace" )
-    , ( "font-weight", "700" )
-    , ( "resize", "none" )
-    , ( "margin", "10px 0" )
-    , ( "flex-grow", "1" )
-    , ( "padding", "10px" )
+    [ style "box-sizing" "border-box"
+    , style "flex-grow" "1"
+    , style "resize" "none"
+    , style "outline" "none"
+    , style "border" "none"
+    , style "color" Colors.text
+    , style "background-color" "transparent"
+    , style "max-height" "150px"
+    , style "margin" "8px 0"
+    , rows 1
     ]
+        ++ Views.Styles.defaultFont
 
 
-commentText : List ( String, String )
+commentText : List (Html.Attribute msg)
 commentText =
-    [ ( "margin", "10px 0" )
-    , ( "flex-grow", "1" )
-    , ( "overflow-y", "auto" )
-    , ( "padding", "10px" )
+    [ style "flex-grow" "1"
+    , style "margin" "0"
+    , style "outline" "0"
+    , style "padding" "8px 0"
+    , style "max-height" "150px"
+    , style "overflow-y" "scroll"
     ]
 
 
 commentSaveButton :
-    { commentChanged : Bool, isHovered : Bool }
-    -> List ( String, String )
-commentSaveButton { commentChanged, isHovered } =
-    [ ( "font-size", "12px" )
-    , ( "font-family", "Inconsolata, monospace" )
-    , ( "font-weight", "700" )
-    , ( "border"
-      , "1px solid "
-            ++ (if commentChanged then
-                    Colors.comment
+    { isHovered : Bool, commentChanged : Bool, pinCommentLoading : Bool }
+    -> List (Html.Attribute msg)
+commentSaveButton { commentChanged, isHovered, pinCommentLoading } =
+    [ style "border" <|
+        "1px solid "
+            ++ (if commentChanged && not pinCommentLoading then
+                    Colors.white
 
                 else
-                    Colors.background
+                    Colors.buttonDisabledGrey
                )
-      )
-    , ( "background-color"
-      , if isHovered then
-            Colors.comment
+    , style "background-color" <|
+        if isHovered && commentChanged && not pinCommentLoading then
+            Colors.frame
 
         else
             "transparent"
-      )
-    , ( "color", Colors.text )
-    , ( "padding", "5px 10px" )
-    , ( "align-self", "flex-end" )
-    , ( "outline", "none" )
-    , ( "cursor"
-      , if isHovered then
+    , style "color" <|
+        if commentChanged && not pinCommentLoading then
+            Colors.text
+
+        else
+            Colors.buttonDisabledGrey
+    , style "padding" "5px 10px"
+    , style "margin" "5px 5px 7px 7px"
+    , style "outline" "none"
+    , style "transition" "border 200ms ease, color 200ms ease"
+    , style "cursor" <|
+        if commentChanged && not pinCommentLoading then
             "pointer"
 
         else
             "default"
-      )
+    ]
+        ++ Views.Styles.defaultFont
+
+
+commentBarIconContainer : Bool -> List (Html.Attribute msg)
+commentBarIconContainer isEditing =
+    [ style "display" "flex"
+    , style "align-items" "flex-start"
+    , style "flex-grow" "1"
+    , style "background-color" <|
+        if isEditing then
+            Colors.pinned
+
+        else
+            Colors.pinTools
     ]
 
 
-commentBarIconContainer : List ( String, String )
-commentBarIconContainer =
-    [ ( "display", "flex" )
-    , ( "align-items", "center" )
+editButton : Bool -> List (Html.Attribute msg)
+editButton isHovered =
+    [ style "padding" "5px"
+    , style "margin" "5px"
+    , style "cursor" "pointer"
+    , style "background-color" <|
+        if isHovered then
+            Colors.sectionHeader
+
+        else
+            Colors.pinTools
+    , style "background-origin" "content-box"
+    , style "background-size" "contain"
+    ]
+
+
+editSaveWrapper : List (Html.Attribute msg)
+editSaveWrapper =
+    [ style "width" "60px"
+    , style "display" "flex"
+    , style "justify-content" "flex-end"
+    ]
+
+
+headerBar : List (Html.Attribute msg)
+headerBar =
+    [ style "height" <| String.fromInt headerHeight ++ "px"
+    , style "display" "flex"
+    , style "align-items" "stretch"
+    , style "background-color" Colors.secondaryTopBar
+    ]
+
+
+headerResourceName : List (Html.Attribute msg)
+headerResourceName =
+    [ style "margin-left" "18px"
+    , style "display" "flex"
+    , style "align-items" "center"
+    , style "justify-content" "center"
+    ]
+
+
+headerLastCheckedSection : List (Html.Attribute msg)
+headerLastCheckedSection =
+    [ style "display" "flex"
+    , style "align-items" "center"
+    , style "justify-content" "center"
+    , style "margin-left" "24px"
+    ]
+
+
+body : List (Html.Attribute msg)
+body =
+    [ style "padding" "10px"
+    , style "overflow-y" "auto"
+    , style "flex-grow" "1"
+    ]
+
+
+pagination : List (Html.Attribute msg)
+pagination =
+    [ style "display" "flex"
+    , style "align-items" "stretch"
+    , style "margin-left" "auto"
+    ]
+
+
+checkBarStatus : List (Html.Attribute msg)
+checkBarStatus =
+    [ style "display" "flex"
+    , style "justify-content" "space-between"
+    , style "align-items" "center"
+    , style "flex-grow" "1"
+    , style "height" "28px"
+    , style "background" Colors.sectionHeader
+    , style "padding-left" "5px"
+    ]
+
+
+checkButton : Bool -> List (Html.Attribute msg)
+checkButton isClickable =
+    [ style "height" "28px"
+    , style "width" "28px"
+    , style "background-color" Colors.sectionHeader
+    , style "margin-right" "5px"
+    , style "cursor" <|
+        if isClickable then
+            "pointer"
+
+        else
+            "default"
+    ]
+
+
+checkButtonIcon : Bool -> List (Html.Attribute msg)
+checkButtonIcon isHighlighted =
+    [ style "margin" "4px"
+    , style "background-size" "contain"
+    , style "opacity" <|
+        if isHighlighted then
+            "1"
+
+        else
+            "0.5"
     ]

@@ -1,10 +1,9 @@
 package atc_test
 
 import (
+	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/concourse/concourse/atc"
 )
 
 var _ = Describe("Plan", func() {
@@ -22,7 +21,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -55,6 +54,16 @@ var _ = Describe("Plan", func() {
 					},
 
 					atc.Plan{
+						ID: "4.2",
+						Check: &atc.CheckPlan{
+							Type:   "type",
+							Name:   "name",
+							Source: atc.Source{"some": "source"},
+							Tags:   atc.Tags{"tags"},
+						},
+					},
+
+					atc.Plan{
 						ID: "5",
 						Task: &atc.TaskPlan{
 							Name:       "name",
@@ -62,7 +71,7 @@ var _ = Describe("Plan", func() {
 							Tags:       atc.Tags{"tags"},
 							ConfigPath: "some/config/path.yml",
 							Config: &atc.TaskConfig{
-								Params: map[string]string{"some": "secret"},
+								Params: atc.TaskEnv{"some": "secret"},
 							},
 						},
 					},
@@ -76,7 +85,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -86,7 +95,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -102,7 +111,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -112,7 +121,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -128,7 +137,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -138,7 +147,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -154,7 +163,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -164,7 +173,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -180,7 +189,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -196,7 +205,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -213,7 +222,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -229,7 +238,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -239,7 +248,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -249,7 +258,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -265,7 +274,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -275,7 +284,7 @@ var _ = Describe("Plan", func() {
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
 									Config: &atc.TaskConfig{
-										Params: map[string]string{"some": "secret"},
+										Params: atc.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -284,8 +293,9 @@ var _ = Describe("Plan", func() {
 
 					atc.Plan{
 						ID: "31",
-						UserArtifact: &atc.UserArtifactPlan{
-							Name: "some-name",
+						ArtifactInput: &atc.ArtifactInputPlan{
+							ArtifactID: 17,
+							Name:       "some-name",
 						},
 					},
 
@@ -293,6 +303,61 @@ var _ = Describe("Plan", func() {
 						ID: "32",
 						ArtifactOutput: &atc.ArtifactOutputPlan{
 							Name: "some-name",
+						},
+					},
+
+					atc.Plan{
+						ID: "33",
+						OnError: &atc.OnErrorPlan{
+							Step: atc.Plan{
+								ID: "34",
+								Task: &atc.TaskPlan{
+									Name:       "name",
+									ConfigPath: "some/config/path.yml",
+									Config: &atc.TaskConfig{
+										Params: atc.TaskEnv{"some": "secret"},
+									},
+								},
+							},
+							Next: atc.Plan{
+								ID: "35",
+								Task: &atc.TaskPlan{
+									Name:       "name",
+									ConfigPath: "some/config/path.yml",
+									Config: &atc.TaskConfig{
+										Params: atc.TaskEnv{"some": "secret"},
+									},
+								},
+							},
+						},
+					},
+					atc.Plan{
+						ID: "36",
+						InParallel: &atc.InParallelPlan{
+							Limit:    1,
+							FailFast: true,
+							Steps: []atc.Plan{
+								{
+									ID: "37",
+									Task: &atc.TaskPlan{
+										Name:       "name",
+										ConfigPath: "some/config/path.yml",
+										Config: &atc.TaskConfig{
+											Params: atc.TaskEnv{"some": "secret"},
+										},
+									},
+								},
+							},
+						},
+					},
+					atc.Plan{
+						ID: "37",
+						SetPipeline: &atc.SetPipelinePlan{
+							Name:     "some-pipeline",
+							Team:     "some-team",
+							File:     "some-file",
+							VarFiles: []string{"vf"},
+							Vars:     map[string]interface{}{"k1": "v1"},
 						},
 					},
 				},
@@ -332,6 +397,13 @@ var _ = Describe("Plan", func() {
         "type": "type",
         "name": "name",
         "resource": "resource"
+      }
+    },
+    {
+      "id": "4.2",
+      "check": {
+        "type": "type",
+        "name": "name"
       }
     },
     {
@@ -501,8 +573,9 @@ var _ = Describe("Plan", func() {
     },
 		{
 			"id": "31",
-			"user_artifact": {
-				"name": "some-name"
+			"artifact_input": {
+				"artifact_id": 17,
+				"name" : "some-name"
 			}
 		},
 		{
@@ -510,7 +583,49 @@ var _ = Describe("Plan", func() {
 			"artifact_output": {
 				"name": "some-name"
 			}
-		}
+		},
+		{
+      "id": "33",
+      "on_error": {
+        "step": {
+          "id": "34",
+          "task": {
+            "name": "name",
+            "privileged": false
+          }
+        },
+        "on_error": {
+          "id": "35",
+          "task": {
+            "name": "name",
+            "privileged": false
+          }
+        }
+      }
+	},
+	{
+	"id": "36",
+	  "in_parallel": {
+		"steps": [
+		  {
+			"id": "37",
+			"task": {
+              "name": "name",
+              "privileged": false
+			}
+		  }
+		],
+		"limit": 1,
+		"fail_fast": true
+	  }
+	},
+	{
+	  "id": "37",
+	  "set_pipeline": {
+		"name": "some-pipeline",
+		"team": "some-team"
+	  }
+	}
   ]
 }
 `))

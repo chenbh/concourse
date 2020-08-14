@@ -3,19 +3,26 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
-
-	"code.cloudfoundry.org/lager"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db/lock"
 )
+
+type BaseResourceTypeNotFoundError struct {
+	Name string
+}
+
+func (e BaseResourceTypeNotFoundError) Error() string {
+	return fmt.Sprintf("base resource type not found: %s", e.Name)
+}
 
 var ErrResourceConfigAlreadyExists = errors.New("resource config already exists")
 var ErrResourceConfigDisappeared = errors.New("resource config disappeared")
 var ErrResourceConfigParentDisappeared = errors.New("resource config parent disappeared")
+var ErrResourceConfigHasNoType = errors.New("resource config has no type")
 
 // ResourceConfig represents a resource type and config source.
 //
@@ -117,7 +124,7 @@ func (r *resourceConfig) FindResourceConfigScopeByID(resourceConfigScopeID int, 
 		lockFactory:    r.lockFactory}, true, nil
 }
 
-func (r *ResourceConfigDescriptor) findOrCreate(logger lager.Logger, tx Tx, lockFactory lock.LockFactory, conn Conn) (ResourceConfig, error) {
+func (r *ResourceConfigDescriptor) findOrCreate(tx Tx, lockFactory lock.LockFactory, conn Conn) (ResourceConfig, error) {
 	rc := &resourceConfig{
 		lockFactory: lockFactory,
 		conn:        conn,
@@ -128,7 +135,7 @@ func (r *ResourceConfigDescriptor) findOrCreate(logger lager.Logger, tx Tx, lock
 	if r.CreatedByResourceCache != nil {
 		parentColumnName = "resource_cache_id"
 
-		resourceCache, err := r.CreatedByResourceCache.findOrCreate(logger, tx, lockFactory, conn)
+		resourceCache, err := r.CreatedByResourceCache.findOrCreate(tx, lockFactory, conn)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +156,7 @@ func (r *ResourceConfigDescriptor) findOrCreate(logger lager.Logger, tx Tx, lock
 		}
 
 		if !found {
-			return nil, ResourceTypeNotFoundError{Name: r.CreatedByBaseResourceType.Name}
+			return nil, BaseResourceTypeNotFoundError{Name: r.CreatedByBaseResourceType.Name}
 		}
 
 		parentID = rc.CreatedByBaseResourceType().ID
@@ -275,19 +282,33 @@ func (r *ResourceConfigDescriptor) findWithParentID(tx Tx, parentColumnName stri
 	return id, true, nil
 }
 
-func findOrCreateResourceConfigScope(tx Tx, conn Conn, lockFactory lock.LockFactory, resourceConfig ResourceConfig, resource Resource, resourceTypes creds.VersionedResourceTypes) (ResourceConfigScope, error) {
+func findOrCreateResourceConfigScope(
+	tx Tx,
+	conn Conn,
+	lockFactory lock.LockFactory,
+	resourceConfig ResourceConfig,
+	resource Resource,
+	resourceType string,
+	resourceTypes atc.VersionedResourceTypes,
+) (ResourceConfigScope, error) {
+
 	var unique bool
 	var uniqueResource Resource
 	var resourceID *int
+
 	if resource != nil {
 		if !atc.EnableGlobalResources {
 			unique = true
 		} else {
-			customType, found := resourceTypes.Lookup(resource.Type())
+			customType, found := resourceTypes.Lookup(resourceType)
 			if found {
 				unique = customType.UniqueVersionHistory
 			} else {
-				unique = resourceConfig.CreatedByBaseResourceType().UniqueVersionHistory
+				baseType := resourceConfig.CreatedByBaseResourceType()
+				if baseType == nil {
+					return nil, ErrResourceConfigHasNoType
+				}
+				unique = baseType.UniqueVersionHistory
 			}
 		}
 

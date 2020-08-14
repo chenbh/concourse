@@ -2,20 +2,22 @@
 package workerfakes
 
 import (
-	io "io"
-	sync "sync"
-	time "time"
+	"context"
+	"io"
+	"sync"
+	"time"
 
-	garden "code.cloudfoundry.org/garden"
-	worker "github.com/concourse/concourse/atc/worker"
+	"code.cloudfoundry.org/garden"
+	"github.com/concourse/concourse/atc/worker"
 )
 
 type FakeContainer struct {
-	AttachStub        func(string, garden.ProcessIO) (garden.Process, error)
+	AttachStub        func(context.Context, string, garden.ProcessIO) (garden.Process, error)
 	attachMutex       sync.RWMutex
 	attachArgsForCall []struct {
-		arg1 string
-		arg2 garden.ProcessIO
+		arg1 context.Context
+		arg2 string
+		arg3 garden.ProcessIO
 	}
 	attachReturns struct {
 		result1 garden.Process
@@ -116,16 +118,6 @@ type FakeContainer struct {
 		result1 garden.ContainerInfo
 		result2 error
 	}
-	MarkAsHijackedStub        func() error
-	markAsHijackedMutex       sync.RWMutex
-	markAsHijackedArgsForCall []struct {
-	}
-	markAsHijackedReturns struct {
-		result1 error
-	}
-	markAsHijackedReturnsOnCall map[int]struct {
-		result1 error
-	}
 	MetricsStub        func() (garden.Metrics, error)
 	metricsMutex       sync.RWMutex
 	metricsArgsForCall []struct {
@@ -201,11 +193,12 @@ type FakeContainer struct {
 	removePropertyReturnsOnCall map[int]struct {
 		result1 error
 	}
-	RunStub        func(garden.ProcessSpec, garden.ProcessIO) (garden.Process, error)
+	RunStub        func(context.Context, garden.ProcessSpec, garden.ProcessIO) (garden.Process, error)
 	runMutex       sync.RWMutex
 	runArgsForCall []struct {
-		arg1 garden.ProcessSpec
-		arg2 garden.ProcessIO
+		arg1 context.Context
+		arg2 garden.ProcessSpec
+		arg3 garden.ProcessIO
 	}
 	runReturns struct {
 		result1 garden.Process
@@ -214,6 +207,23 @@ type FakeContainer struct {
 	runReturnsOnCall map[int]struct {
 		result1 garden.Process
 		result2 error
+	}
+	RunScriptStub        func(context.Context, string, []string, []byte, interface{}, io.Writer, bool) error
+	runScriptMutex       sync.RWMutex
+	runScriptArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 []string
+		arg4 []byte
+		arg5 interface{}
+		arg6 io.Writer
+		arg7 bool
+	}
+	runScriptReturns struct {
+		result1 error
+	}
+	runScriptReturnsOnCall map[int]struct {
+		result1 error
 	}
 	SetGraceTimeStub        func(time.Duration) error
 	setGraceTimeMutex       sync.RWMutex
@@ -273,6 +283,16 @@ type FakeContainer struct {
 		result1 io.ReadCloser
 		result2 error
 	}
+	UpdateLastHijackStub        func() error
+	updateLastHijackMutex       sync.RWMutex
+	updateLastHijackArgsForCall []struct {
+	}
+	updateLastHijackReturns struct {
+		result1 error
+	}
+	updateLastHijackReturnsOnCall map[int]struct {
+		result1 error
+	}
 	VolumeMountsStub        func() []worker.VolumeMount
 	volumeMountsMutex       sync.RWMutex
 	volumeMountsArgsForCall []struct {
@@ -297,17 +317,18 @@ type FakeContainer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeContainer) Attach(arg1 string, arg2 garden.ProcessIO) (garden.Process, error) {
+func (fake *FakeContainer) Attach(arg1 context.Context, arg2 string, arg3 garden.ProcessIO) (garden.Process, error) {
 	fake.attachMutex.Lock()
 	ret, specificReturn := fake.attachReturnsOnCall[len(fake.attachArgsForCall)]
 	fake.attachArgsForCall = append(fake.attachArgsForCall, struct {
-		arg1 string
-		arg2 garden.ProcessIO
-	}{arg1, arg2})
-	fake.recordInvocation("Attach", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 garden.ProcessIO
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Attach", []interface{}{arg1, arg2, arg3})
 	fake.attachMutex.Unlock()
 	if fake.AttachStub != nil {
-		return fake.AttachStub(arg1, arg2)
+		return fake.AttachStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -322,17 +343,17 @@ func (fake *FakeContainer) AttachCallCount() int {
 	return len(fake.attachArgsForCall)
 }
 
-func (fake *FakeContainer) AttachCalls(stub func(string, garden.ProcessIO) (garden.Process, error)) {
+func (fake *FakeContainer) AttachCalls(stub func(context.Context, string, garden.ProcessIO) (garden.Process, error)) {
 	fake.attachMutex.Lock()
 	defer fake.attachMutex.Unlock()
 	fake.AttachStub = stub
 }
 
-func (fake *FakeContainer) AttachArgsForCall(i int) (string, garden.ProcessIO) {
+func (fake *FakeContainer) AttachArgsForCall(i int) (context.Context, string, garden.ProcessIO) {
 	fake.attachMutex.RLock()
 	defer fake.attachMutex.RUnlock()
 	argsForCall := fake.attachArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeContainer) AttachReturns(result1 garden.Process, result2 error) {
@@ -805,58 +826,6 @@ func (fake *FakeContainer) InfoReturnsOnCall(i int, result1 garden.ContainerInfo
 	}{result1, result2}
 }
 
-func (fake *FakeContainer) MarkAsHijacked() error {
-	fake.markAsHijackedMutex.Lock()
-	ret, specificReturn := fake.markAsHijackedReturnsOnCall[len(fake.markAsHijackedArgsForCall)]
-	fake.markAsHijackedArgsForCall = append(fake.markAsHijackedArgsForCall, struct {
-	}{})
-	fake.recordInvocation("MarkAsHijacked", []interface{}{})
-	fake.markAsHijackedMutex.Unlock()
-	if fake.MarkAsHijackedStub != nil {
-		return fake.MarkAsHijackedStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.markAsHijackedReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeContainer) MarkAsHijackedCallCount() int {
-	fake.markAsHijackedMutex.RLock()
-	defer fake.markAsHijackedMutex.RUnlock()
-	return len(fake.markAsHijackedArgsForCall)
-}
-
-func (fake *FakeContainer) MarkAsHijackedCalls(stub func() error) {
-	fake.markAsHijackedMutex.Lock()
-	defer fake.markAsHijackedMutex.Unlock()
-	fake.MarkAsHijackedStub = stub
-}
-
-func (fake *FakeContainer) MarkAsHijackedReturns(result1 error) {
-	fake.markAsHijackedMutex.Lock()
-	defer fake.markAsHijackedMutex.Unlock()
-	fake.MarkAsHijackedStub = nil
-	fake.markAsHijackedReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeContainer) MarkAsHijackedReturnsOnCall(i int, result1 error) {
-	fake.markAsHijackedMutex.Lock()
-	defer fake.markAsHijackedMutex.Unlock()
-	fake.MarkAsHijackedStub = nil
-	if fake.markAsHijackedReturnsOnCall == nil {
-		fake.markAsHijackedReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.markAsHijackedReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeContainer) Metrics() (garden.Metrics, error) {
 	fake.metricsMutex.Lock()
 	ret, specificReturn := fake.metricsReturnsOnCall[len(fake.metricsArgsForCall)]
@@ -1217,17 +1186,18 @@ func (fake *FakeContainer) RemovePropertyReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeContainer) Run(arg1 garden.ProcessSpec, arg2 garden.ProcessIO) (garden.Process, error) {
+func (fake *FakeContainer) Run(arg1 context.Context, arg2 garden.ProcessSpec, arg3 garden.ProcessIO) (garden.Process, error) {
 	fake.runMutex.Lock()
 	ret, specificReturn := fake.runReturnsOnCall[len(fake.runArgsForCall)]
 	fake.runArgsForCall = append(fake.runArgsForCall, struct {
-		arg1 garden.ProcessSpec
-		arg2 garden.ProcessIO
-	}{arg1, arg2})
-	fake.recordInvocation("Run", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 garden.ProcessSpec
+		arg3 garden.ProcessIO
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Run", []interface{}{arg1, arg2, arg3})
 	fake.runMutex.Unlock()
 	if fake.RunStub != nil {
-		return fake.RunStub(arg1, arg2)
+		return fake.RunStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1242,17 +1212,17 @@ func (fake *FakeContainer) RunCallCount() int {
 	return len(fake.runArgsForCall)
 }
 
-func (fake *FakeContainer) RunCalls(stub func(garden.ProcessSpec, garden.ProcessIO) (garden.Process, error)) {
+func (fake *FakeContainer) RunCalls(stub func(context.Context, garden.ProcessSpec, garden.ProcessIO) (garden.Process, error)) {
 	fake.runMutex.Lock()
 	defer fake.runMutex.Unlock()
 	fake.RunStub = stub
 }
 
-func (fake *FakeContainer) RunArgsForCall(i int) (garden.ProcessSpec, garden.ProcessIO) {
+func (fake *FakeContainer) RunArgsForCall(i int) (context.Context, garden.ProcessSpec, garden.ProcessIO) {
 	fake.runMutex.RLock()
 	defer fake.runMutex.RUnlock()
 	argsForCall := fake.runArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeContainer) RunReturns(result1 garden.Process, result2 error) {
@@ -1279,6 +1249,82 @@ func (fake *FakeContainer) RunReturnsOnCall(i int, result1 garden.Process, resul
 		result1 garden.Process
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeContainer) RunScript(arg1 context.Context, arg2 string, arg3 []string, arg4 []byte, arg5 interface{}, arg6 io.Writer, arg7 bool) error {
+	var arg3Copy []string
+	if arg3 != nil {
+		arg3Copy = make([]string, len(arg3))
+		copy(arg3Copy, arg3)
+	}
+	var arg4Copy []byte
+	if arg4 != nil {
+		arg4Copy = make([]byte, len(arg4))
+		copy(arg4Copy, arg4)
+	}
+	fake.runScriptMutex.Lock()
+	ret, specificReturn := fake.runScriptReturnsOnCall[len(fake.runScriptArgsForCall)]
+	fake.runScriptArgsForCall = append(fake.runScriptArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 []string
+		arg4 []byte
+		arg5 interface{}
+		arg6 io.Writer
+		arg7 bool
+	}{arg1, arg2, arg3Copy, arg4Copy, arg5, arg6, arg7})
+	fake.recordInvocation("RunScript", []interface{}{arg1, arg2, arg3Copy, arg4Copy, arg5, arg6, arg7})
+	fake.runScriptMutex.Unlock()
+	if fake.RunScriptStub != nil {
+		return fake.RunScriptStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.runScriptReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeContainer) RunScriptCallCount() int {
+	fake.runScriptMutex.RLock()
+	defer fake.runScriptMutex.RUnlock()
+	return len(fake.runScriptArgsForCall)
+}
+
+func (fake *FakeContainer) RunScriptCalls(stub func(context.Context, string, []string, []byte, interface{}, io.Writer, bool) error) {
+	fake.runScriptMutex.Lock()
+	defer fake.runScriptMutex.Unlock()
+	fake.RunScriptStub = stub
+}
+
+func (fake *FakeContainer) RunScriptArgsForCall(i int) (context.Context, string, []string, []byte, interface{}, io.Writer, bool) {
+	fake.runScriptMutex.RLock()
+	defer fake.runScriptMutex.RUnlock()
+	argsForCall := fake.runScriptArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7
+}
+
+func (fake *FakeContainer) RunScriptReturns(result1 error) {
+	fake.runScriptMutex.Lock()
+	defer fake.runScriptMutex.Unlock()
+	fake.RunScriptStub = nil
+	fake.runScriptReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeContainer) RunScriptReturnsOnCall(i int, result1 error) {
+	fake.runScriptMutex.Lock()
+	defer fake.runScriptMutex.Unlock()
+	fake.RunScriptStub = nil
+	if fake.runScriptReturnsOnCall == nil {
+		fake.runScriptReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.runScriptReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeContainer) SetGraceTime(arg1 time.Duration) error {
@@ -1585,6 +1631,58 @@ func (fake *FakeContainer) StreamOutReturnsOnCall(i int, result1 io.ReadCloser, 
 	}{result1, result2}
 }
 
+func (fake *FakeContainer) UpdateLastHijack() error {
+	fake.updateLastHijackMutex.Lock()
+	ret, specificReturn := fake.updateLastHijackReturnsOnCall[len(fake.updateLastHijackArgsForCall)]
+	fake.updateLastHijackArgsForCall = append(fake.updateLastHijackArgsForCall, struct {
+	}{})
+	fake.recordInvocation("UpdateLastHijack", []interface{}{})
+	fake.updateLastHijackMutex.Unlock()
+	if fake.UpdateLastHijackStub != nil {
+		return fake.UpdateLastHijackStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.updateLastHijackReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeContainer) UpdateLastHijackCallCount() int {
+	fake.updateLastHijackMutex.RLock()
+	defer fake.updateLastHijackMutex.RUnlock()
+	return len(fake.updateLastHijackArgsForCall)
+}
+
+func (fake *FakeContainer) UpdateLastHijackCalls(stub func() error) {
+	fake.updateLastHijackMutex.Lock()
+	defer fake.updateLastHijackMutex.Unlock()
+	fake.UpdateLastHijackStub = stub
+}
+
+func (fake *FakeContainer) UpdateLastHijackReturns(result1 error) {
+	fake.updateLastHijackMutex.Lock()
+	defer fake.updateLastHijackMutex.Unlock()
+	fake.UpdateLastHijackStub = nil
+	fake.updateLastHijackReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeContainer) UpdateLastHijackReturnsOnCall(i int, result1 error) {
+	fake.updateLastHijackMutex.Lock()
+	defer fake.updateLastHijackMutex.Unlock()
+	fake.UpdateLastHijackStub = nil
+	if fake.updateLastHijackReturnsOnCall == nil {
+		fake.updateLastHijackReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateLastHijackReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeContainer) VolumeMounts() []worker.VolumeMount {
 	fake.volumeMountsMutex.Lock()
 	ret, specificReturn := fake.volumeMountsReturnsOnCall[len(fake.volumeMountsArgsForCall)]
@@ -1710,8 +1808,6 @@ func (fake *FakeContainer) Invocations() map[string][][]interface{} {
 	defer fake.handleMutex.RUnlock()
 	fake.infoMutex.RLock()
 	defer fake.infoMutex.RUnlock()
-	fake.markAsHijackedMutex.RLock()
-	defer fake.markAsHijackedMutex.RUnlock()
 	fake.metricsMutex.RLock()
 	defer fake.metricsMutex.RUnlock()
 	fake.netInMutex.RLock()
@@ -1726,6 +1822,8 @@ func (fake *FakeContainer) Invocations() map[string][][]interface{} {
 	defer fake.removePropertyMutex.RUnlock()
 	fake.runMutex.RLock()
 	defer fake.runMutex.RUnlock()
+	fake.runScriptMutex.RLock()
+	defer fake.runScriptMutex.RUnlock()
 	fake.setGraceTimeMutex.RLock()
 	defer fake.setGraceTimeMutex.RUnlock()
 	fake.setPropertyMutex.RLock()
@@ -1736,6 +1834,8 @@ func (fake *FakeContainer) Invocations() map[string][][]interface{} {
 	defer fake.streamInMutex.RUnlock()
 	fake.streamOutMutex.RLock()
 	defer fake.streamOutMutex.RUnlock()
+	fake.updateLastHijackMutex.RLock()
+	defer fake.updateLastHijackMutex.RUnlock()
 	fake.volumeMountsMutex.RLock()
 	defer fake.volumeMountsMutex.RUnlock()
 	fake.workerNameMutex.RLock()

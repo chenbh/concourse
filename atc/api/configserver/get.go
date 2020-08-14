@@ -42,37 +42,15 @@ func (s *Server) GetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs, err := pipeline.Jobs()
-	if err != nil {
-		logger.Error("failed-to-get-jobs", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if pipeline.Archived() {
+		logger.Debug("pipeline-is-archived", lager.Data{"pipeline": pipelineName})
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	resources, err := pipeline.Resources()
+	config, err := pipeline.Config()
 	if err != nil {
-		logger.Error("failed-to-get-resources", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	resourceTypes, err := pipeline.ResourceTypes()
-	if err != nil {
-		logger.Error("failed-to-get-resourceTypes", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	config := atc.Config{
-		Groups:        pipeline.Groups(),
-		Resources:     resources.Configs(),
-		ResourceTypes: resourceTypes.Configs(),
-		Jobs:          jobs.Configs(),
-	}
-
-	rawConfig, err := json.Marshal(config)
-	if err != nil {
-		logger.Error("failed-to-marshal-config", err)
+		logger.Error("failed-to-get-pipeline-config", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -81,8 +59,7 @@ func (s *Server) GetConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(atc.ConfigResponse{
-		Config:    &config,
-		RawConfig: atc.RawConfig(rawConfig),
+		Config: config,
 	})
 	if err != nil {
 		logger.Error("failed-to-encode-config", err)

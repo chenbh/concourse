@@ -6,7 +6,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -16,7 +15,7 @@ import (
 
 var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 	var (
-		collector                           gc.Collector
+		collector                           GcCollector
 		resourceConfigCheckSessionLifecycle db.ResourceConfigCheckSessionLifecycle
 		resourceConfigScope                 db.ResourceConfigScope
 		ownerExpiries                       db.ContainerOwnerExpiries
@@ -34,9 +33,8 @@ var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 		var owner db.ContainerOwner
 
 		ownerExpiries = db.ContainerOwnerExpiries{
-			GraceTime: 5 * time.Second,
-			Min:       10 * time.Second,
-			Max:       10 * time.Second,
+			Min: 10 * time.Second,
+			Max: 10 * time.Second,
 		}
 
 		BeforeEach(func() {
@@ -47,14 +45,14 @@ var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 			Expect(found).To(BeTrue())
 
 			resourceConfigScope, err = resource.SetResourceConfig(
-				logger,
 				atc.Source{
 					"some": "source",
 				},
-				creds.VersionedResourceTypes{})
+				atc.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			owner = db.NewResourceConfigCheckSessionContainerOwner(resourceConfigScope.ResourceConfig(), ownerExpiries)
+			resourceConfig := resourceConfigScope.ResourceConfig()
+			owner = db.NewResourceConfigCheckSessionContainerOwner(resourceConfig.ID(), resourceConfig.OriginBaseResourceType().ID, ownerExpiries)
 
 			workerFactory := db.NewWorkerFactory(dbConn)
 			defaultWorkerPayload := atc.Worker{
@@ -128,7 +126,7 @@ var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 					},
 				}
 
-				defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", atcConfig, db.ConfigVersion(1), db.PipelineUnpaused)
+				defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", atcConfig, db.ConfigVersion(1), false)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

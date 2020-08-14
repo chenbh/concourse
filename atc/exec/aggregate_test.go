@@ -5,9 +5,9 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/concourse/concourse/atc/exec"
 	. "github.com/concourse/concourse/atc/exec"
-	"github.com/concourse/concourse/atc/worker"
-
+	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/exec/execfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ var _ = Describe("Aggregate", func() {
 		fakeStepA *execfakes.FakeStep
 		fakeStepB *execfakes.FakeStep
 
-		repo  *worker.ArtifactRepository
+		repo  *build.Repository
 		state *execfakes.FakeRunState
 
 		step    Step
@@ -39,9 +39,9 @@ var _ = Describe("Aggregate", func() {
 			fakeStepB,
 		}
 
-		repo = worker.NewArtifactRepository()
+		repo = build.NewRepository()
 		state = new(execfakes.FakeRunState)
-		state.ArtifactsReturns(repo)
+		state.ArtifactRepositoryReturns(repo)
 	})
 
 	AfterEach(func() {
@@ -119,6 +119,23 @@ var _ = Describe("Aggregate", func() {
 		It("exits with an error including the original message", func() {
 			Expect(stepErr.Error()).To(ContainSubstring("nope A"))
 			Expect(stepErr.Error()).To(ContainSubstring("nope B"))
+		})
+	})
+
+	Describe("Panic", func() {
+		Context("when one step panic", func() {
+			BeforeEach(func() {
+				fakeStepA.SucceededReturns(true)
+
+				fakeStepB.RunStub = func(_ context.Context, _ exec.RunState) error {
+					panic("something terrible")
+				}
+			})
+
+			It("recover from panic and yields false", func() {
+				Expect(step.Succeeded()).To(BeFalse())
+				Expect(stepErr.Error()).To(ContainSubstring("something terrible"))
+			})
 		})
 	})
 

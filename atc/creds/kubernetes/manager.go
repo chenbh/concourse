@@ -55,7 +55,7 @@ func (manager KubernetesManager) Validate() error {
 	return err
 }
 
-func (manager KubernetesManager) NewVariablesFactory(logger lager.Logger) (creds.VariablesFactory, error) {
+func (manager KubernetesManager) NewSecretsFactory(logger lager.Logger) (creds.SecretsFactory, error) {
 	config, err := manager.buildConfig()
 	if err != nil {
 		return nil, err
@@ -70,4 +70,8 @@ func (manager KubernetesManager) NewVariablesFactory(logger lager.Logger) (creds
 	}
 
 	return NewKubernetesFactory(logger, clientset, manager.NamespacePrefix), nil
+}
+
+func (manager KubernetesManager) Close(logger lager.Logger) {
+	// TODO - to implement
 }

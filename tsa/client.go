@@ -25,9 +25,9 @@ import (
 // ErrAllGatewaysUnreachable is returned when all hosts reject the connection.
 var ErrAllGatewaysUnreachable = errors.New("all worker SSH gateways unreachable")
 
-// ErrDrainTimeout is returned when the connection underlying a registration
-// has been idle for the configured DrainTimeout.
-var ErrDrainTimeout = errors.New("timeout draining connections")
+// ErrConnectionDrainTimeout is returned when the connection underlying a
+// registration has been idle for the configured ConnectionDrainTimeout.
+var ErrConnectionDrainTimeout = errors.New("timeout draining connections")
 
 // HandshakeError is returned when the client fails to establish an SSH
 // connection, possibly due to bad credentials.
@@ -73,7 +73,7 @@ type RegisterOptions struct {
 	// sending a keepalive request to the SSH gateway. When the context is
 	// canceled, the keepalive loop is stopped, and the connection will break
 	// after it has been idle for this duration, if configured.
-	DrainTimeout time.Duration
+	ConnectionDrainTimeout time.Duration
 
 	// RegisteredFunc is called when the initial registration has completed.
 	//
@@ -94,13 +94,13 @@ type RegisterOptions struct {
 // heartbeat the worker.
 //
 // If the context is canceled, heartbeating is immediately stopped and the
-// remote SSH gateway will wait for connections to drain. If a DrainTimeout is
-// configured, the connection will be terminated after no data has gone to/from
-// the SSH gateway for the configured duration.
+// remote SSH gateway will wait for connections to drain. If a
+// ConnectionDrainTimeout is configured, the connection will be terminated
+// after no data has gone to/from the SSH gateway for the configured duration.
 func (client *Client) Register(ctx context.Context, opts RegisterOptions) error {
 	logger := lagerctx.FromContext(ctx)
 
-	sshClient, tcpConn, err := client.dial(ctx, opts.DrainTimeout)
+	sshClient, tcpConn, err := client.dial(ctx, opts.ConnectionDrainTimeout)
 	if err != nil {
 		logger.Error("failed-to-dial", err)
 		return err
@@ -108,7 +108,9 @@ func (client *Client) Register(ctx context.Context, opts RegisterOptions) error 
 
 	defer sshClient.Close()
 
-	go client.keepAlive(ctx, sshClient, tcpConn)
+	keepAliveInterval := time.Second * 5
+	keepAliveTimeout := time.Minute * 5
+	go KeepAlive(ctx, sshClient, tcpConn, keepAliveInterval, keepAliveTimeout)
 
 	gardenListener, err := sshClient.Listen("tcp", gardenForwardAddr)
 	if err != nil {
@@ -162,9 +164,9 @@ func (client *Client) Register(ctx context.Context, opts RegisterOptions) error 
 		eventsW,
 	)
 	if err != nil {
-		if ctx.Err() != nil && opts.DrainTimeout != 0 {
+		if ctx.Err() != nil && opts.ConnectionDrainTimeout != 0 {
 			if _, ok := err.(*ssh.ExitMissingError); ok {
-				return ErrDrainTimeout
+				return ErrConnectionDrainTimeout
 			}
 		}
 
@@ -342,6 +344,8 @@ func (client *Client) dial(ctx context.Context, idleTimeout time.Duration) (*ssh
 	}
 
 	clientConfig := &ssh.ClientConfig{
+		Config: atc.DefaultSSHConfig(),
+
 		User: "beacon", // doesn't matter
 
 		HostKeyCallback: client.checkHostKey,
@@ -403,37 +407,6 @@ func (client *Client) checkHostKey(hostname string, remote net.Addr, remoteKey s
 	return errors.New("remote host public key mismatch")
 }
 
-func (client *Client) keepAlive(ctx context.Context, sshClient *ssh.Client, tcpConn *net.TCPConn) {
-	logger := lagerctx.WithSession(ctx, "keepalive")
-
-	kas := time.NewTicker(5 * time.Second)
-
-	for {
-		// ignore reply; server may just not have handled it, since there's no
-		// standard keepalive request name
-
-		_, _, err := sshClient.Conn.SendRequest("keepalive", true, []byte("sup"))
-		if err != nil {
-			logger.Error("failed", err)
-			return
-		}
-
-		select {
-		case <-kas.C:
-			logger.Debug("tick")
-
-		case <-ctx.Done():
-			logger.Debug("stopping")
-
-			if err := tcpConn.SetKeepAlive(false); err != nil {
-				logger.Error("failed-to-disable-keepalive", err)
-				return
-			}
-
-			return
-		}
-	}
-}
 
 func (client *Client) run(ctx context.Context, sshClient *ssh.Client, command string, stdout io.Writer) error {
 	argv := strings.Split(command, " ")

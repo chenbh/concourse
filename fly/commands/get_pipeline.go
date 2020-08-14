@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
-	"github.com/concourse/concourse/go-concourse/concourse"
 	"github.com/mattn/go-isatty"
 )
 
@@ -23,7 +22,8 @@ type GetPipelineCommand struct {
 }
 
 func (command *GetPipelineCommand) Validate() error {
-	return command.Pipeline.Validate()
+	_, err := command.Pipeline.Validate()
+	return err
 }
 
 func (command *GetPipelineCommand) Execute(args []string) error {
@@ -45,15 +45,9 @@ func (command *GetPipelineCommand) Execute(args []string) error {
 		return err
 	}
 
-	config, rawConfig, _, found, err := target.Team().PipelineConfig(pipelineName)
+	config, _, found, err := target.Team().PipelineConfig(pipelineName)
 	if err != nil {
-		if _, ok := err.(concourse.PipelineConfigError); ok {
-			_ = dumpRawConfig(rawConfig, asJSON)
-			command.showConfigWarning()
-			return err
-		} else {
-			return err
-		}
+		return err
 	}
 
 	if !found {
@@ -78,31 +72,6 @@ func dump(config atc.Config, asJSON bool) error {
 	_, err = fmt.Printf("%s", payload)
 
 	return err
-}
-
-func dumpRawConfig(rawConfig atc.RawConfig, asJSON bool) error {
-	var payload []byte
-	if asJSON {
-		payload = []byte(rawConfig)
-	} else {
-		var config map[string]interface{}
-		err := json.Unmarshal([]byte(rawConfig), &config)
-		if err != nil {
-			return err
-		}
-
-		payload, err = yaml.Marshal(config)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err := fmt.Printf("%s", payload)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (command *GetPipelineCommand) showConfigWarning() {

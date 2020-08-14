@@ -1,11 +1,17 @@
-module Concourse.PipelineStatus exposing (PipelineStatus(..), StatusDetails(..), isRunning, show)
+module Concourse.PipelineStatus exposing
+    ( PipelineStatus(..)
+    , StatusDetails(..)
+    , equal
+    , isRunning
+    , show
+    )
 
-import Time exposing (Time)
+import Time
 
 
 type StatusDetails
     = Running
-    | Since Time
+    | Since Time.Posix
 
 
 type PipelineStatus
@@ -15,6 +21,31 @@ type PipelineStatus
     | PipelineStatusFailed StatusDetails
     | PipelineStatusPending Bool
     | PipelineStatusSucceeded StatusDetails
+
+
+equal : PipelineStatus -> PipelineStatus -> Bool
+equal ps1 ps2 =
+    case ( ps1, ps2 ) of
+        ( PipelineStatusPaused, PipelineStatusPaused ) ->
+            True
+
+        ( PipelineStatusAborted _, PipelineStatusAborted _ ) ->
+            True
+
+        ( PipelineStatusErrored _, PipelineStatusErrored _ ) ->
+            True
+
+        ( PipelineStatusFailed _, PipelineStatusFailed _ ) ->
+            True
+
+        ( PipelineStatusPending _, PipelineStatusPending _ ) ->
+            True
+
+        ( PipelineStatusSucceeded _, PipelineStatusSucceeded _ ) ->
+            True
+
+        _ ->
+            False
 
 
 show : PipelineStatus -> String
@@ -54,8 +85,8 @@ isRunning status =
         PipelineStatusFailed details ->
             details == Running
 
-        PipelineStatusPending isRunning ->
-            isRunning
+        PipelineStatusPending bool ->
+            bool
 
         PipelineStatusSucceeded details ->
             details == Running

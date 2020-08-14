@@ -3,31 +3,64 @@ package accessor
 import (
 	"context"
 	"net/http"
+
+	"code.cloudfoundry.org/lager"
+	"github.com/concourse/concourse/atc/auditor"
 )
 
+//go:generate counterfeiter net/http.Handler
+
+//go:generate counterfeiter . AccessFactory
+
+type AccessFactory interface {
+	Create(req *http.Request, role string) (Access, error)
+}
+
 func NewHandler(
+	logger lager.Logger,
+	action string,
 	handler http.Handler,
 	accessFactory AccessFactory,
-	action string,
+	auditor auditor.Auditor,
+	customRoles map[string]string,
 ) http.Handler {
-	return accessorHandler{
+	return &accessorHandler{
+		logger:        logger,
 		handler:       handler,
 		accessFactory: accessFactory,
 		action:        action,
+		auditor:       auditor,
+		customRoles:   customRoles,
 	}
 }
 
 type accessorHandler struct {
+	logger        lager.Logger
+	action        string
 	handler       http.Handler
 	accessFactory AccessFactory
-	action        string
+	auditor       auditor.Auditor
+	customRoles   map[string]string
 }
 
-func (h accessorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *accessorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requiredRole := h.customRoles[h.action]
+	if requiredRole == "" {
+		requiredRole = DefaultRoles[h.action]
+	}
 
-	acc := h.accessFactory.Create(r, h.action)
+	acc, err := h.accessFactory.Create(r, requiredRole)
+	if err != nil {
+		h.logger.Error("failed-to-construct-accessor", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	claims := acc.Claims()
+
 	ctx := context.WithValue(r.Context(), "accessor", acc)
 
+	h.auditor.Audit(h.action, claims.UserName, r)
 	h.handler.ServeHTTP(w, r.WithContext(ctx))
 }
 

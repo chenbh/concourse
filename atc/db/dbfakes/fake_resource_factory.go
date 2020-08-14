@@ -2,12 +2,39 @@
 package dbfakes
 
 import (
-	sync "sync"
+	"sync"
 
-	db "github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/db"
 )
 
 type FakeResourceFactory struct {
+	AllResourcesStub        func() ([]db.Resource, error)
+	allResourcesMutex       sync.RWMutex
+	allResourcesArgsForCall []struct {
+	}
+	allResourcesReturns struct {
+		result1 []db.Resource
+		result2 error
+	}
+	allResourcesReturnsOnCall map[int]struct {
+		result1 []db.Resource
+		result2 error
+	}
+	ResourceStub        func(int) (db.Resource, bool, error)
+	resourceMutex       sync.RWMutex
+	resourceArgsForCall []struct {
+		arg1 int
+	}
+	resourceReturns struct {
+		result1 db.Resource
+		result2 bool
+		result3 error
+	}
+	resourceReturnsOnCall map[int]struct {
+		result1 db.Resource
+		result2 bool
+		result3 error
+	}
 	VisibleResourcesStub        func([]string) ([]db.Resource, error)
 	visibleResourcesMutex       sync.RWMutex
 	visibleResourcesArgsForCall []struct {
@@ -23,6 +50,127 @@ type FakeResourceFactory struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeResourceFactory) AllResources() ([]db.Resource, error) {
+	fake.allResourcesMutex.Lock()
+	ret, specificReturn := fake.allResourcesReturnsOnCall[len(fake.allResourcesArgsForCall)]
+	fake.allResourcesArgsForCall = append(fake.allResourcesArgsForCall, struct {
+	}{})
+	fake.recordInvocation("AllResources", []interface{}{})
+	fake.allResourcesMutex.Unlock()
+	if fake.AllResourcesStub != nil {
+		return fake.AllResourcesStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.allResourcesReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeResourceFactory) AllResourcesCallCount() int {
+	fake.allResourcesMutex.RLock()
+	defer fake.allResourcesMutex.RUnlock()
+	return len(fake.allResourcesArgsForCall)
+}
+
+func (fake *FakeResourceFactory) AllResourcesCalls(stub func() ([]db.Resource, error)) {
+	fake.allResourcesMutex.Lock()
+	defer fake.allResourcesMutex.Unlock()
+	fake.AllResourcesStub = stub
+}
+
+func (fake *FakeResourceFactory) AllResourcesReturns(result1 []db.Resource, result2 error) {
+	fake.allResourcesMutex.Lock()
+	defer fake.allResourcesMutex.Unlock()
+	fake.AllResourcesStub = nil
+	fake.allResourcesReturns = struct {
+		result1 []db.Resource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeResourceFactory) AllResourcesReturnsOnCall(i int, result1 []db.Resource, result2 error) {
+	fake.allResourcesMutex.Lock()
+	defer fake.allResourcesMutex.Unlock()
+	fake.AllResourcesStub = nil
+	if fake.allResourcesReturnsOnCall == nil {
+		fake.allResourcesReturnsOnCall = make(map[int]struct {
+			result1 []db.Resource
+			result2 error
+		})
+	}
+	fake.allResourcesReturnsOnCall[i] = struct {
+		result1 []db.Resource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeResourceFactory) Resource(arg1 int) (db.Resource, bool, error) {
+	fake.resourceMutex.Lock()
+	ret, specificReturn := fake.resourceReturnsOnCall[len(fake.resourceArgsForCall)]
+	fake.resourceArgsForCall = append(fake.resourceArgsForCall, struct {
+		arg1 int
+	}{arg1})
+	fake.recordInvocation("Resource", []interface{}{arg1})
+	fake.resourceMutex.Unlock()
+	if fake.ResourceStub != nil {
+		return fake.ResourceStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	fakeReturns := fake.resourceReturns
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
+}
+
+func (fake *FakeResourceFactory) ResourceCallCount() int {
+	fake.resourceMutex.RLock()
+	defer fake.resourceMutex.RUnlock()
+	return len(fake.resourceArgsForCall)
+}
+
+func (fake *FakeResourceFactory) ResourceCalls(stub func(int) (db.Resource, bool, error)) {
+	fake.resourceMutex.Lock()
+	defer fake.resourceMutex.Unlock()
+	fake.ResourceStub = stub
+}
+
+func (fake *FakeResourceFactory) ResourceArgsForCall(i int) int {
+	fake.resourceMutex.RLock()
+	defer fake.resourceMutex.RUnlock()
+	argsForCall := fake.resourceArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeResourceFactory) ResourceReturns(result1 db.Resource, result2 bool, result3 error) {
+	fake.resourceMutex.Lock()
+	defer fake.resourceMutex.Unlock()
+	fake.ResourceStub = nil
+	fake.resourceReturns = struct {
+		result1 db.Resource
+		result2 bool
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeResourceFactory) ResourceReturnsOnCall(i int, result1 db.Resource, result2 bool, result3 error) {
+	fake.resourceMutex.Lock()
+	defer fake.resourceMutex.Unlock()
+	fake.ResourceStub = nil
+	if fake.resourceReturnsOnCall == nil {
+		fake.resourceReturnsOnCall = make(map[int]struct {
+			result1 db.Resource
+			result2 bool
+			result3 error
+		})
+	}
+	fake.resourceReturnsOnCall[i] = struct {
+		result1 db.Resource
+		result2 bool
+		result3 error
+	}{result1, result2, result3}
 }
 
 func (fake *FakeResourceFactory) VisibleResources(arg1 []string) ([]db.Resource, error) {
@@ -96,6 +244,10 @@ func (fake *FakeResourceFactory) VisibleResourcesReturnsOnCall(i int, result1 []
 func (fake *FakeResourceFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.allResourcesMutex.RLock()
+	defer fake.allResourcesMutex.RUnlock()
+	fake.resourceMutex.RLock()
+	defer fake.resourceMutex.RUnlock()
 	fake.visibleResourcesMutex.RLock()
 	defer fake.visibleResourcesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

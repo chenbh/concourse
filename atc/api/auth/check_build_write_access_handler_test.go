@@ -8,6 +8,7 @@ import (
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/concourse/concourse/atc/auditor/auditorfakes"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 
 	. "github.com/onsi/ginkgo"
@@ -42,12 +43,20 @@ var _ = Describe("CheckBuildWriteAccessHandler", func() {
 		build.TeamNameReturns("some-team")
 		build.JobNameReturns("some-job")
 
-		checkBuildWriteAccessHandler := handlerFactory.HandlerFor(delegate, auth.UnauthorizedRejector{})
-		handler = accessor.NewHandler(checkBuildWriteAccessHandler, fakeAccessor, "some-action")
+		innerHandler := handlerFactory.HandlerFor(delegate, auth.UnauthorizedRejector{})
+
+		handler = accessor.NewHandler(
+			logger,
+			"some-action",
+			innerHandler,
+			fakeAccessor,
+			new(auditorfakes.FakeAuditor),
+			map[string]string{},
+		)
 	})
 
 	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
+		fakeAccessor.CreateReturns(fakeaccess, nil)
 		server = httptest.NewServer(handler)
 
 		request, err := http.NewRequest("POST", server.URL+"?:team_name=some-team&:build_id=55", nil)

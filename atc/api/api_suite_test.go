@@ -8,37 +8,36 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	"github.com/concourse/concourse/atc/api"
 	"github.com/concourse/concourse/atc/api/accessor"
+	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/concourse/concourse/atc/api/containerserver/containerserverfakes"
+	"github.com/concourse/concourse/atc/api/policychecker/policycheckerfakes"
+	"github.com/concourse/concourse/atc/auditor/auditorfakes"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/creds/credsfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	"github.com/concourse/concourse/atc/gc/gcfakes"
-
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
-	"github.com/concourse/concourse/atc/api/containerserver/containerserverfakes"
-	"github.com/concourse/concourse/atc/api/jobserver/jobserverfakes"
-	"github.com/concourse/concourse/atc/api/resourceserver/resourceserverfakes"
-	"github.com/concourse/concourse/atc/engine/enginefakes"
 	"github.com/concourse/concourse/atc/worker/workerfakes"
 	"github.com/concourse/concourse/atc/wrappa"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var (
 	sink *lager.ReconfigurableSink
 
 	externalURL = "https://example.com"
+	clusterName = "Test Cluster"
 
-	fakeEngine              *enginefakes.FakeEngine
 	fakeWorkerClient        *workerfakes.FakeClient
-	fakeWorkerProvider      *workerfakes.FakeWorkerProvider
 	fakeVolumeRepository    *dbfakes.FakeVolumeRepository
 	fakeContainerRepository *dbfakes.FakeContainerRepository
 	fakeDestroyer           *gcfakes.FakeDestroyer
@@ -48,24 +47,26 @@ var (
 	dbResourceFactory       *dbfakes.FakeResourceFactory
 	dbResourceConfigFactory *dbfakes.FakeResourceConfigFactory
 	fakePipeline            *dbfakes.FakePipeline
+	fakeAccess              *accessorfakes.FakeAccess
 	fakeAccessor            *accessorfakes.FakeAccessFactory
 	dbWorkerFactory         *dbfakes.FakeWorkerFactory
 	dbWorkerLifecycle       *dbfakes.FakeWorkerLifecycle
 	build                   *dbfakes.FakeBuild
 	dbBuildFactory          *dbfakes.FakeBuildFactory
+	dbUserFactory           *dbfakes.FakeUserFactory
+	dbCheckFactory          *dbfakes.FakeCheckFactory
 	dbTeam                  *dbfakes.FakeTeam
-	fakeSchedulerFactory    *jobserverfakes.FakeSchedulerFactory
-	fakeScannerFactory      *resourceserverfakes.FakeScannerFactory
-	fakeVariablesFactory    *credsfakes.FakeVariablesFactory
+	dbWall                  *dbfakes.FakeWall
+	fakeSecretManager       *credsfakes.FakeSecrets
+	fakeVarSourcePool       *credsfakes.FakeVarSourcePool
+	fakePolicyChecker       *policycheckerfakes.FakePolicyChecker
 	credsManagers           creds.Managers
 	interceptTimeoutFactory *containerserverfakes.FakeInterceptTimeoutFactory
 	interceptTimeout        *containerserverfakes.FakeInterceptTimeout
-	peerURL                 string
-	drain                   chan struct{}
-	expire                  time.Duration
 	isTLSEnabled            bool
 	cliDownloadsDir         string
 	logger                  *lagertest.TestLogger
+	fakeClock               *fakeclock.FakeClock
 
 	constructedEventHandler *fakeEventHandlerFactory
 
@@ -100,6 +101,9 @@ var _ = BeforeEach(func() {
 	dbResourceFactory = new(dbfakes.FakeResourceFactory)
 	dbResourceConfigFactory = new(dbfakes.FakeResourceConfigFactory)
 	dbBuildFactory = new(dbfakes.FakeBuildFactory)
+	dbUserFactory = new(dbfakes.FakeUserFactory)
+	dbCheckFactory = new(dbfakes.FakeCheckFactory)
+	dbWall = new(dbfakes.FakeWall)
 
 	interceptTimeoutFactory = new(containerserverfakes.FakeInterceptTimeoutFactory)
 	interceptTimeout = new(containerserverfakes.FakeInterceptTimeout)
@@ -110,32 +114,29 @@ var _ = BeforeEach(func() {
 	dbTeamFactory.FindTeamReturns(dbTeam, true, nil)
 	dbTeamFactory.GetByIDReturns(dbTeam)
 
+	fakeAccess = new(accessorfakes.FakeAccess)
 	fakeAccessor = new(accessorfakes.FakeAccessFactory)
+	fakeAccessor.CreateReturns(fakeAccess, nil)
+
 	fakePipeline = new(dbfakes.FakePipeline)
 	dbTeam.PipelineReturns(fakePipeline, true, nil)
 
 	dbWorkerFactory = new(dbfakes.FakeWorkerFactory)
 	dbWorkerLifecycle = new(dbfakes.FakeWorkerLifecycle)
 
-	peerURL = "http://127.0.0.1:1234"
-
-	drain = make(chan struct{})
-
-	fakeEngine = new(enginefakes.FakeEngine)
 	fakeWorkerClient = new(workerfakes.FakeClient)
-	fakeWorkerProvider = new(workerfakes.FakeWorkerProvider)
-
-	fakeSchedulerFactory = new(jobserverfakes.FakeSchedulerFactory)
-	fakeScannerFactory = new(resourceserverfakes.FakeScannerFactory)
 
 	fakeVolumeRepository = new(dbfakes.FakeVolumeRepository)
 	fakeContainerRepository = new(dbfakes.FakeContainerRepository)
 	fakeDestroyer = new(gcfakes.FakeDestroyer)
 
-	fakeVariablesFactory = new(credsfakes.FakeVariablesFactory)
+	fakeSecretManager = new(credsfakes.FakeSecrets)
+	fakeVarSourcePool = new(credsfakes.FakeVarSourcePool)
 	credsManagers = make(creds.Managers)
-	var err error
 
+	fakeClock = fakeclock.NewFakeClock(time.Unix(123, 456))
+
+	var err error
 	cliDownloadsDir, err = ioutil.TempDir("", "cli-downloads")
 	Expect(err).NotTo(HaveOccurred())
 
@@ -144,8 +145,6 @@ var _ = BeforeEach(func() {
 	logger = lagertest.NewTestLogger("api")
 
 	sink = lager.NewReconfigurableSink(lager.NewPrettySink(GinkgoWriter, lager.DEBUG), lager.DEBUG)
-
-	expire = 24 * time.Hour
 
 	isTLSEnabled = false
 
@@ -159,17 +158,26 @@ var _ = BeforeEach(func() {
 
 	checkWorkerTeamAccessHandlerFactory := auth.NewCheckWorkerTeamAccessHandlerFactory(dbWorkerFactory)
 
-	handler, err := api.NewHandler(
-		logger,
+	fakePolicyChecker = new(policycheckerfakes.FakePolicyChecker)
+	fakePolicyChecker.CheckReturns(true, nil)
 
-		externalURL,
-
+	apiWrapper := wrappa.MultiWrappa{
+		wrappa.NewPolicyCheckWrappa(logger, fakePolicyChecker),
 		wrappa.NewAPIAuthWrappa(
 			checkPipelineAccessHandlerFactory,
 			checkBuildReadAccessHandlerFactory,
 			checkBuildWriteAccessHandlerFactory,
 			checkWorkerTeamAccessHandlerFactory,
 		),
+	}
+
+	handler, err := api.NewHandler(
+		logger,
+
+		externalURL,
+		clusterName,
+
+		apiWrapper,
 
 		dbTeamFactory,
 		dbPipelineFactory,
@@ -180,18 +188,13 @@ var _ = BeforeEach(func() {
 		fakeContainerRepository,
 		fakeDestroyer,
 		dbBuildFactory,
+		dbCheckFactory,
 		dbResourceConfigFactory,
+		dbUserFactory,
 
-		peerURL,
 		constructedEventHandler.Construct,
-		drain,
 
-		fakeEngine,
 		fakeWorkerClient,
-		fakeWorkerProvider,
-
-		fakeSchedulerFactory,
-		fakeScannerFactory,
 
 		sink,
 
@@ -200,13 +203,26 @@ var _ = BeforeEach(func() {
 		cliDownloadsDir,
 		"1.2.3",
 		"4.5.6",
-		fakeVariablesFactory,
+		fakeSecretManager,
+		fakeVarSourcePool,
 		credsManagers,
 		interceptTimeoutFactory,
+		time.Second,
+		dbWall,
+		fakeClock,
 	)
 
 	Expect(err).NotTo(HaveOccurred())
-	accessorHandler := accessor.NewHandler(handler, fakeAccessor, "some-action")
+
+	accessorHandler := accessor.NewHandler(
+		logger,
+		"some-action",
+		handler,
+		fakeAccessor,
+		new(auditorfakes.FakeAuditor),
+		map[string]string{},
+	)
+
 	handler = wrappa.LoggerHandler{
 		Logger:  logger,
 		Handler: accessorHandler,

@@ -1,102 +1,122 @@
 module ApplicationTests exposing (all)
 
 import Application.Application as Application
+import Browser
+import Common exposing (queryView)
+import Expect
+import Message.Effects as Effects
+import Message.Message exposing (DomID(..), Message(..))
+import Message.Subscription as Subscription exposing (Delivery(..))
+import Message.TopLevelMessage as Msgs
 import Test exposing (..)
 import Test.Html.Query as Query
-import Test.Html.Selector exposing (style)
+import Test.Html.Selector exposing (id, style)
+import Url
 
 
 all : Test
 all =
-    describe "top-level layout"
-        [ test "bold and antialiasing on dashboard" <|
+    describe "top-level application"
+        [ test "should subscribe to clicks from the not-automatically-linked boxes in the pipeline, and the token return" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/"
+                    |> Application.subscriptions
+                    |> Expect.all
+                        [ Common.contains Subscription.OnNonHrefLinkClicked
+                        , Common.contains Subscription.OnTokenReceived
+                        ]
+        , test "subscribes to the favorited pipelines response" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/"
+                    |> Application.subscriptions
+                    |> Common.contains Subscription.OnFavoritedPipelinesReceived
+        , test "loads favorited pipelines on init" <|
             \_ ->
                 Application.init
                     { turbulenceImgSrc = ""
-                    , notFoundImgSrc = ""
-                    , csrfToken = ""
+                    , notFoundImgSrc = "notfound.svg"
+                    , csrfToken = "csrf_token"
                     , authToken = ""
-                    , pipelineRunningKeyframes = ""
+                    , pipelineRunningKeyframes = "pipeline-running"
                     }
-                    { href = ""
+                    { protocol = Url.Http
                     , host = ""
-                    , hostname = ""
-                    , protocol = ""
-                    , origin = ""
-                    , port_ = ""
-                    , pathname = "/"
-                    , search = ""
-                    , hash = ""
-                    , username = ""
-                    , password = ""
+                    , port_ = Nothing
+                    , path = "/teams/t/pipelines/p/"
+                    , query = Nothing
+                    , fragment = Nothing
                     }
-                    |> Tuple.first
-                    |> Application.view
-                    |> Query.fromHtml
-                    |> Query.has
-                        [ style
-                            [ ( "-webkit-font-smoothing", "antialiased" )
-                            , ( "font-weight", "700" )
-                            ]
-                        ]
-        , test "bold and antialiasing on resource page" <|
+                    |> Tuple.second
+                    |> Common.contains Effects.LoadFavoritedPipelines
+        , test "clicking a not-automatically-linked box in the pipeline redirects" <|
             \_ ->
-                Application.init
-                    { turbulenceImgSrc = ""
-                    , notFoundImgSrc = ""
-                    , csrfToken = ""
-                    , authToken = ""
-                    , pipelineRunningKeyframes = ""
-                    }
-                    { href = ""
-                    , host = ""
-                    , hostname = ""
-                    , protocol = ""
-                    , origin = ""
-                    , port_ = ""
-                    , pathname = "/teams/t/pipelines/p/resources/r"
-                    , search = ""
-                    , hash = ""
-                    , username = ""
-                    , password = ""
-                    }
-                    |> Tuple.first
-                    |> Application.view
-                    |> Query.fromHtml
-                    |> Query.has
-                        [ style
-                            [ ( "-webkit-font-smoothing", "antialiased" )
-                            , ( "font-weight", "700" )
-                            ]
-                        ]
-        , test "bold and antialiasing everywhere else" <|
+                Common.init "/teams/t/pipelines/p/"
+                    |> Application.update
+                        (Msgs.DeliveryReceived <|
+                            NonHrefLinkClicked "/foo/bar"
+                        )
+                    |> Tuple.second
+                    |> Expect.equal [ Effects.LoadExternal "/foo/bar" ]
+        , test "received token is passed to all subsequent requests" <|
             \_ ->
-                Application.init
-                    { turbulenceImgSrc = ""
-                    , notFoundImgSrc = ""
-                    , csrfToken = ""
-                    , authToken = ""
-                    , pipelineRunningKeyframes = ""
-                    }
-                    { href = ""
-                    , host = ""
-                    , hostname = ""
-                    , protocol = ""
-                    , origin = ""
-                    , port_ = ""
-                    , pathname = "/teams/team/pipelines/pipeline"
-                    , search = ""
-                    , hash = ""
-                    , username = ""
-                    , password = ""
-                    }
+                let
+                    pipelineIdentifier =
+                        { pipelineName = "p", teamName = "t" }
+                in
+                Common.init "/"
+                    |> Application.update
+                        (Msgs.DeliveryReceived <|
+                            TokenReceived <|
+                                Ok "real-token"
+                        )
                     |> Tuple.first
-                    |> Application.view
-                    |> Query.fromHtml
-                    |> Query.has
-                        [ style
-                            [ ( "-webkit-font-smoothing", "antialiased" )
-                            , ( "font-weight", "700" )
-                            ]
+                    |> .session
+                    |> .csrfToken
+                    |> Expect.equal "real-token"
+        , test "subscribes to mouse events when dragging the side bar handle" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/jobs/j"
+                    |> Application.update
+                        (Msgs.Update <|
+                            Click SideBarResizeHandle
+                        )
+                    |> Tuple.first
+                    |> Application.subscriptions
+                    |> Expect.all
+                        [ Common.contains Subscription.OnMouse
+                        , Common.contains Subscription.OnMouseUp
                         ]
+        , test "cannot select text when dragging sidebar" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/jobs/j"
+                    |> Application.update
+                        (Msgs.Update <|
+                            Click SideBarResizeHandle
+                        )
+                    |> Tuple.first
+                    |> Common.queryView
+                    |> Query.has
+                        [ style "user-select" "none"
+                        , style "-ms-user-select" "none"
+                        , style "-moz-user-select" "none"
+                        , style "-khtml-user-select" "none"
+                        , style "-webkit-user-select" "none"
+                        , style "-webkit-touch-callout" "none"
+                        ]
+        , test "can select text when not dragging sidebar" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/jobs/j"
+                    |> Common.queryView
+                    |> Query.hasNot [ style "user-select" "none" ]
+        , test "page-wrapper fills height" <|
+            \_ ->
+                Common.init "/teams/t/pipelines/p/jobs/j"
+                    |> Application.update
+                        (Msgs.Update <|
+                            Click SideBarResizeHandle
+                        )
+                    |> Tuple.first
+                    |> Common.queryView
+                    |> Query.find [ id "page-wrapper" ]
+                    |> Query.has [ style "height" "100%" ]
         ]

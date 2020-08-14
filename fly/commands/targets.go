@@ -3,19 +3,18 @@ package commands
 import (
 	"os"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/concourse/concourse/skymarshal/token"
 	"github.com/fatih/color"
 )
 
 type TargetsCommand struct{}
 
 func (command *TargetsCommand) Execute([]string) error {
-	flyYAML, err := rc.LoadTargets()
+	targets, err := rc.LoadTargets()
 	if err != nil {
 		return err
 	}
@@ -29,8 +28,8 @@ func (command *TargetsCommand) Execute([]string) error {
 		},
 	}
 
-	for targetName, targetValues := range flyYAML.Targets {
-		expirationTime := GetExpirationFromString(targetValues.Token)
+	for targetName, targetValues := range targets {
+		expirationTime := getExpirationFromString(targetValues.Token)
 
 		row := ui.TableRow{
 			{Contents: string(targetName)},
@@ -47,39 +46,15 @@ func (command *TargetsCommand) Execute([]string) error {
 	return table.Render(os.Stdout, Fly.PrintTableHeaders)
 }
 
-func GetExpirationFromString(token *rc.TargetToken) string {
-	if token == nil || token.Type == "" || token.Value == "" {
+func getExpirationFromString(ttoken *rc.TargetToken) string {
+	if ttoken == nil || ttoken.Type == "" || ttoken.Value == "" {
 		return "n/a"
 	}
 
-	parsedToken, _ := jwt.Parse(token.Value, func(token *jwt.Token) (interface{}, error) {
-		return "", nil
-	})
-
-	claims := parsedToken.Claims.(jwt.MapClaims)
-	expClaim, ok := claims["exp"]
-	if !ok {
-		return "n/a"
+	expiry, err := token.Factory{}.ParseExpiry(ttoken.Value)
+	if err != nil {
+		return "n/a: invalid token"
 	}
 
-	var intSeconds int64
-
-	floatSeconds, ok := expClaim.(float64)
-	if ok {
-		intSeconds = int64(floatSeconds)
-	} else {
-		stringSeconds, ok := expClaim.(string)
-		if !ok {
-			return "n/a"
-		}
-		var err error
-		intSeconds, err = strconv.ParseInt(stringSeconds, 10, 64)
-		if err != nil {
-			return "n/a"
-		}
-	}
-
-	unixSeconds := time.Unix(intSeconds, 0).UTC()
-
-	return unixSeconds.Format(time.RFC1123)
+	return expiry.UTC().Format(time.RFC1123)
 }

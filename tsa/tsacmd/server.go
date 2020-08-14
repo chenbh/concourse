@@ -20,15 +20,15 @@ import (
 const maxForwards = 2
 
 type server struct {
-	logger            lager.Logger
-	atcEndpointPicker tsa.EndpointPicker
-	tokenGenerator    tsa.TokenGenerator
-	heartbeatInterval time.Duration
-	cprInterval       time.Duration
-	forwardHost       string
-	config            *ssh.ServerConfig
-	httpClient        *http.Client
-	sessionTeam       *sessionTeam
+	logger               lager.Logger
+	atcEndpointPicker    tsa.EndpointPicker
+	heartbeatInterval    time.Duration
+	cprInterval          time.Duration
+	gardenRequestTimeout time.Duration
+	forwardHost          string
+	config               *ssh.ServerConfig
+	httpClient           *http.Client
+	sessionTeam          *sessionTeam
 }
 
 type sessionTeam struct {
@@ -490,10 +490,6 @@ func (server *server) parseRequest(cli string) (request, string, error) {
 
 	var req request
 	switch command {
-	case tsa.RegisterWorker:
-		req = registerWorkerRequest{
-			server: server,
-		}
 	case tsa.ForwardWorker:
 		var fs = flag.NewFlagSet(command, flag.ContinueOnError)
 

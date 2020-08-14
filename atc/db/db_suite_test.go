@@ -12,7 +12,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/creds/credsfakes"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/db/dbfakes"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/atc/metric"
 	"github.com/concourse/concourse/atc/postgresrunner"
@@ -29,6 +31,9 @@ var (
 	dbProcess      ifrit.Process
 
 	dbConn                              db.Conn
+	fakeSecrets                         *credsfakes.FakeSecrets
+	fakeVarSourcePool                   *credsfakes.FakeVarSourcePool
+	componentFactory                    db.ComponentFactory
 	buildFactory                        db.BuildFactory
 	volumeRepository                    db.VolumeRepository
 	containerRepository                 db.ContainerRepository
@@ -38,8 +43,13 @@ var (
 	resourceConfigCheckSessionLifecycle db.ResourceConfigCheckSessionLifecycle
 	resourceConfigFactory               db.ResourceConfigFactory
 	resourceCacheFactory                db.ResourceCacheFactory
+	taskCacheFactory                    db.TaskCacheFactory
+	checkFactory                        db.CheckFactory
 	workerBaseResourceTypeFactory       db.WorkerBaseResourceTypeFactory
 	workerTaskCacheFactory              db.WorkerTaskCacheFactory
+	userFactory                         db.UserFactory
+	dbWall                              db.Wall
+	fakeClock                           dbfakes.FakeClock
 
 	defaultWorkerResourceType atc.WorkerResourceType
 	defaultTeam               db.Team
@@ -49,6 +59,7 @@ var (
 	otherWorkerPayload        atc.Worker
 	defaultResourceType       db.ResourceType
 	defaultResource           db.Resource
+	defaultPipelineConfig     atc.Config
 	defaultPipeline           db.Pipeline
 	defaultJob                db.Job
 	logger                    *lagertest.TestLogger
@@ -92,7 +103,10 @@ var _ = BeforeEach(func() {
 
 	lockFactory = lock.NewLockFactory(postgresRunner.OpenSingleton(), metric.LogLockAcquired, metric.LogLockReleased)
 
-	buildFactory = db.NewBuildFactory(dbConn, lockFactory, 5*time.Minute)
+	fakeSecrets = new(credsfakes.FakeSecrets)
+	fakeVarSourcePool = new(credsfakes.FakeVarSourcePool)
+	componentFactory = db.NewComponentFactory(dbConn)
+	buildFactory = db.NewBuildFactory(dbConn, lockFactory, 5*time.Minute, 5*time.Minute)
 	volumeRepository = db.NewVolumeRepository(dbConn)
 	containerRepository = db.NewContainerRepository(dbConn)
 	teamFactory = db.NewTeamFactory(dbConn, lockFactory)
@@ -101,8 +115,12 @@ var _ = BeforeEach(func() {
 	resourceConfigCheckSessionLifecycle = db.NewResourceConfigCheckSessionLifecycle(dbConn)
 	resourceConfigFactory = db.NewResourceConfigFactory(dbConn, lockFactory)
 	resourceCacheFactory = db.NewResourceCacheFactory(dbConn, lockFactory)
+	taskCacheFactory = db.NewTaskCacheFactory(dbConn)
+	checkFactory = db.NewCheckFactory(dbConn, lockFactory, fakeSecrets, fakeVarSourcePool, time.Minute)
 	workerBaseResourceTypeFactory = db.NewWorkerBaseResourceTypeFactory(dbConn)
 	workerTaskCacheFactory = db.NewWorkerTaskCacheFactory(dbConn)
+	userFactory = db.NewUserFactory(dbConn)
+	dbWall = db.NewWall(dbConn, &fakeClock)
 
 	var err error
 	defaultTeam, err = teamFactory.CreateTeam(atc.Team{Name: "default-team"})
@@ -138,7 +156,7 @@ var _ = BeforeEach(func() {
 	otherWorker, err = workerFactory.SaveWorker(otherWorkerPayload, 0)
 	Expect(err).NotTo(HaveOccurred())
 
-	defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", atc.Config{
+	defaultPipelineConfig = atc.Config{
 		Jobs: atc.JobConfigs{
 			{
 				Name: "some-job",
@@ -162,13 +180,15 @@ var _ = BeforeEach(func() {
 				},
 			},
 		},
-	}, db.ConfigVersion(0), db.PipelineUnpaused)
+	}
+
+	defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", defaultPipelineConfig, db.ConfigVersion(0), false)
 	Expect(err).NotTo(HaveOccurred())
 
 	var found bool
 	defaultResourceType, found, err = defaultPipeline.ResourceType("some-type")
-	Expect(found).To(BeTrue())
 	Expect(err).NotTo(HaveOccurred())
+	Expect(found).To(BeTrue())
 
 	defaultResource, found, err = defaultPipeline.Resource("some-resource")
 	Expect(err).NotTo(HaveOccurred())

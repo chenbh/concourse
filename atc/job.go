@@ -12,9 +12,10 @@ type Job struct {
 	NextBuild            *Build `json:"next_build"`
 	FinishedBuild        *Build `json:"finished_build"`
 	TransitionBuild      *Build `json:"transition_build,omitempty"`
+	HasNewInputs         bool   `json:"has_new_inputs,omitempty"`
 
-	Inputs  []JobInput  `json:"inputs"`
-	Outputs []JobOutput `json:"outputs"`
+	Inputs  []JobInput  `json:"inputs,omitempty"`
+	Outputs []JobOutput `json:"outputs,omitempty"`
 
 	Groups []string `json:"groups"`
 }
@@ -22,11 +23,15 @@ type Job struct {
 type JobInput struct {
 	Name     string         `json:"name"`
 	Resource string         `json:"resource"`
-	Passed   []string       `json:"passed,omitempty"`
 	Trigger  bool           `json:"trigger"`
+	Passed   []string       `json:"passed,omitempty"`
 	Version  *VersionConfig `json:"version,omitempty"`
-	Params   Params         `json:"params,omitempty"`
-	Tags     Tags           `json:"tags,omitempty"`
+}
+
+type JobInputParams struct {
+	JobInput
+	Params Params `json:"params,omitempty"`
+	Tags   Tags   `json:"tags,omitempty"`
 }
 
 type JobOutput struct {

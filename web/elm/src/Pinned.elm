@@ -23,12 +23,14 @@ type ResourcePinState version id comment
     | PinnedDynamicallyTo comment version
     | UnpinningFrom comment version
     | PinnedStaticallyTo version
+    | Switching comment version id
 
 
 type VersionPinState
     = Enabled
     | PinnedDynamically
-    | PinnedStatically { showTooltip : Bool }
+    | NotThePinnedVersion
+    | PinnedStatically Bool
     | Disabled
     | InTransition
 
@@ -41,6 +43,9 @@ startPinningTo destination resourcePinState =
     case resourcePinState of
         NotPinned ->
             PinningTo destination
+
+        PinnedDynamicallyTo comment version ->
+            Switching comment version destination
 
         x ->
             x
@@ -108,7 +113,7 @@ pinState version id resourcePinState =
     case resourcePinState of
         PinnedStaticallyTo v ->
             if v == version then
-                PinnedStatically { showTooltip = False }
+                PinnedStatically False
 
             else
                 Disabled
@@ -128,10 +133,17 @@ pinState version id resourcePinState =
                 PinnedDynamically
 
             else
-                Disabled
+                NotThePinnedVersion
 
         UnpinningFrom _ v ->
             if v == version then
+                InTransition
+
+            else
+                Disabled
+
+        Switching _ v destination ->
+            if destination == id || v == version then
                 InTransition
 
             else

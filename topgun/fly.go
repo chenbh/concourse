@@ -14,10 +14,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type Fly struct {
+type FlyCli struct {
 	Bin    string
 	Target string
 	Home   string
+}
+
+type Container struct {
+	Type  string `json:"type"`
+	State string `json:"state"`
+	Id    string `json:"id"`
 }
 
 type Worker struct {
@@ -25,6 +31,7 @@ type Worker struct {
 	State           string `json:"state"`
 	GardenAddress   string `json:"addr"`
 	BaggageclaimUrl string `json:"baggageclaim_url"`
+	Team            string `json:"team"`
 }
 
 type Pipeline struct {
@@ -41,13 +48,14 @@ type Version struct {
 	Enabled bool              `json:"enabled"`
 }
 
-func (f *Fly) Login(user, password, endpoint string) {
+func (f *FlyCli) Login(user, password, endpoint string, loginArgs ...string) {
 	Eventually(func() *gexec.Session {
 		sess := f.Start(
-			"login",
-			"-c", endpoint,
-			"-u", user,
-			"-p", password,
+			append([]string{"login",
+				"-c", endpoint,
+				"-u", user,
+				"-p", password},
+				loginArgs...)...,
 		)
 
 		<-sess.Exited
@@ -56,23 +64,36 @@ func (f *Fly) Login(user, password, endpoint string) {
 		Should(gexec.Exit(0), "Fly should have been able to log in")
 }
 
-func (f *Fly) Run(argv ...string) {
+func (f *FlyCli) Run(argv ...string) {
 	Wait(f.Start(argv...))
 }
 
-func (f *Fly) Start(argv ...string) *gexec.Session {
+func (f *FlyCli) Start(argv ...string) *gexec.Session {
 	return Start([]string{"HOME=" + f.Home}, f.Bin, append([]string{"-t", f.Target}, argv...)...)
 }
 
-func (f *Fly) StartWithEnv(env []string, argv ...string) *gexec.Session {
+func (f *FlyCli) StartWithEnv(env []string, argv ...string) *gexec.Session {
 	return Start(append([]string{"HOME=" + f.Home}, env...), f.Bin, append([]string{"-t", f.Target}, argv...)...)
 }
 
-func (f *Fly) SpawnInteractive(stdin io.Reader, argv ...string) *gexec.Session {
+func (f *FlyCli) SpawnInteractive(stdin io.Reader, argv ...string) *gexec.Session {
 	return SpawnInteractive(stdin, []string{"HOME=" + f.Home}, f.Bin, append([]string{"-t", f.Target}, argv...)...)
 }
 
-func (f *Fly) GetWorkers() []Worker {
+func (f *FlyCli) GetContainers() []Container {
+	var containers = []Container{}
+
+	sess := f.Start("containers", "--json")
+	<-sess.Exited
+	Expect(sess.ExitCode()).To(BeZero())
+
+	err := json.Unmarshal(sess.Out.Contents(), &containers)
+	Expect(err).ToNot(HaveOccurred())
+
+	return containers
+}
+
+func (f *FlyCli) GetWorkers() []Worker {
 	var workers = []Worker{}
 
 	sess := f.Start("workers", "--json")
@@ -85,7 +106,7 @@ func (f *Fly) GetWorkers() []Worker {
 	return workers
 }
 
-func (f *Fly) GetPipelines() []Pipeline {
+func (f *FlyCli) GetPipelines() []Pipeline {
 	var pipelines = []Pipeline{}
 
 	sess := f.Start("pipelines", "--json")
@@ -98,7 +119,7 @@ func (f *Fly) GetPipelines() []Pipeline {
 	return pipelines
 }
 
-func (f *Fly) GetVersions(pipeline string, resource string) []Version {
+func (f *FlyCli) GetVersions(pipeline string, resource string) []Version {
 	var versions = []Version{}
 
 	sess := f.Start("resource-versions", "-r", pipeline+"/"+resource, "--json")
@@ -109,6 +130,24 @@ func (f *Fly) GetVersions(pipeline string, resource string) []Version {
 	Expect(err).ToNot(HaveOccurred())
 
 	return versions
+}
+
+func (f *FlyCli) GetUserRole(teamName string) []string {
+
+	type RoleInfo struct {
+		Teams map[string][]string `json:"teams"`
+	}
+	var teamsInfo RoleInfo = RoleInfo{}
+
+	sess := f.Start("userinfo", "--json")
+	<-sess.Exited
+	Expect(sess.ExitCode()).To(BeZero())
+
+	err := json.Unmarshal(sess.Out.Contents(), &teamsInfo)
+	Expect(err).ToNot(HaveOccurred())
+
+	return teamsInfo.Teams[teamName]
+
 }
 
 func BuildBinary() string {
@@ -142,9 +181,14 @@ func FetchToken(webURL, username, password string) (*oauth2.Token, error) {
 	oauth2Config := oauth2.Config{
 		ClientID:     "fly",
 		ClientSecret: "Zmx5",
-		Endpoint:     oauth2.Endpoint{TokenURL: webURL + "/sky/token"},
+		Endpoint:     oauth2.Endpoint{TokenURL: webURL + "/sky/issuer/token"},
 		Scopes:       []string{"openid", "profile", "email", "federated:id"},
 	}
 
-	return oauth2Config.PasswordCredentialsToken(context.Background(), username, password)
+	token, err := oauth2Config.PasswordCredentialsToken(context.Background(), username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
 }

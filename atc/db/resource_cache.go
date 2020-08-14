@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"code.cloudfoundry.org/lager"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
@@ -43,12 +41,11 @@ func (cache *ResourceCacheDescriptor) find(tx Tx, lockFactory lock.LockFactory, 
 }
 
 func (cache *ResourceCacheDescriptor) findOrCreate(
-	logger lager.Logger,
 	tx Tx,
 	lockFactory lock.LockFactory,
 	conn Conn,
 ) (UsedResourceCache, error) {
-	resourceConfig, err := cache.ResourceConfigDescriptor.findOrCreate(logger, tx, lockFactory, conn)
+	resourceConfig, err := cache.ResourceConfigDescriptor.findOrCreate(tx, lockFactory, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -64,20 +61,23 @@ func (cache *ResourceCacheDescriptor) findOrCreate(
 			Columns(
 				"resource_config_id",
 				"version",
+				"version_md5",
 				"params_hash",
 			).
 			Values(
 				resourceConfig.ID(),
 				cache.version(),
+				sq.Expr("md5(?)", cache.version()),
 				paramsHash(cache.Params),
 			).
 			Suffix(`
-				ON CONFLICT (resource_config_id, md5(version::text), params_hash) DO UPDATE SET
-				resource_config_id = ?,
-				version = ?,
-				params_hash = ?
+				ON CONFLICT (resource_config_id, version_md5, params_hash) DO UPDATE SET
+				resource_config_id = EXCLUDED.resource_config_id,
+				version = EXCLUDED.version,
+				version_md5 = EXCLUDED.version_md5,
+				params_hash = EXCLUDED.params_hash
 				RETURNING id
-			`, resourceConfig.ID(), cache.version(), paramsHash(cache.Params)).
+			`).
 			RunWith(tx).
 			QueryRow().
 			Scan(&id)
@@ -87,8 +87,8 @@ func (cache *ResourceCacheDescriptor) findOrCreate(
 
 		rc = &usedResourceCache{
 			id:             id,
-			resourceConfig: resourceConfig,
 			version:        cache.Version,
+			resourceConfig: resourceConfig,
 			lockFactory:    lockFactory,
 			conn:           conn,
 		}
@@ -98,7 +98,6 @@ func (cache *ResourceCacheDescriptor) findOrCreate(
 }
 
 func (cache *ResourceCacheDescriptor) use(
-	logger lager.Logger,
 	tx Tx,
 	rc UsedResourceCache,
 	user ResourceCacheUser,
@@ -137,9 +136,9 @@ func (cache *ResourceCacheDescriptor) findWithResourceConfig(tx Tx, resourceConf
 		From("resource_caches").
 		Where(sq.Eq{
 			"resource_config_id": resourceConfig.ID(),
-			"version":            cache.version(),
 			"params_hash":        paramsHash(cache.Params),
 		}).
+		Where(sq.Expr("version_md5 = md5(?)", cache.version())).
 		Suffix("FOR SHARE").
 		RunWith(tx).
 		QueryRow().
@@ -154,8 +153,8 @@ func (cache *ResourceCacheDescriptor) findWithResourceConfig(tx Tx, resourceConf
 
 	return &usedResourceCache{
 		id:             id,
-		resourceConfig: resourceConfig,
 		version:        cache.Version,
+		resourceConfig: resourceConfig,
 		lockFactory:    lockFactory,
 		conn:           conn,
 	}, true, nil
@@ -190,9 +189,9 @@ func paramsHash(p atc.Params) string {
 
 type UsedResourceCache interface {
 	ID() int
+	Version() atc.Version
 
 	ResourceConfig() ResourceConfig
-	Version() atc.Version
 
 	Destroy(Tx) (bool, error)
 	BaseResourceType() *UsedBaseResourceType

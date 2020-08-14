@@ -2,8 +2,6 @@ package k8s_test
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/onsi/gomega/gexec"
 	"net/http"
 	"path"
 	"time"
@@ -12,6 +10,63 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Prometheus integration", func() {
+
+	var prometheusReleaseName string
+
+	BeforeEach(func() {
+		setReleaseNameAndNamespace("pi")
+		prometheusReleaseName = releaseName + "-prom"
+
+		deployConcourseChart(releaseName,
+			"--set=worker.enabled=false",
+			"--set=concourse.web.prometheus.enabled=true")
+
+		Run(nil,
+			"helm", "dependency", "update",
+			path.Join(Environment.HelmChartsDir, "stable/prometheus"),
+		)
+
+		helmDeploy(prometheusReleaseName,
+			namespace,
+			path.Join(Environment.HelmChartsDir, "stable/prometheus"),
+			"--set=nodeExporter.enabled=false",
+			"--set=kubeStateMetrics.enabled=false",
+			"--set=pushgateway.enabled=false",
+			"--set=alertmanager.enabled=false",
+			"--set=server.persistentVolume.enabled=false")
+
+		waitAllPodsInNamespaceToBeReady(namespace)
+	})
+
+	AfterEach(func() {
+		helmDestroy(prometheusReleaseName)
+		cleanup(releaseName, namespace)
+	})
+
+	It("Is able to retrieve concourse metrics", func() {
+		prometheus := endpointFactory.NewServiceEndpoint(
+			namespace,
+			prometheusReleaseName+"-prometheus-server",
+			"80",
+		)
+		defer prometheus.Close()
+
+		Eventually(func() bool {
+			metrics, err := getPrometheusMetrics("http://"+prometheus.Address(), releaseName)
+			if err != nil {
+				return false
+			}
+
+			if metrics.Status != "success" {
+				return false
+			}
+
+			return true
+		}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "be able to retrieve metrics")
+	})
+})
 
 type prometheusMetrics struct {
 	Status string `json:"status"`
@@ -44,62 +99,3 @@ func getPrometheusMetrics(endpoint, releaseName string) (*prometheusMetrics, err
 
 	return metrics, nil
 }
-
-var _ = Describe("Prometheus integration", func() {
-	var (
-		proxySession          *gexec.Session
-		releaseName           string
-		prometheusReleaseName string
-		prometheusEndpoint    string
-		namespace             string
-	)
-
-	BeforeEach(func() {
-		releaseName = fmt.Sprintf("topgun-pi-%d-%d", GinkgoRandomSeed(), GinkgoParallelNode())
-		namespace = releaseName
-		prometheusReleaseName = releaseName + "-prom"
-
-		deployConcourseChart(releaseName,
-			"--set=prometheus.enabled=true",
-			"--set=worker.replicas=1",
-			"--set=concourse.worker.ephemeral=true",
-			"--set=concourse.web.prometheus.enabled=true",
-			"--set=concourse.worker.baggageclaim.driver=detect")
-
-		helmDeploy(prometheusReleaseName,
-			namespace,
-			path.Join(Environment.ChartsDir, "stable/prometheus"),
-			"--set=nodeExporter.enabled=false",
-			"--set=kubeStateMetrics.enabled=false",
-			"--set=pushgateway.enabled=false",
-			"--set=alertmanager.enabled=false",
-			"--set=server.persistentVolume.enabled=false")
-
-		waitAllPodsInNamespaceToBeReady(namespace)
-
-		By("Creating the prometheus proxy")
-		proxySession, prometheusEndpoint = startPortForwarding(namespace, prometheusReleaseName+"-prometheus-server", "80")
-	})
-
-	AfterEach(func() {
-		helmDestroy(releaseName)
-		helmDestroy(prometheusReleaseName)
-		Wait(Start(nil, "kubectl", "delete", "namespace", namespace, "--wait=false"))
-		Wait(proxySession.Interrupt())
-	})
-
-	It("Is able to retrieve concourse metrics", func() {
-		Eventually(func() bool {
-			metrics, err := getPrometheusMetrics(prometheusEndpoint, releaseName)
-			if err != nil {
-				return false
-			}
-
-			if metrics.Status != "success" {
-				return false
-			}
-
-			return true
-		}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "be able to retrieve metrics")
-	})
-})

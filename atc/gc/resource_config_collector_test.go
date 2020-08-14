@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -14,7 +13,7 @@ import (
 )
 
 var _ = Describe("ResourceConfigCollector", func() {
-	var collector gc.Collector
+	var collector GcCollector
 
 	BeforeEach(func() {
 		collector = gc.NewResourceConfigCollector(resourceConfigFactory)
@@ -40,19 +39,17 @@ var _ = Describe("ResourceConfigCollector", func() {
 
 			Context("when the config is referenced in resource config check sessions", func() {
 				ownerExpiries := db.ContainerOwnerExpiries{
-					GraceTime: 1 * time.Minute,
-					Min:       5 * time.Minute,
-					Max:       10 * time.Minute,
+					Min: 5 * time.Minute,
+					Max: 10 * time.Minute,
 				}
 
 				BeforeEach(func() {
 					resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
-						logger,
 						"some-base-type",
 						atc.Source{
 							"some": "source",
 						},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -72,7 +69,7 @@ var _ = Describe("ResourceConfigCollector", func() {
 					worker, err := workerFactory.SaveWorker(defaultWorkerPayload, 0)
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = worker.CreateContainer(db.NewResourceConfigCheckSessionContainerOwner(resourceConfig, ownerExpiries), db.ContainerMetadata{})
+					_, err = worker.CreateContainer(db.NewResourceConfigCheckSessionContainerOwner(resourceConfig.ID(), resourceConfig.OriginBaseResourceType().ID, ownerExpiries), db.ContainerMetadata{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -85,19 +82,17 @@ var _ = Describe("ResourceConfigCollector", func() {
 
 			Context("when the config is no longer referenced in resource config check sessions", func() {
 				ownerExpiries := db.ContainerOwnerExpiries{
-					GraceTime: 1 * time.Minute,
-					Min:       5 * time.Minute,
-					Max:       10 * time.Minute,
+					Min: 5 * time.Minute,
+					Max: 10 * time.Minute,
 				}
 
 				BeforeEach(func() {
 					resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
-						logger,
 						"some-base-type",
 						atc.Source{
 							"some": "source",
 						},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -117,7 +112,7 @@ var _ = Describe("ResourceConfigCollector", func() {
 					worker, err := workerFactory.SaveWorker(defaultWorkerPayload, 0)
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = worker.CreateContainer(db.NewResourceConfigCheckSessionContainerOwner(resourceConfig, ownerExpiries), db.ContainerMetadata{})
+					_, err = worker.CreateContainer(db.NewResourceConfigCheckSessionContainerOwner(resourceConfig.ID(), resourceConfig.OriginBaseResourceType().ID, ownerExpiries), db.ContainerMetadata{})
 					Expect(err).NotTo(HaveOccurred())
 
 					tx, err := dbConn.Begin()
@@ -139,7 +134,6 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is referenced in resource caches", func() {
 				BeforeEach(func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
-						logger,
 						db.ForBuild(defaultBuild.ID()),
 						"some-base-type",
 						atc.Version{"some": "version"},
@@ -147,7 +141,7 @@ var _ = Describe("ResourceConfigCollector", func() {
 							"some": "source",
 						},
 						nil,
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -162,7 +156,6 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is not referenced in resource caches", func() {
 				BeforeEach(func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
-						logger,
 						db.ForBuild(defaultBuild.ID()),
 						"some-base-type",
 						atc.Version{"some": "version"},
@@ -170,7 +163,7 @@ var _ = Describe("ResourceConfigCollector", func() {
 							"some": "source",
 						},
 						nil,
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -195,9 +188,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is referenced in resources", func() {
 				BeforeEach(func() {
 					_, err := usedResource.SetResourceConfig(
-						logger,
 						atc.Source{"some": "source"},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -212,10 +204,9 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is not referenced in resources", func() {
 				BeforeEach(func() {
 					_, err := resourceConfigFactory.FindOrCreateResourceConfig(
-						logger,
 						"some-base-type",
 						atc.Source{"some": "source"},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 					_, err = usedResource.Reload()
@@ -233,9 +224,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is referenced in resource types", func() {
 				BeforeEach(func() {
 					_, err := usedResourceType.SetResourceConfig(
-						logger,
 						atc.Source{"some": "source-type"},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -250,10 +240,9 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is not referenced in resource types", func() {
 				BeforeEach(func() {
 					_, err := resourceConfigFactory.FindOrCreateResourceConfig(
-						logger,
 						"some-base-type",
 						atc.Source{"some": "source-type"},
-						creds.VersionedResourceTypes{},
+						atc.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 					_, err = usedResourceType.Reload()

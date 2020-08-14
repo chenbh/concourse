@@ -36,6 +36,16 @@ const (
 	WorkerStateRetiring = WorkerState("retiring")
 )
 
+func AllWorkerStates() []WorkerState {
+	return []WorkerState{
+		WorkerStateRunning,
+		WorkerStateStalled,
+		WorkerStateLanding,
+		WorkerStateLanded,
+		WorkerStateRetiring,
+	}
+}
+
 //go:generate counterfeiter . Worker
 
 type Worker interface {
@@ -56,7 +66,7 @@ type Worker interface {
 	Tags() []string
 	TeamID() int
 	TeamName() string
-	StartTime() int64
+	StartTime() time.Time
 	ExpiresAt() time.Time
 	Ephemeral() bool
 
@@ -67,7 +77,11 @@ type Worker interface {
 	Prune() error
 	Delete() error
 
-	FindContainerOnWorker(owner ContainerOwner) (CreatingContainer, CreatedContainer, error)
+	ActiveTasks() (int, error)
+	IncreaseActiveTasks() error
+	DecreaseActiveTasks() error
+
+	FindContainer(owner ContainerOwner) (CreatingContainer, CreatedContainer, error)
 	CreateContainer(owner ContainerOwner, meta ContainerMetadata) (CreatingContainer, error)
 }
 
@@ -84,12 +98,13 @@ type worker struct {
 	noProxy          string
 	activeContainers int
 	activeVolumes    int
+	activeTasks      int
 	resourceTypes    []atc.WorkerResourceType
 	platform         string
 	tags             []string
 	teamID           int
 	teamName         string
-	startTime        int64
+	startTime        time.Time
 	expiresAt        time.Time
 	certsPath        *string
 	ephemeral        bool
@@ -114,8 +129,7 @@ func (worker *worker) TeamID() int                             { return worker.t
 func (worker *worker) TeamName() string                        { return worker.teamName }
 func (worker *worker) Ephemeral() bool                         { return worker.ephemeral }
 
-// TODO: normalize time values
-func (worker *worker) StartTime() int64     { return worker.startTime }
+func (worker *worker) StartTime() time.Time { return worker.startTime }
 func (worker *worker) ExpiresAt() time.Time { return worker.expiresAt }
 
 func (worker *worker) Reload() (bool, error) {
@@ -190,6 +204,13 @@ func (worker *worker) Retire() error {
 }
 
 func (worker *worker) Prune() error {
+	tx, err := worker.conn.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer Rollback(tx)
+
 	rows, err := sq.Delete("workers").
 		Where(sq.Eq{
 			"name": worker.name,
@@ -198,7 +219,7 @@ func (worker *worker) Prune() error {
 			"state": string(WorkerStateRunning),
 		}).
 		PlaceholderFormat(sq.Dollar).
-		RunWith(worker.conn).
+		RunWith(tx).
 		Exec()
 
 	if err != nil {
@@ -214,7 +235,7 @@ func (worker *worker) Prune() error {
 		//check whether the worker exists in the database at all
 		var one int
 		err := psql.Select("1").From("workers").Where(sq.Eq{"name": worker.name}).
-			RunWith(worker.conn).
+			RunWith(tx).
 			QueryRow().
 			Scan(&one)
 		if err != nil {
@@ -227,7 +248,7 @@ func (worker *worker) Prune() error {
 		return ErrCannotPruneRunningWorker
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (worker *worker) Delete() error {
@@ -255,7 +276,7 @@ func (worker *worker) ResourceCerts() (*UsedWorkerResourceCerts, bool, error) {
 	return nil, false, nil
 }
 
-func (worker *worker) FindContainerOnWorker(owner ContainerOwner) (CreatingContainer, CreatedContainer, error) {
+func (worker *worker) FindContainer(owner ContainerOwner) (CreatingContainer, CreatedContainer, error) {
 	ownerQuery, found, err := owner.Find(worker.conn)
 	if err != nil {
 		return nil, nil, err
@@ -351,4 +372,59 @@ func (worker *worker) findContainer(whereClause sq.Sqlizer) (CreatingContainer, 
 	}
 
 	return creating, created, nil
+}
+
+func (worker *worker) ActiveTasks() (int, error) {
+	err := psql.Select("active_tasks").From("workers").Where(sq.Eq{"name": worker.name}).
+		RunWith(worker.conn).
+		QueryRow().
+		Scan(&worker.activeTasks)
+	if err != nil {
+		return 0, err
+	}
+	return worker.activeTasks, nil
+}
+
+func (worker *worker) IncreaseActiveTasks() error {
+	result, err := psql.Update("workers").
+		Set("active_tasks", sq.Expr("active_tasks+1")).
+		Where(sq.Eq{"name": worker.name}).
+		RunWith(worker.conn).
+		Exec()
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return ErrWorkerNotPresent
+	}
+
+	return nil
+}
+
+func (worker *worker) DecreaseActiveTasks() error {
+	result, err := psql.Update("workers").
+		Set("active_tasks", sq.Expr("active_tasks-1")).
+		Where(sq.Eq{"name": worker.name}).
+		RunWith(worker.conn).
+		Exec()
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return ErrWorkerNotPresent
+	}
+
+	return nil
 }

@@ -5,7 +5,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 
@@ -46,7 +45,7 @@ var _ = Describe("WorkerFactory", func() {
 			Platform:  "some-platform",
 			Tags:      atc.Tags{"some", "tags"},
 			Name:      "some-name",
-			StartTime: 55,
+			StartTime: 1565367209,
 		}
 	})
 
@@ -75,38 +74,6 @@ var _ = Describe("WorkerFactory", func() {
 				var err error
 				worker, err = workerFactory.SaveWorker(atcWorker, 5*time.Minute)
 				Expect(err).NotTo(HaveOccurred())
-			})
-
-			Context("when worker is retiring or landing", func() {
-				It("doesn't change the worker from landing to running", func() {
-					atcWorker.State = "landing"
-					_, err := workerFactory.SaveWorker(atcWorker, 5*time.Minute)
-					Expect(err).NotTo(HaveOccurred())
-
-					atcWorker.State = ""
-					_, err = workerFactory.SaveWorker(atcWorker, 5*time.Minute)
-					Expect(err).NotTo(HaveOccurred())
-
-					worker, found, err := workerFactory.GetWorker(atcWorker.Name)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(found).To(BeTrue())
-					Expect(worker.State()).To(Equal(db.WorkerStateLanding))
-				})
-
-				It("doesn't change the worker from retiring to running", func() {
-					atcWorker.State = "retiring"
-					_, err := workerFactory.SaveWorker(atcWorker, 5*time.Minute)
-					Expect(err).NotTo(HaveOccurred())
-
-					atcWorker.State = ""
-					_, err = workerFactory.SaveWorker(atcWorker, 5*time.Minute)
-					Expect(err).NotTo(HaveOccurred())
-
-					worker, found, err := workerFactory.GetWorker(atcWorker.Name)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(found).To(BeTrue())
-					Expect(worker.State()).To(Equal(db.WorkerStateRetiring))
-				})
 			})
 
 			It("saves resource types", func() {
@@ -275,7 +242,7 @@ var _ = Describe("WorkerFactory", func() {
 				}))
 				Expect(foundWorker.Platform()).To(Equal("some-platform"))
 				Expect(foundWorker.Tags()).To(Equal([]string{"some", "tags"}))
-				Expect(foundWorker.StartTime()).To(Equal(int64(55)))
+				Expect(foundWorker.StartTime().Unix()).To(Equal(int64(1565367209)))
 				Expect(foundWorker.State()).To(Equal(db.WorkerStateRunning))
 			})
 
@@ -598,9 +565,8 @@ var _ = Describe("WorkerFactory", func() {
 
 				BeforeEach(func() {
 					ownerExpiries := db.ContainerOwnerExpiries{
-						GraceTime: 1 * time.Minute,
-						Min:       5 * time.Minute,
-						Max:       5 * time.Minute,
+						Min: 5 * time.Minute,
+						Max: 5 * time.Minute,
 					}
 
 					var err error
@@ -614,7 +580,7 @@ var _ = Describe("WorkerFactory", func() {
 								},
 							},
 						},
-					}, db.ConfigVersion(0), db.PipelineUnpaused)
+					}, db.ConfigVersion(0), false)
 					Expect(err).NotTo(HaveOccurred())
 
 					taggedWorkerSpec := atc.Worker{
@@ -657,10 +623,14 @@ var _ = Describe("WorkerFactory", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
-					rcs, err := otherResource.SetResourceConfig(logger, atc.Source{"some": "source"}, creds.VersionedResourceTypes{})
+					rcs, err := otherResource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
 					Expect(err).NotTo(HaveOccurred())
 
-					owner = db.NewResourceConfigCheckSessionContainerOwner(rcs.ResourceConfig(), ownerExpiries)
+					owner = db.NewResourceConfigCheckSessionContainerOwner(
+						rcs.ResourceConfig().ID(),
+						rcs.ResourceConfig().OriginBaseResourceType().ID,
+						ownerExpiries,
+					)
 
 					_, err = defaultWorker.CreateContainer(owner, containerMetadata)
 					Expect(err).ToNot(HaveOccurred())

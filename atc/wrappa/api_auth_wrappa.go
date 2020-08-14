@@ -36,33 +36,20 @@ func (wrappa *APIAuthWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 		newHandler := handler
 
 		switch name {
-		// unauthenticated / delegating to handler
-		case atc.DownloadCLI,
-			atc.CheckResourceWebHook,
-			atc.GetInfo,
-			atc.ListTeams,
-			atc.ListAllPipelines,
-			atc.ListPipelines,
-			atc.ListAllJobs,
-			atc.ListAllResources,
-			atc.ListBuilds,
-			atc.MainJobBadge:
-
 		// pipeline is public or authorized
 		case atc.GetBuild,
-			atc.BuildResources,
-			atc.GetBuildPlan:
+			atc.BuildResources:
 			newHandler = wrappa.checkBuildReadAccessHandlerFactory.AnyJobHandler(handler, rejector)
 
 		// pipeline and job are public or authorized
 		case atc.GetBuildPreparation,
-			atc.BuildEvents:
+			atc.BuildEvents,
+			atc.GetBuildPlan,
+			atc.ListBuildArtifacts:
 			newHandler = wrappa.checkBuildReadAccessHandlerFactory.CheckIfPrivateJobHandler(handler, rejector)
 
-		// resource belongs to authorized team
-		case atc.AbortBuild,
-			atc.SendInputToBuildPlan,
-			atc.ReadOutputFromBuildPlan:
+			// resource belongs to authorized team
+		case atc.AbortBuild:
 			newHandler = wrappa.checkBuildWriteAccessHandlerFactory.HandlerFor(handler, rejector)
 
 		// requester is system, admin team, or worker owning team
@@ -103,22 +90,43 @@ func (wrappa *APIAuthWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 			atc.RegisterWorker,
 			atc.HeartbeatWorker,
 			atc.DeleteWorker,
+			atc.GetTeam,
 			atc.SetTeam,
 			atc.ListTeamBuilds,
 			atc.RenameTeam,
 			atc.DestroyTeam,
-			atc.ListVolumes:
+			atc.ListVolumes,
+			atc.GetUser:
 			newHandler = auth.CheckAuthenticationHandler(handler, rejector)
 
+		// unauthenticated / delegating to handler (validate token if provided)
+		case atc.DownloadCLI,
+			atc.CheckResourceWebHook,
+			atc.GetInfo,
+			atc.GetCheck,
+			atc.ListTeams,
+			atc.ListAllPipelines,
+			atc.ListPipelines,
+			atc.ListAllJobs,
+			atc.ListAllResources,
+			atc.ListBuilds,
+			atc.MainJobBadge,
+			atc.GetWall:
+			newHandler = auth.CheckAuthenticationIfProvidedHandler(handler, rejector)
+
 		case atc.GetLogLevel,
+			atc.ListActiveUsersSince,
 			atc.SetLogLevel,
-			atc.GetInfoCreds:
+			atc.GetInfoCreds,
+			atc.SetWall,
+			atc.ClearWall:
 			newHandler = auth.CheckAdminHandler(handler, rejector)
 
 		// authorized (requested team matches resource team)
 		case atc.CheckResource,
 			atc.CheckResourceType,
 			atc.CreateJobBuild,
+			atc.RerunJobBuild,
 			atc.CreatePipelineBuild,
 			atc.DeletePipeline,
 			atc.DisableResourceVersion,
@@ -139,7 +147,11 @@ func (wrappa *APIAuthWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 			atc.ExposePipeline,
 			atc.HidePipeline,
 			atc.SaveConfig,
-			atc.ClearTaskCache:
+			atc.ArchivePipeline,
+			atc.ClearTaskCache,
+			atc.CreateArtifact,
+			atc.ScheduleJob,
+			atc.GetArtifact:
 			newHandler = auth.CheckAuthorizationHandler(handler, rejector)
 
 		// think about it!
@@ -147,7 +159,7 @@ func (wrappa *APIAuthWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 			panic("you missed a spot")
 		}
 
-		wrapped[name] = auth.CSRFValidationHandler(newHandler, rejector)
+		wrapped[name] = newHandler
 	}
 
 	return wrapped

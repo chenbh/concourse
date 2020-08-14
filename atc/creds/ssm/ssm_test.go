@@ -3,15 +3,17 @@ package ssm_test
 import (
 	"errors"
 	"strconv"
-	"text/template"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
+
+	"github.com/concourse/concourse/atc/creds"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
-	varTemplate "github.com/cloudfoundry/bosh-cli/director/template"
 	. "github.com/concourse/concourse/atc/creds/ssm"
+	"github.com/concourse/concourse/vars"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -84,18 +86,20 @@ func (mock *MockSsmService) GetParametersByPathPages(input *ssm.GetParametersByP
 
 var _ = Describe("Ssm", func() {
 	var ssmAccess *Ssm
-	var varDef varTemplate.VariableDefinition
+	var variables vars.Variables
+	var varDef vars.VariableDefinition
 	var mockService MockSsmService
 
 	JustBeforeEach(func() {
-		varDef = varTemplate.VariableDefinition{Name: "cheery"}
-		t1, err := template.New("test").Parse(DefaultPipelineSecretTemplate)
+		varDef = vars.VariableDefinition{Ref: vars.VariableReference{Path: "cheery"}}
+		t1, err := creds.BuildSecretTemplate("t1", DefaultPipelineSecretTemplate)
 		Expect(t1).NotTo(BeNil())
 		Expect(err).To(BeNil())
-		t2, err := template.New("test").Parse(DefaultTeamSecretTemplate)
+		t2, err := creds.BuildSecretTemplate("t2", DefaultTeamSecretTemplate)
 		Expect(t2).NotTo(BeNil())
 		Expect(err).To(BeNil())
-		ssmAccess = NewSsm(lager.NewLogger("ssm_test"), &mockService, "alpha", "bogus", []*template.Template{t1, t2})
+		ssmAccess = NewSsm(lagertest.NewTestLogger("ssm_test"), &mockService, []*creds.SecretTemplate{t1, t2})
+		variables = creds.NewVariables(ssmAccess, "alpha", "bogus", false)
 		Expect(ssmAccess).NotTo(BeNil())
 		mockService.stubGetParameter = func(input string) (string, error) {
 			if input == "/concourse/alpha/bogus/cheery" {
@@ -110,7 +114,7 @@ var _ = Describe("Ssm", func() {
 
 	Describe("Get()", func() {
 		It("should get parameter if exists", func() {
-			value, found, err := ssmAccess.Get(varDef)
+			value, found, err := variables.Get(varDef)
 			Expect(value).To(BeEquivalentTo("ssm decrypted value"))
 			Expect(found).To(BeTrue())
 			Expect(err).To(BeNil())
@@ -128,8 +132,8 @@ var _ = Describe("Ssm", func() {
 					},
 				}
 			}
-			value, found, err := ssmAccess.Get(varTemplate.VariableDefinition{Name: "user"})
-			Expect(value).To(BeEquivalentTo(map[interface{}]interface{}{
+			value, found, err := variables.Get(vars.VariableDefinition{Ref: vars.VariableReference{Path: "user"}})
+			Expect(value).To(BeEquivalentTo(map[string]interface{}{
 				"name": "yours",
 				"pass": "truely",
 			}))
@@ -141,7 +145,7 @@ var _ = Describe("Ssm", func() {
 			mockService.stubGetParameter = func(input string) (string, error) {
 				return "101", nil
 			}
-			value, found, err := ssmAccess.Get(varDef)
+			value, found, err := variables.Get(varDef)
 			Expect(value).To(BeEquivalentTo("101"))
 			Expect(found).To(BeTrue())
 			Expect(err).To(BeNil())
@@ -154,7 +158,7 @@ var _ = Describe("Ssm", func() {
 				}
 				return "team decrypted value", nil
 			}
-			value, found, err := ssmAccess.Get(varDef)
+			value, found, err := variables.Get(varDef)
 			Expect(value).To(BeEquivalentTo("team decrypted value"))
 			Expect(found).To(BeTrue())
 			Expect(err).To(BeNil())
@@ -162,19 +166,19 @@ var _ = Describe("Ssm", func() {
 
 		It("should return not found on error", func() {
 			mockService.stubGetParameter = nil
-			value, found, err := ssmAccess.Get(varDef)
+			value, found, err := variables.Get(varDef)
 			Expect(value).To(BeNil())
 			Expect(found).To(BeFalse())
 			Expect(err).NotTo(BeNil())
 		})
 
 		It("should allow empty pipeline name", func() {
-			ssmAccess.PipelineName = ""
+			variables := creds.NewVariables(ssmAccess, "alpha", "", false)
 			mockService.stubGetParameter = func(input string) (string, error) {
 				Expect(input).To(Equal("/concourse/alpha/cheery"))
 				return "team power", nil
 			}
-			value, found, err := ssmAccess.Get(varDef)
+			value, found, err := variables.Get(varDef)
 			Expect(value).To(BeEquivalentTo("team power"))
 			Expect(found).To(BeTrue())
 			Expect(err).To(BeNil())

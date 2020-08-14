@@ -1,127 +1,158 @@
 module FlySuccess.FlySuccess exposing
-    ( Model
-    , handleCallback
+    ( documentTitle
+    , handleDelivery
     , init
+    , subscriptions
+    , tooltip
     , update
     , view
     )
 
-import Callback exposing (Callback(..))
-import Effects exposing (Effect(..))
-import FlySuccess.Models
-    exposing
-        ( ButtonState(..)
-        , TokenTransfer
-        , TransferResult
-        , hover
-        , isClicked
-        , isPending
-        )
-import FlySuccess.Msgs exposing (Msg(..))
+import Assets
+import EffectTransformer exposing (ET)
+import FlySuccess.Models as Models exposing (ButtonState(..), InputState(..), Model, hover)
 import FlySuccess.Styles as Styles
 import FlySuccess.Text as Text
 import Html exposing (Html)
-import Html.Attributes exposing (attribute, class, id, style)
+import Html.Attributes exposing (attribute, href, id, style, value)
 import Html.Events exposing (onClick, onMouseEnter, onMouseLeave)
-import Html.Styled as HS
+import Login.Login as Login
+import Message.Callback exposing (Callback(..))
+import Message.Effects exposing (Effect(..))
+import Message.Message exposing (DomID(..), Message(..))
+import Message.Subscription as Subscription
+    exposing
+        ( Delivery(..)
+        , RawHttpResponse(..)
+        , Subscription(..)
+        )
+import Message.TopLevelMessage exposing (TopLevelMessage(..))
 import Routes
-import TopBar.Model
-import TopBar.Styles
-import TopBar.TopBar as TopBar
+import Tooltip
 import UserState exposing (UserState)
+import Views.Icon as Icon
+import Views.Styles
+import Views.TopBar as TopBar
 
 
-type alias Model =
-    { buttonState : ButtonState
-    , authToken : String
-    , tokenTransfer : TokenTransfer
-    , topBar : TopBar.Model.Model
+init :
+    { authToken : String
+    , flyPort : Maybe Int
+    , noop : Bool
     }
-
-
-init : { authToken : String, flyPort : Maybe Int } -> ( Model, List Effect )
-init { authToken, flyPort } =
-    let
-        ( topBar, topBarEffects ) =
-            TopBar.init { route = Routes.FlySuccess { flyPort = flyPort } }
-    in
-    ( { buttonState = Unhovered
+    -> ( Model, List Effect )
+init { authToken, flyPort, noop } =
+    ( { copyTokenButtonState = Unhovered
+      , sendTokenButtonState = Unhovered
+      , copyTokenInputState = InputUnhovered
       , authToken = authToken
       , tokenTransfer =
-            case flyPort of
-                Just _ ->
-                    Nothing
+            case ( noop, flyPort ) of
+                ( False, Just _ ) ->
+                    Models.Pending
 
-                Nothing ->
-                    Just <| Err ()
-      , topBar = topBar
+                ( False, Nothing ) ->
+                    Models.NoFlyPort
+
+                ( True, _ ) ->
+                    Models.Success
+      , isUserMenuExpanded = False
+      , flyPort = flyPort
       }
-    , topBarEffects
-        ++ (case flyPort of
-                Just fp ->
-                    [ SendTokenToFly authToken fp ]
+    , case ( noop, flyPort ) of
+        ( False, Just fp ) ->
+            [ SendTokenToFly authToken fp ]
 
-                Nothing ->
-                    []
-           )
+        _ ->
+            []
     )
 
 
-handleCallback : Callback -> Model -> ( Model, List Effect )
-handleCallback msg model =
-    case msg of
-        TokenSentToFly success ->
-            ( { model | tokenTransfer = Just <| Ok success }, [] )
+handleDelivery : Delivery -> ET Model
+handleDelivery delivery ( model, effects ) =
+    case delivery of
+        TokenSentToFly Subscription.Success ->
+            ( { model | tokenTransfer = Models.Success }, effects )
+
+        TokenSentToFly Subscription.NetworkError ->
+            ( { model | tokenTransfer = Models.NetworkTrouble }, effects )
+
+        TokenSentToFly Subscription.BrowserError ->
+            ( { model | tokenTransfer = Models.BlockedByBrowser }, effects )
 
         _ ->
-            let
-                ( newTopBar, topBarEffects ) =
-                    TopBar.handleCallback msg model.topBar
-            in
-            ( { model | topBar = newTopBar }, topBarEffects )
+            ( model, effects )
 
 
-update : Msg -> Model -> ( Model, List Effect )
-update msg model =
+update : Message -> ET Model
+update msg ( model, effects ) =
     case msg of
-        CopyTokenButtonHover hovered ->
-            ( { model | buttonState = hover hovered model.buttonState }
-            , []
+        Hover (Just CopyTokenButton) ->
+            ( { model
+                | copyTokenButtonState = hover True model.copyTokenButtonState
+              }
+            , effects
             )
 
-        CopyToken ->
-            ( { model | buttonState = Clicked }, [] )
+        Hover (Just SendTokenButton) ->
+            ( { model
+                | sendTokenButtonState = hover True model.sendTokenButtonState
+              }
+            , effects
+            )
 
-        FromTopBar msg ->
-            let
-                ( newTopBar, topBarEffects ) =
-                    TopBar.update msg model.topBar
-            in
-            ( { model | topBar = newTopBar }, topBarEffects )
+        Hover (Just CopyTokenInput) ->
+            ( { model | copyTokenInputState = InputHovered }, effects )
+
+        Hover Nothing ->
+            ( { model
+                | copyTokenButtonState = hover False model.copyTokenButtonState
+                , sendTokenButtonState = hover False model.sendTokenButtonState
+                , copyTokenInputState = InputUnhovered
+              }
+            , effects
+            )
+
+        Click CopyTokenButton ->
+            ( { model | copyTokenButtonState = Clicked }, effects )
+
+        _ ->
+            ( model, effects )
 
 
-view : UserState -> Model -> Html Msg
+subscriptions : List Subscription
+subscriptions =
+    [ OnTokenSentToFly ]
+
+
+documentTitle : String
+documentTitle =
+    "Fly Login"
+
+
+view : UserState -> Model -> Html Message
 view userState model =
     Html.div []
         [ Html.div
-            [ style TopBar.Styles.pageIncludingTopBar
-            , id "page-including-top-bar"
-            ]
-            [ TopBar.view userState TopBar.Model.None model.topBar |> HS.toUnstyled |> Html.map FromTopBar
-            , Html.div [ id "page-below-top-bar", style TopBar.Styles.pageBelowTopBar ]
+            (id "page-including-top-bar" :: Views.Styles.pageIncludingTopBar)
+            [ Html.div
+                (id "top-bar-app" :: Views.Styles.topBar False)
+                [ TopBar.concourseLogo
+                , Login.view userState model False
+                ]
+            , Html.div
+                (id "page-below-top-bar"
+                    :: (Views.Styles.pageBelowTopBar <|
+                            Routes.FlySuccess False Nothing
+                       )
+                )
                 [ Html.div
-                    [ id "success-card"
-                    , style Styles.card
-                    ]
+                    (id "success-card" :: Styles.card)
                     [ Html.p
-                        [ id "success-card-title"
-                        , style Styles.title
-                        ]
+                        (id "success-card-title" :: Styles.title)
                         [ Html.text Text.title ]
                     , Html.div
-                        [ id "success-card-body"
-                        , style Styles.body
-                        ]
+                        (id "success-card-body" :: Styles.body)
                       <|
                         body model
                     ]
@@ -130,63 +161,100 @@ view userState model =
         ]
 
 
-body : Model -> List (Html Msg)
+tooltip : Model -> a -> Maybe Tooltip.Tooltip
+tooltip _ _ =
+    Nothing
+
+
+body : Model -> List (Html Message)
 body model =
     let
-        elemList =
-            List.filter Tuple.second >> List.map Tuple.first
+        p1 =
+            paragraph
+                { identifier = "first-paragraph"
+                , lines = Text.firstParagraph model.tokenTransfer
+                }
+
+        p2 =
+            paragraph
+                { identifier = "second-paragraph"
+                , lines = Text.secondParagraph model.tokenTransfer
+                }
     in
     case model.tokenTransfer of
-        Nothing ->
+        Models.Pending ->
             [ Html.text Text.pending ]
 
-        Just result ->
-            let
-                success =
-                    result == Ok True
-            in
-            elemList
-                [ ( paragraph
-                        { identifier = "first-paragraph"
-                        , lines = Text.firstParagraph success
-                        }
-                  , True
-                  )
-                , ( button model, not success )
-                , ( paragraph
-                        { identifier = "second-paragraph"
-                        , lines = Text.secondParagraph result
-                        }
-                  , True
-                  )
-                ]
+        Models.Success ->
+            [ p1, p2 ]
+
+        Models.NetworkTrouble ->
+            [ p1, tokenTextBox model, copyTokenButton model, p2 ]
+
+        Models.BlockedByBrowser ->
+            [ p1, tokenTextBox model, sendTokenButton model, p2, copyTokenButton model ]
+
+        Models.NoFlyPort ->
+            [ p1, tokenTextBox model, copyTokenButton model, p2 ]
 
 
-paragraph : { identifier : String, lines : Text.Paragraph } -> Html Msg
+tokenTextBox : Model -> Html Message
+tokenTextBox { copyTokenInputState, authToken } =
+    Html.label []
+        [ Html.text Text.copyTokenInput
+        , Html.input
+            ([ id "manual-copy-token"
+             , value authToken
+             , onMouseEnter <| Hover <| Just CopyTokenInput
+             , onMouseLeave <| Hover Nothing
+             ]
+                ++ Styles.input copyTokenInputState
+            )
+            []
+        ]
+
+
+paragraph : { identifier : String, lines : Text.Paragraph } -> Html Message
 paragraph { identifier, lines } =
     lines
         |> List.map Html.text
         |> List.intersperse (Html.br [] [])
-        |> Html.p
-            [ id identifier
-            , style Styles.paragraph
-            ]
+        |> Html.p (id identifier :: Styles.paragraph)
 
 
-button : Model -> Html Msg
-button { tokenTransfer, authToken, buttonState } =
+copyTokenButton : Model -> Html Message
+copyTokenButton { authToken, copyTokenButtonState } =
     Html.span
-        [ id "copy-token"
-        , style <| Styles.button buttonState
-        , onMouseEnter <| CopyTokenButtonHover True
-        , onMouseLeave <| CopyTokenButtonHover False
-        , onClick CopyToken
-        , attribute "data-clipboard-text" authToken
-        ]
-        [ Html.div
+        ([ id "copy-token"
+         , onMouseEnter <| Hover <| Just CopyTokenButton
+         , onMouseLeave <| Hover Nothing
+         , onClick <| Click CopyTokenButton
+         , attribute "data-clipboard-text" authToken
+         ]
+            ++ Styles.button copyTokenButtonState
+        )
+        [ Icon.icon
+            { sizePx = 20
+            , image = Assets.ClippyIcon
+            }
             [ id "copy-icon"
-            , style Styles.buttonIcon
+            , style "margin-right" "5px"
             ]
-            []
-        , Html.text <| Text.button buttonState
+        , Html.text <| Text.copyTokenButton copyTokenButtonState
         ]
+
+
+sendTokenButton : Model -> Html Message
+sendTokenButton { sendTokenButtonState, flyPort, authToken } =
+    Html.a
+        ([ id "send-token"
+         , onMouseEnter <| Hover <| Just SendTokenButton
+         , onMouseLeave <| Hover Nothing
+         , href
+            (Maybe.map (Routes.tokenToFlyRoute authToken) flyPort
+                |> Maybe.withDefault ""
+            )
+         ]
+            ++ Styles.button sendTokenButtonState
+        )
+        [ Html.text <| Text.sendTokenButton ]

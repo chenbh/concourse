@@ -2,22 +2,23 @@ package syslog_test
 
 import (
 	"crypto/tls"
-	"github.com/concourse/concourse/atc/syslog"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/square/certstrap/pkix"
 	"io/ioutil"
 	"net"
 	"os"
 	"time"
+
+	"github.com/concourse/concourse/atc/syslog"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/square/certstrap/pkix"
 )
 
 var _ = Describe("Syslog", func() {
 	var server *testServer
 	const (
 		hostname = "hostname"
-		tag = "tag"
-		message = "build 123 log"
+		tag      = "tag"
+		message  = "build 123 log"
 	)
 
 	AfterEach(func() {

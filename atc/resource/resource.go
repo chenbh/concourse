@@ -2,55 +2,59 @@ package resource
 
 import (
 	"context"
-	"io"
+	"encoding/json"
 	"path/filepath"
 
+	"github.com/concourse/concourse/atc/runtime"
+
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/worker"
 )
+
+//go:generate counterfeiter . ResourceFactory
+type ResourceFactory interface {
+	NewResource(source atc.Source, params atc.Params, version atc.Version) Resource
+}
+
+type resourceFactory struct {
+}
+
+func NewResourceFactory() ResourceFactory {
+	return resourceFactory{}
+
+}
+func (rf resourceFactory) NewResource(source atc.Source, params atc.Params, version atc.Version) Resource {
+	return &resource{
+		Source:  source,
+		Params:  params,
+		Version: version,
+	}
+}
 
 //go:generate counterfeiter . Resource
 
 type Resource interface {
-	Get(context.Context, worker.Volume, IOConfig, atc.Source, atc.Params, atc.Version) (VersionedSource, error)
-	Put(context.Context, IOConfig, atc.Source, atc.Params) (VersionedSource, error)
-	Check(context.Context, atc.Source, atc.Version) ([]atc.Version, error)
-	Container() worker.Container
+	Get(context.Context, runtime.ProcessSpec, runtime.Runner) (runtime.VersionResult, error)
+	Put(context.Context, runtime.ProcessSpec, runtime.Runner) (runtime.VersionResult, error)
+	Check(context.Context, runtime.ProcessSpec, runtime.Runner) ([]atc.Version, error)
+	Signature() ([]byte, error)
 }
 
 type ResourceType string
-
-type Session struct {
-	Metadata db.ContainerMetadata
-}
 
 type Metadata interface {
 	Env() []string
 }
 
-type IOConfig struct {
-	Stdout io.Writer
-	Stderr io.Writer
-}
-
-// TODO: check if we need it
 func ResourcesDir(suffix string) string {
 	return filepath.Join("/tmp", "build", suffix)
 }
 
 type resource struct {
-	container worker.Container
-
-	ScriptFailure bool
+	Source  atc.Source  `json:"source"`
+	Params  atc.Params  `json:"params,omitempty"`
+	Version atc.Version `json:"version,omitempty"`
 }
 
-func NewResourceForContainer(container worker.Container) Resource {
-	return &resource{
-		container: container,
-	}
-}
-
-func (r *resource) Container() worker.Container {
-	return r.container
+func (resource *resource) Signature() ([]byte, error) {
+	return json.Marshal(resource)
 }

@@ -11,7 +11,7 @@ declarative config, stateless workers, and reproducible builds.
 
 ## Installation
 
-Concourse is distributed as a single `concourse` binary, available on the [Downloads page](https://concourse-ci.org/download.html).
+Concourse is distributed as a single `concourse` binary, available on the [Releases page](https://github.com/concourse/concourse/releases/latest).
 
 If you want to just kick the tires, jump ahead to the [Quick Start](#quick-start).
 
@@ -20,7 +20,7 @@ Consult their GitHub repos for more information:
 
 * [Docker image](https://github.com/concourse/concourse-docker)
 * [BOSH release](https://github.com/concourse/concourse-bosh-release)
-* [Kubernetes Helm chart](https://github.com/helm/charts/tree/master/stable/concourse)
+* [Kubernetes Helm chart](https://github.com/concourse/concourse-chart)
 
 
 ## Quick Start
@@ -71,7 +71,7 @@ as `booklit.yml`, [target your Concourse
 instance](https://concourse-ci.org/fly.html#fly-login), and then run:
 
 ```sh
-fly -t $target set-pipeline -p booklit -c booklit.yml
+fly -t ci set-pipeline -p booklit -c booklit.yml
 ```
 
 These pipeline files are self-contained, maximizing portability from one
@@ -80,8 +80,8 @@ Concourse instance to the next.
 
 ### Learn More
 
-* The [Official Site](https://concourse-ci.org) for documentation and
-  reference material.
+* The [Official Site](https://concourse-ci.org) for documentation,
+  reference material, and example pipelines (which no longer live in this repository).
 * The [Concourse Tutorial](https://concoursetutorial.com) by Stark & Wayne is
   great for a guided introduction to all the core concepts.
 * See Concourse in action with our [production pipelines](https://ci.concourse-ci.org/)

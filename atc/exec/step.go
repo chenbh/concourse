@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/worker"
+	"github.com/concourse/concourse/atc/exec/build"
 )
 
 //go:generate counterfeiter . Step
@@ -29,31 +29,26 @@ type Step interface {
 	Succeeded() bool
 }
 
+//go:generate counterfeiter . BuildStepDelegate
+
+type BuildOutputFilter func(text string) string
+
 //go:generate counterfeiter . RunState
 
-type InputHandler func(io.ReadCloser) error
-type OutputHandler func(io.Writer) error
-
 type RunState interface {
-	Artifacts() *worker.ArtifactRepository
+	ArtifactRepository() *build.Repository
 
 	Result(atc.PlanID, interface{}) bool
 	StoreResult(atc.PlanID, interface{})
-
-	SendUserInput(atc.PlanID, io.ReadCloser)
-	ReadUserInput(atc.PlanID, InputHandler) error
-
-	ReadPlanOutput(atc.PlanID, io.Writer)
-	SendPlanOutput(atc.PlanID, OutputHandler) error
 }
 
 // ExitStatus is the resulting exit code from the process that the step ran.
 // Typically if the ExitStatus result is 0, the Success result is true.
 type ExitStatus int
 
-// VersionInfo is the version and metadata of a resource that was fetched or
-// produced. It is used by Put and Get.
-type VersionInfo struct {
-	Version  atc.Version
-	Metadata []atc.MetadataField
-}
+// Privileged is used to indicate whether the given step should run with
+// special privileges (i.e. as an administrator user).
+type Privileged bool
+
+type InputHandler func(io.ReadCloser) error
+type OutputHandler func(io.Writer) error

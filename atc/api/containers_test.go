@@ -15,9 +15,9 @@ import (
 	"code.cloudfoundry.org/garden"
 	gfakes "code.cloudfoundry.org/garden/gardenfakes"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
+	. "github.com/concourse/concourse/atc/testhelpers"
 	"github.com/concourse/concourse/atc/worker/workerfakes"
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
@@ -27,7 +27,6 @@ import (
 var _ = Describe("Containers API", func() {
 	var (
 		stepType         = db.ContainerTypeTask
-		fakeaccess       *accessorfakes.FakeAccess
 		stepName         = "some-step"
 		pipelineID       = 1111
 		jobID            = 2222
@@ -43,7 +42,6 @@ var _ = Describe("Containers API", func() {
 	)
 
 	BeforeEach(func() {
-		fakeaccess = new(accessorfakes.FakeAccess)
 		fakeContainer1 = new(dbfakes.FakeContainer)
 		fakeContainer1.HandleReturns("some-handle")
 		fakeContainer1.StateReturns("container-state")
@@ -79,9 +77,6 @@ var _ = Describe("Containers API", func() {
 			User:             user + "-other",
 		})
 	})
-	JustBeforeEach(func() {
-		fakeAccessor.CreateReturns(fakeaccess)
-	})
 
 	Describe("GET /api/v1/teams/a-team/containers", func() {
 		BeforeEach(func() {
@@ -93,7 +88,7 @@ var _ = Describe("Containers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401 Unauthorized", func() {
@@ -106,8 +101,8 @@ var _ = Describe("Containers API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("with no params", func() {
@@ -127,7 +122,10 @@ var _ = Describe("Containers API", func() {
 						response, err := client.Do(req)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("returns all containers", func() {
@@ -362,10 +360,11 @@ var _ = Describe("Containers API", func() {
 					_, err := client.Do(req)
 					Expect(err).NotTo(HaveOccurred())
 
-					_, pipelineName, resourceName, variablesFactory := dbTeam.FindCheckContainersArgsForCall(0)
+					_, pipelineName, resourceName, secretManager, varSourcePool := dbTeam.FindCheckContainersArgsForCall(0)
 					Expect(pipelineName).To(Equal("some-pipeline"))
 					Expect(resourceName).To(Equal("some-resource"))
-					Expect(variablesFactory).To(Equal(fakeVariablesFactory))
+					Expect(secretManager).To(Equal(fakeSecretManager))
+					Expect(varSourcePool).To(Equal(fakeVarSourcePool))
 				})
 			})
 		})
@@ -385,7 +384,7 @@ var _ = Describe("Containers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401 Unauthorized", func() {
@@ -398,8 +397,8 @@ var _ = Describe("Containers API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("when the container is not found", func() {
@@ -437,7 +436,10 @@ var _ = Describe("Containers API", func() {
 						response, err := client.Do(req)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+						expectedHeaderEntries := map[string]string{
+							"Content-Type": "application/json",
+						}
+						Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 					})
 
 					It("performs lookup by id", func() {
@@ -556,8 +558,8 @@ var _ = Describe("Containers API", func() {
 
 		Context("when authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsAuthorizedReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsAuthorizedReturns(true)
 			})
 
 			Context("and the worker client returns a container", func() {
@@ -572,7 +574,7 @@ var _ = Describe("Containers API", func() {
 					fakeDBContainer.HandleReturns("some-handle")
 
 					fakeContainer = new(workerfakes.FakeContainer)
-					fakeWorkerClient.FindContainerByHandleReturns(fakeContainer, true, nil)
+					fakeWorkerClient.FindContainerReturns(fakeContainer, true, nil)
 				})
 
 				Context("when the container is a check container", func() {
@@ -584,7 +586,7 @@ var _ = Describe("Containers API", func() {
 						BeforeEach(func() {
 							expectBadHandshake = true
 
-							fakeaccess.IsAdminReturns(false)
+							fakeAccess.IsAdminReturns(false)
 						})
 
 						It("returns Forbidden", func() {
@@ -594,7 +596,7 @@ var _ = Describe("Containers API", func() {
 
 					Context("when the user is an admin", func() {
 						BeforeEach(func() {
-							fakeaccess.IsAdminReturns(true)
+							fakeAccess.IsAdminReturns(true)
 						})
 
 						Context("when the container is not within the team", func() {
@@ -666,7 +668,7 @@ var _ = Describe("Containers API", func() {
 							BeforeEach(func() {
 								expectBadHandshake = true
 
-								fakeWorkerClient.FindContainerByHandleReturns(nil, false, errors.New("nope"))
+								fakeWorkerClient.FindContainerReturns(nil, false, errors.New("nope"))
 							})
 
 							It("returns 500 internal error", func() {
@@ -678,7 +680,7 @@ var _ = Describe("Containers API", func() {
 							BeforeEach(func() {
 								expectBadHandshake = true
 
-								fakeWorkerClient.FindContainerByHandleReturns(nil, false, nil)
+								fakeWorkerClient.FindContainerReturns(nil, false, nil)
 							})
 
 							It("returns 404 Not Found", func() {
@@ -743,17 +745,17 @@ var _ = Describe("Containers API", func() {
 							})
 
 							It("did not check if the user is admin", func() {
-								Expect(fakeaccess.IsAdminCallCount()).To(Equal(0))
+								Expect(fakeAccess.IsAdminCallCount()).To(Equal(0))
 							})
 
 							It("hijacks the build", func() {
 								Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-								_, lookedUpTeamID, lookedUpHandle := fakeWorkerClient.FindContainerByHandleArgsForCall(0)
+								_, lookedUpTeamID, lookedUpHandle := fakeWorkerClient.FindContainerArgsForCall(0)
 								Expect(lookedUpTeamID).To(Equal(734))
 								Expect(lookedUpHandle).To(Equal(handle))
 
-								spec, io := fakeContainer.RunArgsForCall(0)
+								_, spec, io := fakeContainer.RunArgsForCall(0)
 								Expect(spec).To(Equal(garden.ProcessSpec{
 									Path: "ls",
 									User: "snoopy",
@@ -764,10 +766,22 @@ var _ = Describe("Containers API", func() {
 								Expect(io.Stderr).NotTo(BeNil())
 							})
 
-							It("marks container as hijacked", func() {
+							It("updates the last hijack value", func() {
 								Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-								Expect(fakeContainer.MarkAsHijackedCallCount()).To(Equal(1))
+								Expect(fakeContainer.UpdateLastHijackCallCount()).To(Equal(1))
+							})
+
+							Context("when the hijack timer elapses", func() {
+								JustBeforeEach(func() {
+									fakeClock.WaitForWatcherAndIncrement(time.Second)
+								})
+
+								It("updates the last hijack value again", func() {
+									Eventually(fakeContainer.RunCallCount).Should(Equal(1))
+
+									Eventually(fakeContainer.UpdateLastHijackCallCount).Should(Equal(2))
+								})
 							})
 
 							Context("when stdin is sent over the API", func() {
@@ -781,7 +795,7 @@ var _ = Describe("Containers API", func() {
 								It("forwards the payload to the process", func() {
 									Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-									_, io := fakeContainer.RunArgsForCall(0)
+									_, _, io := fakeContainer.RunArgsForCall(0)
 									Expect(bufio.NewReader(io.Stdin).ReadBytes('\n')).To(Equal([]byte("some stdin\n")))
 
 									Expect(interceptTimeout.ResetCallCount()).To(Equal(1))
@@ -799,7 +813,7 @@ var _ = Describe("Containers API", func() {
 								It("closes the process's stdin", func() {
 									Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-									_, ioConfig := fakeContainer.RunArgsForCall(0)
+									_, _, ioConfig := fakeContainer.RunArgsForCall(0)
 									_, err := ioConfig.Stdin.Read(make([]byte, 10))
 									Expect(err).To(Equal(io.EOF))
 								})
@@ -809,7 +823,7 @@ var _ = Describe("Containers API", func() {
 								JustBeforeEach(func() {
 									Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-									_, io := fakeContainer.RunArgsForCall(0)
+									_, _, io := fakeContainer.RunArgsForCall(0)
 
 									_, err := fmt.Fprintf(io.Stdout, "some stdout\n")
 									Expect(err).NotTo(HaveOccurred())
@@ -830,7 +844,7 @@ var _ = Describe("Containers API", func() {
 								JustBeforeEach(func() {
 									Eventually(fakeContainer.RunCallCount).Should(Equal(1))
 
-									_, io := fakeContainer.RunArgsForCall(0)
+									_, _, io := fakeContainer.RunArgsForCall(0)
 
 									_, err := fmt.Fprintf(io.Stderr, "some stderr\n")
 									Expect(err).NotTo(HaveOccurred())
@@ -864,7 +878,7 @@ var _ = Describe("Containers API", func() {
 								})
 
 								It("closes the process' stdin pipe", func() {
-									_, io := fakeContainer.RunArgsForCall(0)
+									_, _, io := fakeContainer.RunArgsForCall(0)
 
 									c := make(chan bool, 1)
 
@@ -968,15 +982,11 @@ var _ = Describe("Containers API", func() {
 			BeforeEach(func() {
 				expectBadHandshake = true
 
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401 Unauthorized", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusUnauthorized))
-			})
-
-			It("does not hijack the build", func() {
-				Expect(fakeEngine.LookupBuildCallCount()).To(BeZero())
 			})
 		})
 	})
@@ -988,12 +998,12 @@ var _ = Describe("Containers API", func() {
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/json")
 
-			fakeaccess.IsAuthenticatedReturns(true)
+			fakeAccess.IsAuthenticatedReturns(true)
 		})
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401 Unauthorized", func() {
@@ -1010,7 +1020,7 @@ var _ = Describe("Containers API", func() {
 
 		Context("when authenticated as system", func() {
 			BeforeEach(func() {
-				fakeaccess.IsSystemReturns(true)
+				fakeAccess.IsSystemReturns(true)
 			})
 
 			Context("with no params", func() {
@@ -1123,7 +1133,7 @@ var _ = Describe("Containers API", func() {
 
 		Context("when not authenticated", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(false)
+				fakeAccess.IsAuthenticatedReturns(false)
 			})
 
 			It("returns 401 Unauthorized", func() {
@@ -1135,8 +1145,8 @@ var _ = Describe("Containers API", func() {
 
 		Context("when authenticated as system", func() {
 			BeforeEach(func() {
-				fakeaccess.IsAuthenticatedReturns(true)
-				fakeaccess.IsSystemReturns(true)
+				fakeAccess.IsAuthenticatedReturns(true)
+				fakeAccess.IsSystemReturns(true)
 			})
 
 			Context("with no params", func() {
@@ -1151,7 +1161,10 @@ var _ = Describe("Containers API", func() {
 					response, err = client.Do(req)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
-					Expect(response.Header.Get("Content-Type")).To(Equal("application/json"))
+					expectedHeaderEntries := map[string]string{
+						"Content-Type": "application/json",
+					}
+					Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 				})
 			})
 

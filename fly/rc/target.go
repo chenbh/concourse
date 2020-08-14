@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 
@@ -34,12 +35,17 @@ func NewErrVersionMismatch(flyVersion string, atcVersion string, targetName Targ
 }
 
 func (e ErrVersionMismatch) Error() string {
-	return fmt.Sprintf("fly version (%s) is out of sync with the target (%s). to sync up, run the following:\n\n    fly -t %s sync\n", ui.Embolden(e.flyVersion), ui.Embolden(e.atcVersion), e.targetName)
+	return fmt.Sprintf(
+		"fly version (%s) is out of sync with the target (%s). to sync up, run the following:\n\n    %s -t %s sync\n",
+		ui.Embolden(e.flyVersion), ui.Embolden(e.atcVersion), os.Args[0], e.targetName)
 }
+
+//go:generate counterfeiter . Target
 
 type Target interface {
 	Client() concourse.Client
 	Team() concourse.Team
+	FindTeam(string) (concourse.Team, error)
 	CACert() string
 	Validate() error
 	ValidateWithWarningOnly() error
@@ -63,7 +69,7 @@ type target struct {
 	info      atc.Info
 }
 
-func newTarget(
+func NewTarget(
 	name TargetName,
 	teamName string,
 	url string,
@@ -95,7 +101,7 @@ func LoadTargetFromURL(url, team string, tracing bool) (Target, TargetName, erro
 		return nil, "", err
 	}
 
-	for name, props := range flyTargets.Targets {
+	for name, props := range flyTargets {
 		if props.API == url && props.TeamName == team {
 			target, err := LoadTarget(name, tracing)
 			return target, name, err
@@ -119,7 +125,7 @@ func LoadTarget(selectedTarget TargetName, tracing bool) (Target, error) {
 	httpClient := defaultHttpClient(targetProps.Token, targetProps.Insecure, caCertPool)
 	client := concourse.NewClient(targetProps.API, httpClient, tracing)
 
-	return newTarget(
+	return NewTarget(
 		selectedTarget,
 		targetProps.TeamName,
 		targetProps.API,
@@ -162,7 +168,7 @@ func LoadUnauthenticatedTarget(
 
 	httpClient := &http.Client{Transport: transport(insecure, caCertPool)}
 
-	return newTarget(
+	return NewTarget(
 		selectedTarget,
 		teamName,
 		targetProps.API,
@@ -189,11 +195,39 @@ func NewUnauthenticatedTarget(
 
 	httpClient := &http.Client{Transport: transport(insecure, caCertPool)}
 	client := concourse.NewClient(url, httpClient, tracing)
-	return newTarget(
+	return NewTarget(
 		name,
 		teamName,
 		url,
 		nil,
+		caCert,
+		caCertPool,
+		insecure,
+		client,
+	), nil
+}
+
+func NewAuthenticatedTarget(
+	name TargetName,
+	url string,
+	teamName string,
+	insecure bool,
+	token *TargetToken,
+	caCert string,
+	tracing bool,
+) (Target, error) {
+	caCertPool, err := loadCACertPool(caCert)
+	if err != nil {
+		return nil, err
+	}
+	httpClient := defaultHttpClient(token, insecure, caCertPool)
+	client := concourse.NewClient(url, httpClient, tracing)
+
+	return NewTarget(
+		name,
+		teamName,
+		url,
+		token,
 		caCert,
 		caCertPool,
 		insecure,
@@ -218,7 +252,7 @@ func NewBasicAuthTarget(
 	httpClient := basicAuthHttpClient(username, password, insecure, caCertPool)
 	client := concourse.NewClient(url, httpClient, tracing)
 
-	return newTarget(
+	return NewTarget(
 		name,
 		teamName,
 		url,
@@ -236,6 +270,10 @@ func (t *target) Client() concourse.Client {
 
 func (t *target) Team() concourse.Team {
 	return t.client.Team(t.teamName)
+}
+
+func (t *target) FindTeam(teamName string) (concourse.Team, error) {
+	return t.client.FindTeam(teamName)
 }
 
 func (t *target) CACert() string {

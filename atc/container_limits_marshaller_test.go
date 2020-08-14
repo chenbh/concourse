@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	. "github.com/concourse/concourse/atc"
-	yaml "gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
