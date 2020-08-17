@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/concourse/concourse/atc"
-	. "github.com/concourse/concourse/fly/commands/internal/hijackhelpers"
+	"github.com/chenbh/concourse/v6/atc"
+	. "github.com/chenbh/concourse/v6/fly/commands/internal/hijackhelpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

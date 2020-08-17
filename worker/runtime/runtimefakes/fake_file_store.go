@@ -4,7 +4,7 @@ package runtimefakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/worker/runtime"
+	"github.com/chenbh/concourse/v6/worker/runtime"
 )
 
 type FakeFileStore struct {

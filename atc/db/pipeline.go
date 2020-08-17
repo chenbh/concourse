@@ -13,11 +13,11 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db/lock"
-	"github.com/concourse/concourse/atc/event"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/v6/vars"
 )
 
 type ErrResourceNotFound struct {

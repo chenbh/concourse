@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/api/accessor"
-	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
+	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/v6/atc/api/accessor/accessorfakes"
 
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

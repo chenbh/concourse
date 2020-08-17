@@ -3,25 +3,25 @@ package exec_test
 import (
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/worker/workerfakes"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/worker/workerfakes"
 
 	"context"
 	"errors"
 	"io"
 
-	"github.com/concourse/concourse/atc/exec/build"
-	"github.com/concourse/concourse/atc/exec/build/buildfakes"
+	"github.com/chenbh/concourse/v6/atc/exec/build"
+	"github.com/chenbh/concourse/v6/atc/exec/build/buildfakes"
 	"github.com/onsi/gomega/gbytes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db/dbfakes"
-	"github.com/concourse/concourse/atc/exec"
-	"github.com/concourse/concourse/atc/exec/execfakes"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/exec"
+	"github.com/chenbh/concourse/v6/atc/exec/execfakes"
+	"github.com/chenbh/concourse/v6/vars"
 )
 
 var _ = Describe("SetPipelineStep", func() {

@@ -4,9 +4,9 @@ package schedulerfakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/scheduler"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/scheduler"
 )
 
 type FakeBuildPlanner struct {

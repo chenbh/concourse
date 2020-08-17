@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
 )
 
 //go:generate counterfeiter . BuildFactory

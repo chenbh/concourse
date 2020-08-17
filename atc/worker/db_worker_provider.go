@@ -1,17 +1,17 @@
 package worker
 
 import (
-	"github.com/concourse/concourse/atc/policy"
+	"github.com/chenbh/concourse/v6/atc/policy"
 	"net/http"
 	"time"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	bclient "github.com/concourse/baggageclaim/client"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/lock"
-	"github.com/concourse/concourse/atc/worker/gclient"
-	"github.com/concourse/concourse/atc/worker/transport"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc/worker/gclient"
+	"github.com/chenbh/concourse/v6/atc/worker/transport"
 	"github.com/concourse/retryhttp"
 	"github.com/cppforlife/go-semi-semantic/version"
 )

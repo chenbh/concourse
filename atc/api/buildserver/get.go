@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/concourse/concourse/atc/api/present"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/api/present"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func (s *Server) GetBuild(build db.Build) http.Handler {

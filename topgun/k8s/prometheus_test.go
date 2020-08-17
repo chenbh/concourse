@@ -6,7 +6,7 @@ import (
 	"path"
 	"time"
 
-	. "github.com/concourse/concourse/topgun"
+	. "github.com/chenbh/concourse/v6/topgun"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

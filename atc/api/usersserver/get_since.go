@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/present"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/api/present"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 const since = "since"

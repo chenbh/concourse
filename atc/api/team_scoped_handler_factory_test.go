@@ -9,11 +9,11 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/concourse/concourse/atc/api"
-	"github.com/concourse/concourse/atc/api/accessor"
-	"github.com/concourse/concourse/atc/auditor/auditorfakes"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/api"
+	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/v6/atc/auditor/auditorfakes"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

@@ -3,7 +3,7 @@ package workercmd
 import (
 	"time"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 )
 
 type WorkerConfig struct {

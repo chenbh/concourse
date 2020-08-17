@@ -7,12 +7,12 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/resource"
-	"github.com/concourse/concourse/atc/worker"
-	"github.com/concourse/concourse/tracing"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/resource"
+	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/v6/tracing"
 )
 
 type CheckStep struct {

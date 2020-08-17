@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/scheduler"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/scheduler"
 )
 
 type FakeBuildStarter struct {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/chenbh/concourse/v6/atc/api/auth"
 )
 
 type FakeRejector struct {

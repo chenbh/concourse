@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 type FakeCheckLifecycle struct {

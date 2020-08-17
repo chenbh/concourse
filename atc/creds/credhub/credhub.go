@@ -4,7 +4,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/creds"
 
 	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"

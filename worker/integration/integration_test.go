@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/concourse/concourse/worker/workercmd"
+	"github.com/chenbh/concourse/v6/worker/workercmd"
 	"github.com/concourse/flag"
 	"github.com/jessevdk/go-flags"
 	"github.com/stretchr/testify/require"

@@ -1,8 +1,8 @@
 package wrappa
 
 import (
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/api/auth"
 	"github.com/tedsuo/rata"
 )
 

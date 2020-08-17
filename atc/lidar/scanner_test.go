@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds/credsfakes"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/dbfakes"
-	"github.com/concourse/concourse/atc/db/lock/lockfakes"
-	"github.com/concourse/concourse/atc/lidar"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds/credsfakes"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/db/lock/lockfakes"
+	"github.com/chenbh/concourse/v6/atc/lidar"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

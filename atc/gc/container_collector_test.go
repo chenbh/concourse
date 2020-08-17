@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/gc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/gc"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

@@ -3,7 +3,7 @@ package resource
 import (
 	"context"
 
-	"github.com/concourse/concourse/atc/runtime"
+	"github.com/chenbh/concourse/v6/atc/runtime"
 )
 
 func (resource *resource) Get(

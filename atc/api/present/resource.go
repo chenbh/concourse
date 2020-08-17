@@ -1,8 +1,8 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func Resource(resource db.Resource, showCheckError bool, teamName string) atc.Resource {

@@ -3,8 +3,8 @@ package pipelineserver
 import (
 	"net/http"
 
-	"github.com/concourse/concourse/atc/api/auth"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/api/auth"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 type ScopedHandlerFactory struct {

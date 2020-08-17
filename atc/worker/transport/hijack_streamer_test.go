@@ -15,15 +15,15 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/garden"
-	"github.com/concourse/concourse/atc/db/dbfakes"
-	gconn "github.com/concourse/concourse/atc/worker/gclient/connection"
-	"github.com/concourse/concourse/atc/worker/transport"
-	"github.com/concourse/concourse/atc/worker/transport/transportfakes"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	gconn "github.com/chenbh/concourse/v6/atc/worker/gclient/connection"
+	"github.com/chenbh/concourse/v6/atc/worker/transport"
+	"github.com/chenbh/concourse/v6/atc/worker/transport/transportfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/rata"
 
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 	"github.com/concourse/retryhttp/retryhttpfakes"
 )
 

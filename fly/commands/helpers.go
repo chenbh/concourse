@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
-	"github.com/concourse/concourse/fly/rc"
-	"github.com/concourse/concourse/go-concourse/concourse"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/v6/go-concourse/concourse"
 )
 
 func GetBuild(client concourse.Client, team concourse.Team, jobName string, buildNameOrID string, pipelineName string) (atc.Build, error) {

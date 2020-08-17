@@ -8,7 +8,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 	"github.com/lib/pq"
 )
 

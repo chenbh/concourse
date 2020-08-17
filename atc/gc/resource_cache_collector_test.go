@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/gc"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/gc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

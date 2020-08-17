@@ -8,9 +8,9 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc/api/present"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/api/present"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db"
 	"github.com/tedsuo/rata"
 )
 

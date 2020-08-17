@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/api/accessor"
-	"github.com/concourse/concourse/atc/api/present"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/v6/atc/api/present"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func (s *Server) ListResourceVersions(pipeline db.Pipeline) http.Handler {

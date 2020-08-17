@@ -4,7 +4,7 @@ package wrappafakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc/wrappa"
+	"github.com/chenbh/concourse/v6/atc/wrappa"
 )
 
 type FakeConcurrentRequestPolicy struct {

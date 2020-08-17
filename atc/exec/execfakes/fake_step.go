@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/concourse/concourse/atc/exec"
+	"github.com/chenbh/concourse/v6/atc/exec"
 )
 
 type FakeStep struct {

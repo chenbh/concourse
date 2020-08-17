@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/concourse/concourse/atc/atccmd"
+	"github.com/chenbh/concourse/v6/atc/atccmd"
 	"github.com/jessevdk/go-flags"
 )
 

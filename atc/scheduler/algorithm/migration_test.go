@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 	. "github.com/onsi/ginkgo/extensions/table"
 )
 

@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 //go:generate counterfeiter . ImageFactory

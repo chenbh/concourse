@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/garden"
-	"github.com/concourse/concourse/worker/runtime"
-	"github.com/concourse/concourse/worker/runtime/libcontainerd"
+	"github.com/chenbh/concourse/v6/worker/runtime"
+	"github.com/chenbh/concourse/v6/worker/runtime/libcontainerd"
 	"github.com/containerd/containerd"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

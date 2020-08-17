@@ -2,7 +2,7 @@ package infoserver
 
 import (
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/creds"
 )
 
 type Server struct {

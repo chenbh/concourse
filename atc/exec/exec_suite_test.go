@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/api/trace/testtrace"
 
-	"github.com/concourse/concourse/atc/policy"
-	"github.com/concourse/concourse/atc/policy/policyfakes"
+	"github.com/chenbh/concourse/v6/atc/policy"
+	"github.com/chenbh/concourse/v6/atc/policy/policyfakes"
 )
 
 func TestExec(t *testing.T) {

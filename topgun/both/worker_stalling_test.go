@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	. "github.com/concourse/concourse/topgun/common"
+	. "github.com/chenbh/concourse/v6/topgun/common"
 	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

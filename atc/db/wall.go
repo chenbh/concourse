@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 
 	sq "github.com/Masterminds/squirrel"
 )

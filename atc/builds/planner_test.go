@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/builds"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/builds"
+	"github.com/chenbh/concourse/v6/atc/db"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

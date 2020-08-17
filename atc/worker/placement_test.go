@@ -3,9 +3,9 @@ package worker_test
 import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc/db"
-	. "github.com/concourse/concourse/atc/worker"
-	"github.com/concourse/concourse/atc/worker/workerfakes"
+	"github.com/chenbh/concourse/v6/atc/db"
+	. "github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/v6/atc/worker/workerfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/concourse/concourse/fly/version"
+	"github.com/chenbh/concourse/v6/fly/version"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -46,8 +46,8 @@ var _ = Describe("Syncing", func() {
 	JustBeforeEach(func() {
 		var err error
 		flyPath, err = gexec.Build(
-			"github.com/concourse/concourse/fly",
-			"-ldflags", fmt.Sprintf("-X github.com/concourse/concourse.Version=%s", flyVersion),
+			"github.com/chenbh/concourse/v6/fly",
+			"-ldflags", fmt.Sprintf("-X github.com/chenbh/concourse/v6.Version=%s", flyVersion),
 		)
 		Expect(err).NotTo(HaveOccurred())
 

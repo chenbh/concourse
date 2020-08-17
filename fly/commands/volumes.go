@@ -8,10 +8,10 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
-	"github.com/concourse/concourse/fly/rc"
-	"github.com/concourse/concourse/fly/ui"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/v6/fly/ui"
 	"github.com/fatih/color"
 )
 

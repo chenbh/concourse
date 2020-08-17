@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/fly/rc"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/fly/rc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 
 	"sigs.k8s.io/yaml"
 )

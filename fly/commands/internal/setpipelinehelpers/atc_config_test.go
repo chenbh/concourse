@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/concourse/concourse/fly/commands/internal/setpipelinehelpers"
+	. "github.com/chenbh/concourse/v6/fly/commands/internal/setpipelinehelpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

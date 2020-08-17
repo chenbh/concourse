@@ -1,4 +1,4 @@
-module github.com/concourse/concourse
+module github.com/chenbh/concourse/v6
 
 require (
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c

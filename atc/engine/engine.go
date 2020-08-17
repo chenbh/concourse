@@ -12,13 +12,13 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/exec"
-	"github.com/concourse/concourse/atc/metric"
-	"github.com/concourse/concourse/atc/policy"
-	"github.com/concourse/concourse/tracing"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/exec"
+	"github.com/chenbh/concourse/v6/atc/metric"
+	"github.com/chenbh/concourse/v6/atc/policy"
+	"github.com/chenbh/concourse/v6/tracing"
 )
 
 //go:generate counterfeiter . Engine

@@ -3,8 +3,8 @@ package integration_test
 import (
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/wrappa"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/wrappa"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

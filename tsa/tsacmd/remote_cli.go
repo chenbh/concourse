@@ -11,9 +11,9 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	bclient "github.com/concourse/baggageclaim/client"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/worker/gclient"
-	"github.com/concourse/concourse/tsa"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/worker/gclient"
+	"github.com/chenbh/concourse/v6/tsa"
 	"golang.org/x/crypto/ssh"
 )
 

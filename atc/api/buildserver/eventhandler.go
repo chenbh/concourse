@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 	"github.com/vito/go-sse/sse"
 )
 

@@ -11,8 +11,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
 )
 
 var ErrPinnedThroughConfig = errors.New("resource is pinned through config")

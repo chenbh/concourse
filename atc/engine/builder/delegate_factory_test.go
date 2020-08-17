@@ -12,14 +12,14 @@ import (
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/dbfakes"
-	"github.com/concourse/concourse/atc/engine/builder"
-	"github.com/concourse/concourse/atc/event"
-	"github.com/concourse/concourse/atc/exec"
-	"github.com/concourse/concourse/atc/runtime"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/v6/atc/engine/builder"
+	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/v6/atc/exec"
+	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/v6/vars"
 )
 
 var _ = Describe("DelegateFactory", func() {

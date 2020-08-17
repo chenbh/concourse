@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 type FakeExecutor struct {

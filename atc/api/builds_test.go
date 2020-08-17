@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/dbfakes"
-	. "github.com/concourse/concourse/atc/testhelpers"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	. "github.com/chenbh/concourse/v6/atc/testhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

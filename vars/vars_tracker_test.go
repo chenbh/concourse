@@ -1,7 +1,7 @@
 package vars_test
 
 import (
-	. "github.com/concourse/concourse/vars"
+	. "github.com/chenbh/concourse/v6/vars"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

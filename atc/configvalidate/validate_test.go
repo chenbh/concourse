@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/configvalidate"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/configvalidate"
 
 	// load dummy credential manager
-	_ "github.com/concourse/concourse/atc/creds/dummy"
+	_ "github.com/chenbh/concourse/v6/atc/creds/dummy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

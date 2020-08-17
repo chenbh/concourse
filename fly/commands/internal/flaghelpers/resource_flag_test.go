@@ -1,7 +1,7 @@
 package flaghelpers_test
 
 import (
-	. "github.com/concourse/concourse/fly/commands/internal/flaghelpers"
+	. "github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/concourse/concourse/fly/rc"
+	"github.com/chenbh/concourse/v6/fly/rc"
 )
 
 type DeleteTargetCommand struct {

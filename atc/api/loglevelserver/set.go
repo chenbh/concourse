@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 )
 
 func (s *Server) SetMinLevel(w http.ResponseWriter, r *http.Request) {

@@ -4,10 +4,10 @@ package builderfakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/engine/builder"
-	"github.com/concourse/concourse/atc/exec"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/engine/builder"
+	"github.com/chenbh/concourse/v6/atc/exec"
 )
 
 type FakeStepFactory struct {

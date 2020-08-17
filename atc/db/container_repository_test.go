@@ -4,8 +4,8 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
 	"github.com/lib/pq"
 
 	. "github.com/onsi/ginkgo"

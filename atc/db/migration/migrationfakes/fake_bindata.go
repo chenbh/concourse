@@ -4,7 +4,7 @@ package migrationfakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc/db/migration"
+	"github.com/chenbh/concourse/v6/atc/db/migration"
 )
 
 type FakeBindata struct {

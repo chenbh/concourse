@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/concourse/concourse/fly/rc"
-	fakes "github.com/concourse/concourse/go-concourse/concourse/concoursefakes"
+	"github.com/chenbh/concourse/v6/fly/rc"
+	fakes "github.com/chenbh/concourse/v6/go-concourse/concourse/concoursefakes"
 	"golang.org/x/oauth2"
 	"sigs.k8s.io/yaml"
 

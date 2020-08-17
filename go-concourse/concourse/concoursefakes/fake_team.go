@@ -5,8 +5,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/go-concourse/concourse"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/go-concourse/concourse"
 )
 
 type FakeTeam struct {

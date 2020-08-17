@@ -5,8 +5,8 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/auditor"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/auditor"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

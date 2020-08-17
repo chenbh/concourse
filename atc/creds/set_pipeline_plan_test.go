@@ -1,9 +1,9 @@
 package creds_test
 
 import (
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/vars"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

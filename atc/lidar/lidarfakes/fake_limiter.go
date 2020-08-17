@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/concourse/concourse/atc/lidar"
+	"github.com/chenbh/concourse/v6/atc/lidar"
 )
 
 type FakeLimiter struct {

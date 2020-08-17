@@ -3,7 +3,7 @@ package conjur
 import (
 	"code.cloudfoundry.org/lager"
 
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/creds"
 	"github.com/cyberark/conjur-api-go/conjurapi"
 )
 

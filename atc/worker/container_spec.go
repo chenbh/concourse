@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/garden"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/runtime"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/runtime"
 )
 
 type WorkerSpec struct {

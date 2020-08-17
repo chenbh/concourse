@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
-	. "github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
+	"github.com/chenbh/concourse/v6/atc"
+	. "github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
 )
 
 func formatErr(groupName string, err error) string {

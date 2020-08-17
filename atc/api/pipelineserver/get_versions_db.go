@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func (s *Server) GetVersionsDB(pipelineDB db.Pipeline) http.Handler {

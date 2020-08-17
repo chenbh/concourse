@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
-	"github.com/concourse/concourse/fly/rc"
+	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/v6/fly/rc"
 	"github.com/vito/go-interact/interact"
 )
 

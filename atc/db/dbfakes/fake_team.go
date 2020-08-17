@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 type FakeTeam struct {

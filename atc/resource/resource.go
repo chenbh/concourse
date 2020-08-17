@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	"github.com/concourse/concourse/atc/runtime"
+	"github.com/chenbh/concourse/v6/atc/runtime"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 )
 
 //go:generate counterfeiter . ResourceFactory

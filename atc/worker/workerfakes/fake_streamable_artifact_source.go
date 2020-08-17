@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/worker"
+	"github.com/chenbh/concourse/v6/atc/worker"
 )
 
 type FakeStreamableArtifactSource struct {

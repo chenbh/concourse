@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/db/lock"
-	"github.com/concourse/concourse/atc/resource"
-	"github.com/concourse/concourse/atc/runtime"
-	"github.com/concourse/concourse/atc/worker"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc/resource"
+	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/v6/atc/worker"
 )
 
 type FakeClient struct {

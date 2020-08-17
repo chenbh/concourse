@@ -12,10 +12,10 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/db/lock"
-	"github.com/concourse/concourse/atc/event"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/db/lock"
+	"github.com/chenbh/concourse/v6/atc/event"
 )
 
 var ErrConfigComparisonFailed = errors.New("comparison with existing config failed during save")

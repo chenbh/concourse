@@ -7,8 +7,8 @@ import (
 	"sigs.k8s.io/yaml"
 	"encoding/json"
 
-	"github.com/concourse/concourse/atc/api/accessor"
-	"github.com/concourse/concourse/atc/policy"
+	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/v6/atc/policy"
 )
 
 //go:generate counterfeiter . PolicyChecker

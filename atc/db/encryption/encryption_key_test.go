@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/concourse/concourse/atc/db/encryption"
+	"github.com/chenbh/concourse/v6/atc/db/encryption"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

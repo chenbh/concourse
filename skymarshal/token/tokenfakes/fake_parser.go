@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/concourse/concourse/skymarshal/token"
+	"github.com/chenbh/concourse/v6/skymarshal/token"
 )
 
 type FakeParser struct {

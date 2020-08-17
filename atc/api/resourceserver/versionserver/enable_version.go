@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func (s *Server) EnableResourceVersion(pipeline db.Pipeline) http.Handler {

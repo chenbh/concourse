@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 )
 
 const (

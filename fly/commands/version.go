@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/concourse/concourse"
+	"github.com/chenbh/concourse/v6"
 )
 
 func init() {

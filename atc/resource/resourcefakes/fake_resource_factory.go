@@ -4,8 +4,8 @@ package resourcefakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/resource"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/resource"
 )
 
 type FakeResourceFactory struct {

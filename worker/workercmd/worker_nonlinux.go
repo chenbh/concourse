@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 	"github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 )

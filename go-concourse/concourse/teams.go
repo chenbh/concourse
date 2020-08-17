@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/go-concourse/concourse/internal"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 

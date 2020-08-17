@@ -4,8 +4,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/vars"
 )
 
 type Secrets struct {

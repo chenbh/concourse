@@ -1,8 +1,8 @@
 package exec_test
 
 import (
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/exec"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/exec"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

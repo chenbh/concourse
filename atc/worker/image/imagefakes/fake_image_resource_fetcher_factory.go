@@ -4,10 +4,10 @@ package imagefakes
 import (
 	"sync"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/compression"
-	"github.com/concourse/concourse/atc/worker"
-	"github.com/concourse/concourse/atc/worker/image"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/compression"
+	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/v6/atc/worker/image"
 )
 
 type FakeImageResourceFetcherFactory struct {

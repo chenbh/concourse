@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	"github.com/concourse/concourse/atc/creds"
-	"github.com/concourse/concourse/atc/creds/credsfakes"
-	"github.com/concourse/concourse/vars"
+	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/v6/atc/creds/credsfakes"
+	"github.com/chenbh/concourse/v6/vars"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
-	"github.com/concourse/concourse/atc/event"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/v6/atc/event"
 
 	// load dummy credential manager
-	_ "github.com/concourse/concourse/atc/creds/dummy"
+	_ "github.com/chenbh/concourse/v6/atc/creds/dummy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

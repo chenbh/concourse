@@ -3,8 +3,8 @@ package present
 import (
 	"time"
 
-	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/atc/db"
+	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/v6/atc/db"
 )
 
 func Container(container db.Container, expiresAt time.Time) atc.Container {

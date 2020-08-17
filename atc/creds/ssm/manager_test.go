@@ -1,7 +1,7 @@
 package ssm_test
 
 import (
-	"github.com/concourse/concourse/atc/creds/ssm"
+	"github.com/chenbh/concourse/v6/atc/creds/ssm"
 	flags "github.com/jessevdk/go-flags"
 
 	. "github.com/onsi/ginkgo"

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
+	"github.com/chenbh/concourse/v6/atc"
 	"github.com/gorilla/websocket"
 	"github.com/mgutz/ansi"
 	. "github.com/onsi/ginkgo"
