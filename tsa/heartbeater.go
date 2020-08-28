@@ -13,8 +13,8 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/worker/gclient"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/worker/gclient"
 	"github.com/tedsuo/rata"
 )
 

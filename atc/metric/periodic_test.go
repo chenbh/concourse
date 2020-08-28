@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	"github.com/chenbh/concourse/v6/atc/metric"
-	"github.com/chenbh/concourse/v6/atc/metric/metricfakes"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/metric"
+	"github.com/chenbh/concourse/atc/metric/metricfakes"
 	"github.com/tedsuo/ifrit"
 
 	. "github.com/onsi/ginkgo"

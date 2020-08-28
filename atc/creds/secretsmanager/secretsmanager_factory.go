@@ -4,7 +4,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/atc/creds"
 )
 
 type secretsManagerFactory struct {

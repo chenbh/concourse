@@ -9,10 +9,10 @@ import (
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
 
-	"github.com/chenbh/concourse/v6"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/fly/ui"
+	"github.com/chenbh/concourse"
+	"github.com/chenbh/concourse/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/fly/ui"
 )
 
 type SyncCommand struct {

@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"github.com/lib/pq"
 	uuid "github.com/nu7hatch/gouuid"
 )

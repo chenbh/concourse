@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/credhub/auth"
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/atc/creds"
 )
 
 type CredHubManager struct {

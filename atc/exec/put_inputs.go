@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/resource"
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/resource"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 type PutInputNotFoundError struct {

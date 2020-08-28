@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/templatehelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/templatehelpers"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

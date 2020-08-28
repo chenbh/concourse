@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/exec/build"
 )
 
 //go:generate counterfeiter . Step

@@ -1,7 +1,7 @@
 package ssm
 
 import (
-	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/atc/creds"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/mitchellh/mapstructure"
 )

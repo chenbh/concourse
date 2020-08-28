@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 func (resource *resource) Put(

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/policy"
+	"github.com/chenbh/concourse/atc/policy"
 )
 
 type FakeAgentFactory struct {

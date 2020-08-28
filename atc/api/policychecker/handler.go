@@ -6,7 +6,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/atc/api/accessor"
 )
 
 func NewHandler(

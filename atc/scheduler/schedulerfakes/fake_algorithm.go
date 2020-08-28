@@ -5,8 +5,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/scheduler"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/scheduler"
 )
 
 type FakeAlgorithm struct {

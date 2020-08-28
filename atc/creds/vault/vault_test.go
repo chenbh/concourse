@@ -1,9 +1,9 @@
 package vault_test
 
 import (
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/creds/vault"
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/creds/vault"
+	"github.com/chenbh/concourse/vars"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

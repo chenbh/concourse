@@ -1,12 +1,12 @@
 package commands
 
 import (
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/setpipelinehelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/templatehelpers"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/setpipelinehelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/templatehelpers"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 	"github.com/mgutz/ansi"
 )
 

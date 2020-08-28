@@ -1,8 +1,8 @@
 package build_test
 
 import (
-	. "github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/runtime/runtimefakes"
+	. "github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/runtime/runtimefakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

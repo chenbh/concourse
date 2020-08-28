@@ -3,8 +3,8 @@ package resource
 import (
 	"context"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 func (resource *resource) Check(

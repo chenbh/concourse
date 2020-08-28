@@ -4,7 +4,7 @@ package policyfakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/policy"
+	"github.com/chenbh/concourse/atc/policy"
 )
 
 type FakeAgent struct {

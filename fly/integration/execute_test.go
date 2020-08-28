@@ -17,9 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/event"
-	"github.com/chenbh/concourse/v6/atc/testhelpers"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/event"
+	"github.com/chenbh/concourse/atc/testhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"

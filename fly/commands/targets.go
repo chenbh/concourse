@@ -5,9 +5,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/fly/ui"
-	"github.com/chenbh/concourse/v6/skymarshal/token"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/fly/ui"
+	"github.com/chenbh/concourse/skymarshal/token"
 	"github.com/fatih/color"
 )
 

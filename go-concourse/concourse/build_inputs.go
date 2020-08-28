@@ -3,8 +3,8 @@ package concourse
 import (
 	"strconv"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse/internal"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 

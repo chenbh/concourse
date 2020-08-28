@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc/api/containerserver"
+	"github.com/chenbh/concourse/atc/api/containerserver"
 )
 
 type FakeInterceptTimeout struct {

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/chenbh/concourse/v6/atc/api/pipelineserver"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/api/pipelineserver"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

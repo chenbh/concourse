@@ -2,11 +2,11 @@ package wrappa_test
 
 import (
 	"fmt"
-	. "github.com/chenbh/concourse/v6/atc/testhelpers"
+	. "github.com/chenbh/concourse/atc/testhelpers"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/chenbh/concourse/v6/atc/wrappa"
+	"github.com/chenbh/concourse/atc/wrappa"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

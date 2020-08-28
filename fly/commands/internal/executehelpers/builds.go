@@ -1,8 +1,8 @@
 package executehelpers
 
 import (
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/rc"
 )
 
 func CreateBuildPlan(

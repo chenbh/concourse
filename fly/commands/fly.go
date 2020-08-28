@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/fly/rc"
 )
 
 type FlyCommand struct {

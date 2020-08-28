@@ -2,10 +2,10 @@ package kubernetes_test
 
 import (
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/creds/kubernetes"
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/creds/kubernetes"
+	"github.com/chenbh/concourse/vars"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"

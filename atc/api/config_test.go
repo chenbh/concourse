@@ -8,17 +8,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/creds/noop"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	. "github.com/chenbh/concourse/v6/atc/testhelpers"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/creds/noop"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	. "github.com/chenbh/concourse/atc/testhelpers"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/tedsuo/rata"
 	"sigs.k8s.io/yaml"
 
 	// load dummy credential manager
-	_ "github.com/chenbh/concourse/v6/atc/creds/dummy"
+	_ "github.com/chenbh/concourse/atc/creds/dummy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

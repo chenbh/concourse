@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 )
 
 type ResolutionFailure string

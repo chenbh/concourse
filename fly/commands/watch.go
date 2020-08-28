@@ -6,9 +6,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/eventstream"
-	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/eventstream"
+	"github.com/chenbh/concourse/fly/rc"
 )
 
 type WatchCommand struct {

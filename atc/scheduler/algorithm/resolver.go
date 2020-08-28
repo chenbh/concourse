@@ -1,7 +1,7 @@
 package algorithm
 
 import (
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 type NameToIDMap map[string]int

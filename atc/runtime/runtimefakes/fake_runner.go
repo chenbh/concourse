@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 type FakeRunner struct {

@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/chenbh/concourse/v6/skymarshal/token"
+	"github.com/chenbh/concourse/skymarshal/token"
 )
 
 func CSRFValidationHandler(

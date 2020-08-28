@@ -4,7 +4,7 @@ package runtimefakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/worker/runtime"
+	"github.com/chenbh/concourse/worker/runtime"
 )
 
 type FakeUserNamespace struct {

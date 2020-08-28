@@ -2,7 +2,7 @@ package policy_test
 
 import (
 	"context"
-	"github.com/chenbh/concourse/v6/atc/policy"
+	"github.com/chenbh/concourse/atc/policy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

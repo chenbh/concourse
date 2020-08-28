@@ -7,7 +7,7 @@ import (
 	"text/template"
 	"text/template/parse"
 
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/vars"
 )
 
 // SecretLookupPath transforms variable name into full secret path

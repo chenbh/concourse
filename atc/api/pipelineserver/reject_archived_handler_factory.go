@@ -3,7 +3,7 @@ package pipelineserver
 import (
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 type RejectArchivedHandlerFactory struct {

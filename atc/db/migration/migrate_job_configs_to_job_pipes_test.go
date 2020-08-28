@@ -3,7 +3,7 @@ package migration_test
 import (
 	"database/sql"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

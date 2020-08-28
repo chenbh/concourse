@@ -7,7 +7,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
-	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/fly/rc"
 )
 
 type JobFlag struct {

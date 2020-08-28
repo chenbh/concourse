@@ -3,7 +3,7 @@ package creds
 import (
 	"encoding/json"
 
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/vars"
 	"sigs.k8s.io/yaml"
 )
 

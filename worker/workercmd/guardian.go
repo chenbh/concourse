@@ -12,7 +12,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/localip"
-	concourseCmd "github.com/chenbh/concourse/v6/cmd"
+	concourseCmd "github.com/chenbh/concourse/cmd"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 )

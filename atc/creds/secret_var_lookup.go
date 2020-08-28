@@ -1,7 +1,7 @@
 package creds
 
 import (
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/vars"
 )
 
 type VariableLookupFromSecrets struct {

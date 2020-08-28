@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/rc"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/rc"
 )
 
 type EnableResourceVersionCommand struct {

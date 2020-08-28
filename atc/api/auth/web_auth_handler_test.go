@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/chenbh/concourse/v6/atc/api/auth"
-	"github.com/chenbh/concourse/v6/atc/api/auth/authfakes"
-	"github.com/chenbh/concourse/v6/atc/api/buildserver"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	"github.com/chenbh/concourse/v6/atc/event"
-	"github.com/chenbh/concourse/v6/skymarshal/token/tokenfakes"
+	"github.com/chenbh/concourse/atc/api/auth"
+	"github.com/chenbh/concourse/atc/api/auth/authfakes"
+	"github.com/chenbh/concourse/atc/api/buildserver"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/event"
+	"github.com/chenbh/concourse/skymarshal/token/tokenfakes"
 )
 
 var _ = Describe("WebAuthHandler", func() {

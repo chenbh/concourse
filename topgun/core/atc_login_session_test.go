@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"golang.org/x/oauth2"
 
 	_ "github.com/lib/pq"
 
-	. "github.com/chenbh/concourse/v6/topgun"
-	. "github.com/chenbh/concourse/v6/topgun/common"
+	. "github.com/chenbh/concourse/topgun"
+	. "github.com/chenbh/concourse/topgun/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

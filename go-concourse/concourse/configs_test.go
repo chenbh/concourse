@@ -6,8 +6,8 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

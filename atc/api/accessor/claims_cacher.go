@@ -3,7 +3,7 @@ package accessor
 import (
 	"encoding/json"
 
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 	"github.com/golang/groupcache/lru"
 )
 

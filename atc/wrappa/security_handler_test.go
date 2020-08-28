@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/chenbh/concourse/v6/atc/wrappa"
+	"github.com/chenbh/concourse/atc/wrappa"
 
-	"github.com/chenbh/concourse/v6/atc/wrappa/wrappafakes"
+	"github.com/chenbh/concourse/atc/wrappa/wrappafakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

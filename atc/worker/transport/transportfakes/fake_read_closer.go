@@ -4,7 +4,7 @@ package transportfakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/worker/transport"
+	"github.com/chenbh/concourse/atc/worker/transport"
 )
 
 type FakeReadCloser struct {

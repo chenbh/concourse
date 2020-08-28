@@ -8,10 +8,10 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/lock"
-	"github.com/chenbh/concourse/v6/atc/resource"
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/atc/resource"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 const GetResourceLockInterval = 5 * time.Second

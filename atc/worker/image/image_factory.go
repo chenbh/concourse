@@ -4,10 +4,10 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/compression"
-	"github.com/chenbh/concourse/v6/atc/worker"
-	w "github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/compression"
+	"github.com/chenbh/concourse/atc/worker"
+	w "github.com/chenbh/concourse/atc/worker"
 )
 
 var ErrUnsupportedResourceType = errors.New("unsupported resource type")

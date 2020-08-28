@@ -3,8 +3,8 @@ package db_test
 import (
 	"errors"
 
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
 	"github.com/lib/pq"
 
 	. "github.com/onsi/ginkgo"

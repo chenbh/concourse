@@ -9,10 +9,10 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/api/accessor"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/api/accessor"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/worker"
 	"github.com/gorilla/websocket"
 )
 

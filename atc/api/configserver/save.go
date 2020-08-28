@@ -8,12 +8,12 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/configvalidate"
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/exec"
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/configvalidate"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/exec"
+	"github.com/chenbh/concourse/vars"
 	"github.com/hashicorp/go-multierror"
 	"github.com/tedsuo/rata"
 )

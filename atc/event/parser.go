@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 )
 
 type eventTable map[atc.EventType]eventVersions

@@ -3,8 +3,8 @@ package present
 import (
 	"strconv"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db"
 	"github.com/tedsuo/rata"
 )
 

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/chenbh/concourse/v6/vars"
+	. "github.com/chenbh/concourse/vars"
 )
 
 var _ = Describe("StaticVariables", func() {

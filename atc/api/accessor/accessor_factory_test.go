@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/api/accessor/accessorfakes"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/api/accessor/accessorfakes"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/chenbh/concourse/v6/atc/api/accessor"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/api/accessor"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 var _ = Describe("AccessorFactory", func() {

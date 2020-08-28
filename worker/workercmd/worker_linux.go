@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc"
-	concourseCmd "github.com/chenbh/concourse/v6/cmd"
+	"github.com/chenbh/concourse/atc"
+	concourseCmd "github.com/chenbh/concourse/cmd"
 	"github.com/concourse/flag"
 	"github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"

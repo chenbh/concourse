@@ -11,11 +11,11 @@ import (
 	"runtime"
 	"time"
 
-	conc "github.com/chenbh/concourse/v6"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/ui"
-	"github.com/chenbh/concourse/v6/fly/version"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	conc "github.com/chenbh/concourse"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/ui"
+	"github.com/chenbh/concourse/fly/version"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 	semisemanticversion "github.com/cppforlife/go-semi-semantic/version"
 	"golang.org/x/oauth2"
 )

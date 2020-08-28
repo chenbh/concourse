@@ -5,8 +5,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/tsa"
-	"github.com/chenbh/concourse/v6/worker"
+	"github.com/chenbh/concourse/tsa"
+	"github.com/chenbh/concourse/worker"
 )
 
 type FakeTSAClient struct {

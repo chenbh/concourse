@@ -2,7 +2,7 @@ package integration_test
 
 import (
 	"fmt"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"io"
 	"net/http"
 	"os/exec"

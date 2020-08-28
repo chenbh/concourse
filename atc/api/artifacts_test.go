@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	. "github.com/chenbh/concourse/v6/atc/testhelpers"
-	"github.com/chenbh/concourse/v6/atc/worker"
-	"github.com/chenbh/concourse/v6/atc/worker/workerfakes"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	. "github.com/chenbh/concourse/atc/testhelpers"
+	"github.com/chenbh/concourse/atc/worker"
+	"github.com/chenbh/concourse/atc/worker/workerfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

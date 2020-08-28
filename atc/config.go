@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"sigs.k8s.io/yaml"
 
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/vars"
 )
 
 const ConfigVersionHeader = "X-Concourse-Config-Version"

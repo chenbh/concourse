@@ -8,7 +8,7 @@ import (
 
 	"github.com/onsi/gomega/ghttp"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 )
 
 var _ = Describe("ATC Info", func() {

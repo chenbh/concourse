@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/skymarshal/token"
+	"github.com/chenbh/concourse/skymarshal/token"
 )
 
 //go:generate counterfeiter net/http.Handler

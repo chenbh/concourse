@@ -8,8 +8,8 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/chenbh/concourse/v6/atc/api/auth"
-	"github.com/chenbh/concourse/v6/skymarshal/token/tokenfakes"
+	"github.com/chenbh/concourse/atc/api/auth"
+	"github.com/chenbh/concourse/skymarshal/token/tokenfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

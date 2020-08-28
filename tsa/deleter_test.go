@@ -3,11 +3,11 @@ package tsa_test
 import (
 	"context"
 
-	"github.com/chenbh/concourse/v6/tsa"
+	"github.com/chenbh/concourse/tsa"
 
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

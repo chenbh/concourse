@@ -7,8 +7,8 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/commands/internal/displayhelpers"
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 

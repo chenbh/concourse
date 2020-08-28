@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/auditor"
+	"github.com/chenbh/concourse/atc/auditor"
 )
 
 type FakeAuditor struct {

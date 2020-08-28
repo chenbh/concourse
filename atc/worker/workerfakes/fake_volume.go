@@ -8,8 +8,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/worker"
 )
 
 type FakeVolume struct {

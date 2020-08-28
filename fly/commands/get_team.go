@@ -6,10 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/fly/ui"
+	"github.com/chenbh/concourse/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/fly/ui"
 	"github.com/fatih/color"
 )
 

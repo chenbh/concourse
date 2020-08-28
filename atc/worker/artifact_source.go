@@ -6,9 +6,9 @@ import (
 	"io"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/compression"
-	"github.com/chenbh/concourse/v6/atc/runtime"
-	"github.com/chenbh/concourse/v6/tracing"
+	"github.com/chenbh/concourse/atc/compression"
+	"github.com/chenbh/concourse/atc/runtime"
+	"github.com/chenbh/concourse/tracing"
 	"github.com/hashicorp/go-multierror"
 )
 

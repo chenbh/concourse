@@ -4,8 +4,8 @@ package transportfakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/worker/transport"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/worker/transport"
 )
 
 type FakeTransportDB struct {

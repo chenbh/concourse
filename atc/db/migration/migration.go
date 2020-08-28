@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/db/encryption"
-	"github.com/chenbh/concourse/v6/atc/db/lock"
-	"github.com/chenbh/concourse/v6/atc/db/migration/migrations"
+	"github.com/chenbh/concourse/atc/db/encryption"
+	"github.com/chenbh/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/atc/db/migration/migrations"
 	"github.com/gobuffalo/packr"
 	multierror "github.com/hashicorp/go-multierror"
 	_ "github.com/lib/pq"

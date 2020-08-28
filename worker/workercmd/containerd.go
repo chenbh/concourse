@@ -14,9 +14,9 @@ import (
 	"code.cloudfoundry.org/garden/server"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/localip"
-	concourseCmd "github.com/chenbh/concourse/v6/cmd"
-	"github.com/chenbh/concourse/v6/worker/runtime"
-	"github.com/chenbh/concourse/v6/worker/runtime/libcontainerd"
+	concourseCmd "github.com/chenbh/concourse/cmd"
+	"github.com/chenbh/concourse/worker/runtime"
+	"github.com/chenbh/concourse/worker/runtime/libcontainerd"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 )

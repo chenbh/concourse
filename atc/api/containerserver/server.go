@@ -5,10 +5,10 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/gc"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/gc"
+	"github.com/chenbh/concourse/atc/worker"
 )
 
 type Server struct {

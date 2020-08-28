@@ -3,7 +3,7 @@ package wrappa
 import (
 	"code.cloudfoundry.org/lager"
 	"github.com/NYTimes/gziphandler"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 

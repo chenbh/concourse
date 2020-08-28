@@ -3,7 +3,7 @@ package wrappa
 import (
 	"fmt"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 )
 
 type LimitedRoute string

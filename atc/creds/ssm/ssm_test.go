@@ -6,14 +6,14 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/atc/creds"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
-	. "github.com/chenbh/concourse/v6/atc/creds/ssm"
-	"github.com/chenbh/concourse/v6/vars"
+	. "github.com/chenbh/concourse/atc/creds/ssm"
+	"github.com/chenbh/concourse/vars"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

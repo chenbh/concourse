@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/chenbh/concourse/v6/topgun/common"
+	. "github.com/chenbh/concourse/topgun/common"
 	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -227,8 +227,8 @@ var _ = Describe("Worker landing", func() {
 	})
 
 	//TODO: Un-pend this Context when team workers can run check containers
-	// see: - https://github.com/chenbh/concourse/v6/issues/2910
-	//      - https://github.com/chenbh/concourse/v6/issues/2951
+	// see: - https://github.com/chenbh/concourse/issues/2910
+	//      - https://github.com/chenbh/concourse/issues/2951
 	XContext("with a single team worker", func() {
 		BeforeEach(func() {
 			Deploy(

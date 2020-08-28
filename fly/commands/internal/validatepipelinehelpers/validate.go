@@ -2,12 +2,12 @@ package validatepipelinehelpers
 
 import (
 	"fmt"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 
-	"github.com/chenbh/concourse/v6/atc/configvalidate"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/displayhelpers"
-	"github.com/chenbh/concourse/v6/fly/commands/internal/templatehelpers"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	"github.com/chenbh/concourse/atc/configvalidate"
+	"github.com/chenbh/concourse/fly/commands/internal/displayhelpers"
+	"github.com/chenbh/concourse/fly/commands/internal/templatehelpers"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 	"sigs.k8s.io/yaml"
 )
 

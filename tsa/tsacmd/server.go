@@ -13,7 +13,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/chenbh/concourse/v6/tsa"
+	"github.com/chenbh/concourse/tsa"
 	"golang.org/x/crypto/ssh"
 )
 

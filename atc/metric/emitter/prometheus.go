@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/metric"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/metric"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

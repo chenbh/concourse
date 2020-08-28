@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
 
-	. "github.com/chenbh/concourse/v6/topgun"
-	. "github.com/chenbh/concourse/v6/topgun/common"
+	. "github.com/chenbh/concourse/topgun"
+	. "github.com/chenbh/concourse/topgun/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

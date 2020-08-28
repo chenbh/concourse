@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/chenbh/concourse/v6/atc/worker/transport"
+	"github.com/chenbh/concourse/atc/worker/transport"
 	"net"
 	"net/url"
 	"reflect"

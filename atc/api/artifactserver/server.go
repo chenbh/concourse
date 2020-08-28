@@ -2,7 +2,7 @@ package artifactserver
 
 import (
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc/worker"
 )
 
 type Server struct {

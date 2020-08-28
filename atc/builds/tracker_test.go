@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc/builds"
-	"github.com/chenbh/concourse/v6/atc/component"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	"github.com/chenbh/concourse/v6/atc/engine"
-	"github.com/chenbh/concourse/v6/atc/engine/enginefakes"
+	"github.com/chenbh/concourse/atc/builds"
+	"github.com/chenbh/concourse/atc/component"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/engine"
+	"github.com/chenbh/concourse/atc/engine/enginefakes"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

@@ -8,14 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/exec"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/exec/build/buildfakes"
-	"github.com/chenbh/concourse/v6/atc/exec/execfakes"
-	"github.com/chenbh/concourse/v6/atc/worker/workerfakes"
-	"github.com/chenbh/concourse/v6/vars"
-	"github.com/chenbh/concourse/v6/vars/varsfakes"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/exec"
+	"github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/exec/build/buildfakes"
+	"github.com/chenbh/concourse/atc/exec/execfakes"
+	"github.com/chenbh/concourse/atc/worker/workerfakes"
+	"github.com/chenbh/concourse/vars"
+	"github.com/chenbh/concourse/vars/varsfakes"
 )
 
 const plainString = "  pv  \n\n"

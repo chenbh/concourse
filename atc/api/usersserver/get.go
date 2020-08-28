@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/api/accessor"
 )
 
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {

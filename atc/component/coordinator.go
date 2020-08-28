@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/chenbh/concourse/v6/atc/db/lock"
+	"github.com/chenbh/concourse/atc/db/lock"
 )
 
 // Coordinator ensures that the given component is not executed concurrently.

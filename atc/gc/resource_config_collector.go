@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/metric"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/metric"
 )
 
 type resourceConfigCollector struct {

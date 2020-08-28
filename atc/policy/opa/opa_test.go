@@ -3,8 +3,8 @@ package opa_test
 import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"fmt"
-	"github.com/chenbh/concourse/v6/atc/policy"
-	"github.com/chenbh/concourse/v6/atc/policy/opa"
+	"github.com/chenbh/concourse/atc/policy"
+	"github.com/chenbh/concourse/atc/policy/opa"
 	"net/http"
 	"net/http/httptest"
 	"time"

@@ -12,7 +12,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"sigs.k8s.io/yaml"
 
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"github.com/concourse/flag"
 )
 

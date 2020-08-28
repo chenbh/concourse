@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 func (s *Server) GetArtifact(team db.Team) http.Handler {

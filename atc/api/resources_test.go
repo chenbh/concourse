@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	. "github.com/chenbh/concourse/v6/atc/testhelpers"
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	. "github.com/chenbh/concourse/atc/testhelpers"
+	"github.com/chenbh/concourse/vars"
 )
 
 var _ = Describe("Resources API", func() {

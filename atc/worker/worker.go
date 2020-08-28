@@ -19,14 +19,14 @@ import (
 	"github.com/cppforlife/go-semi-semantic/version"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/metric"
-	"github.com/chenbh/concourse/v6/atc/policy"
-	"github.com/chenbh/concourse/v6/atc/resource"
-	"github.com/chenbh/concourse/v6/atc/runtime"
-	"github.com/chenbh/concourse/v6/atc/worker/gclient"
-	"github.com/chenbh/concourse/v6/tracing"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/metric"
+	"github.com/chenbh/concourse/atc/policy"
+	"github.com/chenbh/concourse/atc/resource"
+	"github.com/chenbh/concourse/atc/runtime"
+	"github.com/chenbh/concourse/atc/worker/gclient"
+	"github.com/chenbh/concourse/tracing"
 )
 
 const userPropertyName = "user"

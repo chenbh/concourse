@@ -6,10 +6,10 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/worker"
 )
 
 type ArtifactNotFoundError struct {

@@ -10,10 +10,10 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/creds/credsfakes"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/creds/credsfakes"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/event"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

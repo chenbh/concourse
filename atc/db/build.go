@@ -13,10 +13,10 @@ import (
 	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/api/propagators"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db/encryption"
-	"github.com/chenbh/concourse/v6/atc/db/lock"
-	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db/encryption"
+	"github.com/chenbh/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/atc/event"
 )
 
 const schema = "exec.v2"

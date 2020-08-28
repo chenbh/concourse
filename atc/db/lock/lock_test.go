@@ -7,10 +7,10 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/lock"
-	"github.com/chenbh/concourse/v6/atc/db/lock/lockfakes"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/lock"
+	"github.com/chenbh/concourse/atc/db/lock/lockfakes"
 	"github.com/lib/pq"
 
 	. "github.com/onsi/ginkgo"

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/api/present"
-	"github.com/chenbh/concourse/v6/atc/creds"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/api/present"
+	"github.com/chenbh/concourse/atc/creds"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 func (s *Server) ListContainers(team db.Team) http.Handler {

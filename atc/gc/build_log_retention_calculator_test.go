@@ -1,8 +1,8 @@
 package gc_test
 
 import (
-	"github.com/chenbh/concourse/v6/atc"
-	. "github.com/chenbh/concourse/v6/atc/gc"
+	"github.com/chenbh/concourse/atc"
+	. "github.com/chenbh/concourse/atc/gc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

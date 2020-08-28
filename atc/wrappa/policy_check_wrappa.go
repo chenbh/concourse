@@ -2,7 +2,7 @@ package wrappa
 
 import (
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/api/policychecker"
+	"github.com/chenbh/concourse/atc/api/policychecker"
 	"github.com/tedsuo/rata"
 )
 

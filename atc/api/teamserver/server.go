@@ -2,7 +2,7 @@ package teamserver
 
 import (
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 type Server struct {

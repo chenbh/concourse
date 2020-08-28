@@ -3,17 +3,17 @@ package buildserver_test
 import (
 	"encoding/json"
 	"errors"
-	. "github.com/chenbh/concourse/v6/atc/testhelpers"
+	. "github.com/chenbh/concourse/atc/testhelpers"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"time"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/chenbh/concourse/v6/atc/api/buildserver"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	"github.com/chenbh/concourse/v6/atc/event"
+	. "github.com/chenbh/concourse/atc/api/buildserver"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/event"
 	"github.com/vito/go-sse/sse"
 
 	. "github.com/onsi/ginkgo"

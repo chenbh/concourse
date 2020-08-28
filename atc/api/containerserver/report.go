@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc/metric"
+	"github.com/chenbh/concourse/atc/metric"
 
 	"code.cloudfoundry.org/lager"
 )

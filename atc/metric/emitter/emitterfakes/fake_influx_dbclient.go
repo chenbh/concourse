@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc/metric/emitter"
+	"github.com/chenbh/concourse/atc/metric/emitter"
 	client "github.com/influxdata/influxdb1-client/v2"
 )
 

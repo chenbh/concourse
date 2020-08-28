@@ -6,9 +6,9 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 )
 
 type PipelineFlag string

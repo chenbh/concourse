@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/api/present"
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/api/present"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 func (s *Server) GetBuildPreparation(build db.Build) http.Handler {

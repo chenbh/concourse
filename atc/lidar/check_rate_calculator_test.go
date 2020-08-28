@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc/lidar"
-	"github.com/chenbh/concourse/v6/atc/lidar/lidarfakes"
+	"github.com/chenbh/concourse/atc/lidar"
+	"github.com/chenbh/concourse/atc/lidar/lidarfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"

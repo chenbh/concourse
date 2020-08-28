@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/chenbh/concourse/v6/atc"
+	"github.com/chenbh/concourse/atc"
 	"go.opentelemetry.io/otel/api/propagators"
 )
 

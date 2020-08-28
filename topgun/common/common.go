@@ -26,8 +26,8 @@ import (
 	bclient "github.com/concourse/baggageclaim/client"
 	"golang.org/x/oauth2"
 
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
-	. "github.com/chenbh/concourse/v6/topgun"
+	"github.com/chenbh/concourse/go-concourse/concourse"
+	. "github.com/chenbh/concourse/topgun"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"

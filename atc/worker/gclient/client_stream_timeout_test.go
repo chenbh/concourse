@@ -7,8 +7,8 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/lager"
-	"github.com/chenbh/concourse/v6/atc/worker/gclient"
-	"github.com/chenbh/concourse/v6/atc/worker/transport/transportfakes"
+	"github.com/chenbh/concourse/atc/worker/gclient"
+	"github.com/chenbh/concourse/atc/worker/transport/transportfakes"
 	"github.com/concourse/retryhttp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

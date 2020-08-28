@@ -3,7 +3,7 @@ package build
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 // ArtifactName is just a string, with its own type to make interfaces using it

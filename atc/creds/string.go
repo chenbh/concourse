@@ -1,6 +1,6 @@
 package creds
 
-import "github.com/chenbh/concourse/v6/vars"
+import "github.com/chenbh/concourse/vars"
 
 type String struct {
 	variablesResolver vars.Variables

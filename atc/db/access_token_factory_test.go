@@ -1,7 +1,7 @@
 package db_test
 
 import (
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	. "github.com/onsi/ginkgo"

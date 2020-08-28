@@ -3,8 +3,8 @@ package wrappa_test
 import (
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/wrappa"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/wrappa"
 	"github.com/tedsuo/rata"
 
 	. "github.com/onsi/ginkgo"

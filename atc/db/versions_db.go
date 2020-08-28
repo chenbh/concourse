@@ -10,8 +10,8 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/tracing"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/tracing"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel/api/key"
 	"go.opentelemetry.io/otel/api/trace"

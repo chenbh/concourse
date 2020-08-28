@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 )
 
 var (

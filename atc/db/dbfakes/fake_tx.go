@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/db/encryption"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/db/encryption"
 )
 
 type FakeTx struct {

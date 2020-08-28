@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/chenbh/concourse/v6/fly/commands/internal/flaghelpers"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/go-concourse/concourse"
+	"github.com/chenbh/concourse/fly/commands/internal/flaghelpers"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/go-concourse/concourse"
 )
 
 type UnpauseJobCommand struct {

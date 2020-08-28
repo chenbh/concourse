@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc/creds"
+	"github.com/chenbh/concourse/atc/creds"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/aws/aws-sdk-go/aws/awserr"

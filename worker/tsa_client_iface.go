@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 
-	"github.com/chenbh/concourse/v6/tsa"
+	"github.com/chenbh/concourse/tsa"
 )
 
 //go:generate counterfeiter . TSAClient

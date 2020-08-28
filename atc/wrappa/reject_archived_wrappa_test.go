@@ -1,10 +1,10 @@
 package wrappa_test
 
 import (
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/api/pipelineserver"
-	"github.com/chenbh/concourse/v6/atc/db/dbfakes"
-	"github.com/chenbh/concourse/v6/atc/wrappa"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/api/pipelineserver"
+	"github.com/chenbh/concourse/atc/db/dbfakes"
+	"github.com/chenbh/concourse/atc/wrappa"
 	"github.com/tedsuo/rata"
 
 	. "github.com/onsi/ginkgo"

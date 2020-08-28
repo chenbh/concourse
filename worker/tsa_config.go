@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/tsa"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/tsa"
 	"github.com/concourse/flag"
 )
 

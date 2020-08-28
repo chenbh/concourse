@@ -1,9 +1,10 @@
 #!/bin/bash
 
 system=$(uname -s)
+pattern='s/github.com\/chenbh\/concourse\/v6/github.com\/chenbh\/concourse/g' 
 case $system in
   Linux*)    
-    find . -type f -name "*.go" -exec sed -i 's/github.com\/concourse\/concourse/github.com\/chenbh\/concourse\/v6/g' {} +;;
+    find . -type f -name "*.go" -exec sed -i $pattern {} +;;
   Darwin*)    
-    find . -type f -name "*.go" -exec sed -i '' 's/github.com\/concourse\/concourse/github.com\/chenbh\/concourse\/v6/g' {} +;;
+    find . -type f -name "*.go" -exec sed -i '' $pattern {} +;;
 esac

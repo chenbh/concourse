@@ -4,8 +4,8 @@ package dbfakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/atc/event"
 )
 
 type FakeEventSource struct {

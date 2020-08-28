@@ -13,8 +13,8 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/event"
 )
 
 var _ = Describe("Watching", func() {

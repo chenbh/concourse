@@ -75,7 +75,7 @@ var _ = Describe("DNS Resolution", func() {
 		DescribeTable("different proxy settings",
 			func(c Case) {
 				if runtime == containerdRuntime && c.enableDnsProxy == "false" {
-					Skip("Skip test until https://github.com/chenbh/concourse/v6/issues/5967 is resolv'ed :P")
+					Skip("Skip test until https://github.com/chenbh/concourse/issues/5967 is resolv'ed :P")
 				}
 				setupDeployment(runtime, c.enableDnsProxy, c.dnsServer)
 

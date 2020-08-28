@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/chenbh/concourse/v6"
-	"github.com/chenbh/concourse/v6/fly/version"
+	"github.com/chenbh/concourse"
+	"github.com/chenbh/concourse/fly/version"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -33,8 +33,8 @@ var _ = Describe("Version Checks", func() {
 
 	JustBeforeEach(func() {
 		flyPath, err := gexec.Build(
-			"github.com/chenbh/concourse/v6/fly",
-			"-ldflags", fmt.Sprintf("-X github.com/chenbh/concourse/v6.Version=%s", flyVersion),
+			"github.com/chenbh/concourse/fly",
+			"-ldflags", fmt.Sprintf("-X github.com/chenbh/concourse.Version=%s", flyVersion),
 		)
 		Expect(err).NotTo(HaveOccurred())
 

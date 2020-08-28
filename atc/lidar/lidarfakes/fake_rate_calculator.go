@@ -4,7 +4,7 @@ package lidarfakes
 import (
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc/lidar"
+	"github.com/chenbh/concourse/atc/lidar"
 )
 
 type FakeRateCalculator struct {

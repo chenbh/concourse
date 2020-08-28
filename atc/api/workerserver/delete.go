@@ -3,7 +3,7 @@ package workerserver
 import (
 	"net/http"
 
-	"github.com/chenbh/concourse/v6/atc/api/accessor"
+	"github.com/chenbh/concourse/atc/api/accessor"
 )
 
 func (s *Server) DeleteWorker(w http.ResponseWriter, r *http.Request) {

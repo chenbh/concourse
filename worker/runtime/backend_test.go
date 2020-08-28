@@ -9,9 +9,9 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
-	"github.com/chenbh/concourse/v6/worker/runtime"
-	"github.com/chenbh/concourse/v6/worker/runtime/libcontainerd/libcontainerdfakes"
-	"github.com/chenbh/concourse/v6/worker/runtime/runtimefakes"
+	"github.com/chenbh/concourse/worker/runtime"
+	"github.com/chenbh/concourse/worker/runtime/libcontainerd/libcontainerdfakes"
+	"github.com/chenbh/concourse/worker/runtime/runtimefakes"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/errdefs"
 	"github.com/opencontainers/runtime-spec/specs-go"

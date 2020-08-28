@@ -11,10 +11,10 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/worker"
-	"github.com/chenbh/concourse/v6/vars"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/worker"
+	"github.com/chenbh/concourse/vars"
 	"sigs.k8s.io/yaml"
 )
 

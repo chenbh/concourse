@@ -5,9 +5,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/resource"
-	"github.com/chenbh/concourse/v6/atc/runtime"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/resource"
+	"github.com/chenbh/concourse/atc/runtime"
 )
 
 type FakeResource struct {

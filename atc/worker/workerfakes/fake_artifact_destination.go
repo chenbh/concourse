@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/concourse/baggageclaim"
-	"github.com/chenbh/concourse/v6/atc/worker"
+	"github.com/chenbh/concourse/atc/worker"
 )
 
 type FakeArtifactDestination struct {

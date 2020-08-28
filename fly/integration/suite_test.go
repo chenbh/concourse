@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/db"
-	"github.com/chenbh/concourse/v6/fly/rc"
-	"github.com/chenbh/concourse/v6/skymarshal/token"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/db"
+	"github.com/chenbh/concourse/fly/rc"
+	"github.com/chenbh/concourse/skymarshal/token"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -46,7 +46,7 @@ var teams = []atc.Team{
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	binPath, err := gexec.Build("github.com/chenbh/concourse/v6/fly")
+	binPath, err := gexec.Build("github.com/chenbh/concourse/fly")
 	Expect(err).NotTo(HaveOccurred())
 
 	return []byte(binPath)

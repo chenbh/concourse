@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/chenbh/concourse/v6/atc"
-	"github.com/chenbh/concourse/v6/atc/event"
+	"github.com/chenbh/concourse/atc"
+	"github.com/chenbh/concourse/atc/event"
 )
 
 var ErrEndOfBuildEventStream = errors.New("end of build event stream")

@@ -1,7 +1,7 @@
 package algorithm_test
 
 import (
-	"github.com/chenbh/concourse/v6/atc/db"
+	"github.com/chenbh/concourse/atc/db"
 	. "github.com/onsi/ginkgo/extensions/table"
 )
 

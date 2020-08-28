@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	. "github.com/chenbh/concourse/v6/atc/exec"
-	"github.com/chenbh/concourse/v6/atc/exec/build"
-	"github.com/chenbh/concourse/v6/atc/exec/execfakes"
+	. "github.com/chenbh/concourse/atc/exec"
+	"github.com/chenbh/concourse/atc/exec/build"
+	"github.com/chenbh/concourse/atc/exec/execfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
