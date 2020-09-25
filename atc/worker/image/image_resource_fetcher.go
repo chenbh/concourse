@@ -6,10 +6,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/compression"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/resource"
@@ -32,9 +32,9 @@ type ImageResourceFetcherFactory interface {
 	NewImageResourceFetcher(
 		worker.Worker,
 		worker.ImageResource,
-		atc.Version,
+		types.Version,
 		int,
-		atc.VersionedResourceTypes,
+		types.VersionedResourceTypes,
 		worker.ImageFetchingDelegate,
 		compression.Compression,
 	) ImageResourceFetcher
@@ -48,7 +48,7 @@ type ImageResourceFetcher interface {
 		logger lager.Logger,
 		container db.CreatingContainer,
 		privileged bool,
-	) (worker.Volume, io.ReadCloser, atc.Version, error)
+	) (worker.Volume, io.ReadCloser, types.Version, error)
 }
 
 type imageResourceFetcherFactory struct {
@@ -75,9 +75,9 @@ func NewImageResourceFetcherFactory(
 func (f *imageResourceFetcherFactory) NewImageResourceFetcher(
 	worker worker.Worker,
 	imageResource worker.ImageResource,
-	version atc.Version,
+	version types.Version,
 	teamID int,
-	customTypes atc.VersionedResourceTypes,
+	customTypes types.VersionedResourceTypes,
 	imageFetchingDelegate worker.ImageFetchingDelegate,
 	compression compression.Compression,
 ) ImageResourceFetcher {
@@ -105,9 +105,9 @@ type imageResourceFetcher struct {
 	dbResourceConfigFactory db.ResourceConfigFactory
 
 	imageResource         worker.ImageResource
-	version               atc.Version
+	version               types.Version
 	teamID                int
-	customTypes           atc.VersionedResourceTypes
+	customTypes           types.VersionedResourceTypes
 	imageFetchingDelegate worker.ImageFetchingDelegate
 	compression           compression.Compression
 }
@@ -117,7 +117,7 @@ func (i *imageResourceFetcher) Fetch(
 	logger lager.Logger,
 	container db.CreatingContainer,
 	privileged bool,
-) (worker.Volume, io.ReadCloser, atc.Version, error) {
+) (worker.Volume, io.ReadCloser, types.Version, error) {
 	version := i.version
 	if version == nil {
 		var err error
@@ -236,7 +236,7 @@ func (i *imageResourceFetcher) ensureVersionOfType(
 	ctx context.Context,
 	logger lager.Logger,
 	container db.CreatingContainer,
-	resourceType atc.VersionedResourceType,
+	resourceType types.VersionedResourceType,
 ) error {
 	containerSpec := worker.ContainerSpec{
 		ImageSpec: worker.ImageSpec{
@@ -289,7 +289,7 @@ func (i *imageResourceFetcher) getLatestVersion(
 	ctx context.Context,
 	logger lager.Logger,
 	container db.CreatingContainer,
-) (atc.Version, error) {
+) (types.Version, error) {
 
 	resourceType, found := i.customTypes.Lookup(i.imageResource.Type)
 	if found && resourceType.Version == nil {

@@ -1,11 +1,11 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"os/exec"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -34,7 +34,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-							ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+							ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 								{Name: "pipeline-1-longer", Paused: false, Public: false, LastUpdated: 1},
 								{Name: "pipeline-2", Paused: true, Public: false, LastUpdated: 1},
 								{Name: "pipeline-3", Paused: false, Public: true, LastUpdated: 1},
@@ -121,7 +121,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/pipelines"),
-							ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+							ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 								{Name: "pipeline-1-longer", Paused: false, Public: false, TeamName: "main", LastUpdated: 1},
 								{Name: "pipeline-2", Paused: true, Public: false, TeamName: "main", LastUpdated: 1},
 								{Name: "pipeline-3", Paused: false, Public: true, TeamName: "main", LastUpdated: 1},
@@ -235,7 +235,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-							ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+							ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 								{Name: "pipeline-1-longer", Paused: false, Public: false, TeamName: "main", LastUpdated: 1},
 								{Name: "archived-pipeline", Paused: true, Archived: true, Public: true, TeamName: "main", LastUpdated: 1},
 							}),
@@ -267,7 +267,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-							ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+							ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 								{Name: "some-pipeline-1", Paused: false, Public: false, LastUpdated: 1},
 								{Name: "some-pipeline-2", Paused: false, Public: false, LastUpdated: 1},
 								{Name: "another-pipeline", Paused: false, Public: false, LastUpdated: 1},
@@ -306,7 +306,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{}),
+						ghttp.RespondWithJSONEncoded(200, []types.Pipeline{}),
 					),
 				)
 			})

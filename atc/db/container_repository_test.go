@@ -1,10 +1,10 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/lib/pq"
 
@@ -29,8 +29,8 @@ var _ = Describe("ContainerRepository", func() {
 				var err error
 				resourceConfig, err = resourceConfigFactory.FindOrCreateResourceConfig(
 					"some-base-resource-type",
-					atc.Source{"some": "source"},
-					atc.VersionedResourceTypes{},
+					types.Source{"some": "source"},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -162,7 +162,7 @@ var _ = Describe("ContainerRepository", func() {
 					newlyUpdatedWorker := defaultWorkerPayload
 					newlyUpdatedResource := defaultWorkerPayload.ResourceTypes[0]
 					newlyUpdatedResource.Version = newlyUpdatedResource.Version + "-new"
-					newlyUpdatedWorker.ResourceTypes = []atc.WorkerResourceType{newlyUpdatedResource}
+					newlyUpdatedWorker.ResourceTypes = []types.WorkerResourceType{newlyUpdatedResource}
 
 					defaultWorker, err = workerFactory.SaveWorker(newlyUpdatedWorker, 0)
 					Expect(err).NotTo(HaveOccurred())
@@ -454,7 +454,7 @@ var _ = Describe("ContainerRepository", func() {
 			BeforeEach(func() {
 				result, err := psql.Insert("containers").
 					SetMap(map[string]interface{}{
-						"state":       atc.ContainerStateFailed,
+						"state":       types.ContainerStateFailed,
 						"handle":      "123-456-abc-def",
 						"worker_name": defaultWorker.Name(),
 					}).RunWith(dbConn).Exec()
@@ -599,14 +599,14 @@ var _ = Describe("ContainerRepository", func() {
 
 			_, err = psql.Insert("containers").SetMap(map[string]interface{}{
 				"handle":      "created-handle-1",
-				"state":       atc.ContainerStateCreated,
+				"state":       types.ContainerStateCreated,
 				"worker_name": "running-worker",
 			}).RunWith(dbConn).Exec()
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = psql.Insert("containers").SetMap(map[string]interface{}{
 				"handle":        "created-handle-2",
-				"state":         atc.ContainerStateCreated,
+				"state":         types.ContainerStateCreated,
 				"worker_name":   "running-worker",
 				"missing_since": today.Add(-5 * time.Minute),
 			}).RunWith(dbConn).Exec()
@@ -614,7 +614,7 @@ var _ = Describe("ContainerRepository", func() {
 
 			_, err = psql.Insert("containers").SetMap(map[string]interface{}{
 				"handle":        "failed-handle-3",
-				"state":         atc.ContainerStateFailed,
+				"state":         types.ContainerStateFailed,
 				"worker_name":   "running-worker",
 				"missing_since": today.Add(-5 * time.Minute),
 			}).RunWith(dbConn).Exec()
@@ -622,7 +622,7 @@ var _ = Describe("ContainerRepository", func() {
 
 			_, err = psql.Insert("containers").SetMap(map[string]interface{}{
 				"handle":        "destroying-handle-4",
-				"state":         atc.ContainerStateDestroying,
+				"state":         types.ContainerStateDestroying,
 				"worker_name":   "running-worker",
 				"missing_since": today.Add(-10 * time.Minute),
 			}).RunWith(dbConn).Exec()
@@ -689,7 +689,7 @@ var _ = Describe("ContainerRepository", func() {
 
 				_, err = psql.Insert("containers").SetMap(map[string]interface{}{
 					"handle":        "stalled-handle-5",
-					"state":         atc.ContainerStateCreated,
+					"state":         types.ContainerStateCreated,
 					"worker_name":   "stalled-worker",
 					"missing_since": today.Add(-10 * time.Minute),
 				}).RunWith(dbConn).Exec()
@@ -763,7 +763,7 @@ var _ = Describe("ContainerRepository", func() {
 				BeforeEach(func() {
 					handles = []string{"some-handle1", "some-handle2"}
 					result, err := psql.Insert("containers").SetMap(map[string]interface{}{
-						"state":       atc.ContainerStateDestroying,
+						"state":       types.ContainerStateDestroying,
 						"handle":      "123-456-abc-def",
 						"worker_name": defaultWorker.Name(),
 					}).RunWith(dbConn).Exec()
@@ -790,7 +790,7 @@ var _ = Describe("ContainerRepository", func() {
 				BeforeEach(func() {
 					handles = []string{}
 					result, err := psql.Insert("containers").SetMap(map[string]interface{}{
-						"state":       atc.ContainerStateDestroying,
+						"state":       types.ContainerStateDestroying,
 						"handle":      "123-456-abc-def",
 						"worker_name": defaultWorker.Name(),
 					}).RunWith(dbConn).Exec()
@@ -913,7 +913,7 @@ var _ = Describe("ContainerRepository", func() {
 
 		BeforeEach(func() {
 			result, err := psql.Insert("containers").SetMap(map[string]interface{}{
-				"state":       atc.ContainerStateDestroying,
+				"state":       types.ContainerStateDestroying,
 				"handle":      "some-handle1",
 				"worker_name": defaultWorker.Name(),
 			}).RunWith(dbConn).Exec()
@@ -922,7 +922,7 @@ var _ = Describe("ContainerRepository", func() {
 			Expect(result.RowsAffected()).To(Equal(int64(1)))
 
 			result, err = psql.Insert("containers").SetMap(map[string]interface{}{
-				"state":       atc.ContainerStateDestroying,
+				"state":       types.ContainerStateDestroying,
 				"handle":      "some-handle2",
 				"worker_name": defaultWorker.Name(),
 			}).RunWith(dbConn).Exec()
@@ -933,7 +933,7 @@ var _ = Describe("ContainerRepository", func() {
 			today = time.Date(2018, 9, 24, 0, 0, 0, 0, time.UTC)
 
 			result, err = psql.Insert("containers").SetMap(map[string]interface{}{
-				"state":         atc.ContainerStateCreated,
+				"state":         types.ContainerStateCreated,
 				"handle":        "some-handle3",
 				"worker_name":   defaultWorker.Name(),
 				"missing_since": today,
@@ -957,7 +957,7 @@ var _ = Describe("ContainerRepository", func() {
 					result, err := psql.Update("containers").
 						Where(sq.Eq{"handle": "some-handle3"}).
 						SetMap(map[string]interface{}{
-							"state":         atc.ContainerStateCreating,
+							"state":         types.ContainerStateCreating,
 							"missing_since": nil,
 						}).RunWith(dbConn).Exec()
 					Expect(err).NotTo(HaveOccurred())
@@ -1055,7 +1055,7 @@ var _ = Describe("ContainerRepository", func() {
 
 		BeforeEach(func() {
 			result, err := psql.Insert("containers").SetMap(map[string]interface{}{
-				"state":       atc.ContainerStateDestroying,
+				"state":       types.ContainerStateDestroying,
 				"handle":      "some-handle1",
 				"worker_name": defaultWorker.Name(),
 			}).RunWith(dbConn).Exec()
@@ -1064,7 +1064,7 @@ var _ = Describe("ContainerRepository", func() {
 			Expect(result.RowsAffected()).To(Equal(int64(1)))
 
 			result, err = psql.Insert("containers").SetMap(map[string]interface{}{
-				"state":       atc.ContainerStateCreated,
+				"state":       types.ContainerStateCreated,
 				"handle":      "some-handle2",
 				"worker_name": defaultWorker.Name(),
 			}).RunWith(dbConn).Exec()
@@ -1088,7 +1088,7 @@ var _ = Describe("ContainerRepository", func() {
 			It("adds new destroying containers to the database", func() {
 				result, err := psql.Select("handle").
 					From("containers").
-					Where(sq.Eq{"state": atc.ContainerStateDestroying}).
+					Where(sq.Eq{"state": types.ContainerStateDestroying}).
 					RunWith(dbConn).Query()
 
 				Expect(err).ToNot(HaveOccurred())
@@ -1105,7 +1105,7 @@ var _ = Describe("ContainerRepository", func() {
 			It("does not affect containers in any other state", func() {
 				rows, err := psql.Select("handle").
 					From("containers").
-					Where(sq.Eq{"state": atc.ContainerStateCreated}).
+					Where(sq.Eq{"state": types.ContainerStateCreated}).
 					RunWith(dbConn).Query()
 
 				Expect(err).ToNot(HaveOccurred())
@@ -1133,7 +1133,7 @@ var _ = Describe("ContainerRepository", func() {
 
 				rows, err := psql.Select("handle").
 					From("containers").
-					Where(sq.Eq{"state": atc.ContainerStateDestroying}).
+					Where(sq.Eq{"state": types.ContainerStateDestroying}).
 					RunWith(dbConn).Query()
 
 				Expect(err).ToNot(HaveOccurred())

@@ -1,23 +1,23 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) BuildInputsForJob(pipelineName string, jobName string) ([]atc.BuildInput, bool, error) {
+func (team *team) BuildInputsForJob(pipelineName string, jobName string) ([]types.BuildInput, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"job_name":      jobName,
 		"team_name":     team.name,
 	}
 
-	var buildInputs []atc.BuildInput
+	var buildInputs []types.BuildInput
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListJobInputs,
+		RequestName: types.ListJobInputs,
 		Params:      params,
 	}, &internal.Response{
 		Result: &buildInputs,
@@ -33,7 +33,7 @@ func (team *team) BuildInputsForJob(pipelineName string, jobName string) ([]atc.
 	}
 }
 
-func (team *team) BuildsWithVersionAsInput(pipelineName string, resourceName string, resourceVersionID int) ([]atc.Build, bool, error) {
+func (team *team) BuildsWithVersionAsInput(pipelineName string, resourceName string, resourceVersionID int) ([]types.Build, bool, error) {
 	params := rata.Params{
 		"pipeline_name":              pipelineName,
 		"resource_name":              resourceName,
@@ -41,9 +41,9 @@ func (team *team) BuildsWithVersionAsInput(pipelineName string, resourceName str
 		"team_name":                  team.name,
 	}
 
-	var builds []atc.Build
+	var builds []types.Build
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListBuildsWithVersionAsInput,
+		RequestName: types.ListBuildsWithVersionAsInput,
 		Params:      params,
 	}, &internal.Response{
 		Result: &builds,

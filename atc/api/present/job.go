@@ -1,20 +1,20 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
 func Job(
 	teamName string,
 	job db.Job,
-	inputs []atc.JobInput,
-	outputs []atc.JobOutput,
+	inputs []types.JobInput,
+	outputs []types.JobOutput,
 	finishedBuild db.Build,
 	nextBuild db.Build,
 	transitionBuild db.Build,
-) atc.Job {
-	var presentedNextBuild, presentedFinishedBuild, presentedTransitionBuild *atc.Build
+) types.Job {
+	var presentedNextBuild, presentedFinishedBuild, presentedTransitionBuild *types.Build
 
 	if nextBuild != nil {
 		presented := Build(nextBuild)
@@ -31,9 +31,9 @@ func Job(
 		presentedTransitionBuild = &presented
 	}
 
-	sanitizedInputs := []atc.JobInput{}
+	sanitizedInputs := []types.JobInput{}
 	for _, input := range inputs {
-		sanitizedInputs = append(sanitizedInputs, atc.JobInput{
+		sanitizedInputs = append(sanitizedInputs, types.JobInput{
 			Name:     input.Name,
 			Resource: input.Resource,
 			Passed:   input.Passed,
@@ -41,15 +41,15 @@ func Job(
 		})
 	}
 
-	sanitizedOutputs := []atc.JobOutput{}
+	sanitizedOutputs := []types.JobOutput{}
 	for _, output := range outputs {
-		sanitizedOutputs = append(sanitizedOutputs, atc.JobOutput{
+		sanitizedOutputs = append(sanitizedOutputs, types.JobOutput{
 			Name:     output.Name,
 			Resource: output.Resource,
 		})
 	}
 
-	return atc.Job{
+	return types.Job{
 		ID: job.ID(),
 
 		Name:                 job.Name(),

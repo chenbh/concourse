@@ -3,18 +3,18 @@ package imagefakes
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/worker"
 	"github.com/concourse/concourse/atc/worker/image"
 )
 
 type FakeImageResourceFetcher struct {
-	FetchStub        func(context.Context, lager.Logger, db.CreatingContainer, bool) (worker.Volume, io.ReadCloser, atc.Version, error)
+	FetchStub        func(context.Context, lager.Logger, db.CreatingContainer, bool) (worker.Volume, io.ReadCloser, types.Version, error)
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
 		arg1 context.Context
@@ -25,20 +25,20 @@ type FakeImageResourceFetcher struct {
 	fetchReturns struct {
 		result1 worker.Volume
 		result2 io.ReadCloser
-		result3 atc.Version
+		result3 types.Version
 		result4 error
 	}
 	fetchReturnsOnCall map[int]struct {
 		result1 worker.Volume
 		result2 io.ReadCloser
-		result3 atc.Version
+		result3 types.Version
 		result4 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImageResourceFetcher) Fetch(arg1 context.Context, arg2 lager.Logger, arg3 db.CreatingContainer, arg4 bool) (worker.Volume, io.ReadCloser, atc.Version, error) {
+func (fake *FakeImageResourceFetcher) Fetch(arg1 context.Context, arg2 lager.Logger, arg3 db.CreatingContainer, arg4 bool) (worker.Volume, io.ReadCloser, types.Version, error) {
 	fake.fetchMutex.Lock()
 	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
@@ -65,7 +65,7 @@ func (fake *FakeImageResourceFetcher) FetchCallCount() int {
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeImageResourceFetcher) FetchCalls(stub func(context.Context, lager.Logger, db.CreatingContainer, bool) (worker.Volume, io.ReadCloser, atc.Version, error)) {
+func (fake *FakeImageResourceFetcher) FetchCalls(stub func(context.Context, lager.Logger, db.CreatingContainer, bool) (worker.Volume, io.ReadCloser, types.Version, error)) {
 	fake.fetchMutex.Lock()
 	defer fake.fetchMutex.Unlock()
 	fake.FetchStub = stub
@@ -78,19 +78,19 @@ func (fake *FakeImageResourceFetcher) FetchArgsForCall(i int) (context.Context, 
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
-func (fake *FakeImageResourceFetcher) FetchReturns(result1 worker.Volume, result2 io.ReadCloser, result3 atc.Version, result4 error) {
+func (fake *FakeImageResourceFetcher) FetchReturns(result1 worker.Volume, result2 io.ReadCloser, result3 types.Version, result4 error) {
 	fake.fetchMutex.Lock()
 	defer fake.fetchMutex.Unlock()
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
 		result1 worker.Volume
 		result2 io.ReadCloser
-		result3 atc.Version
+		result3 types.Version
 		result4 error
 	}{result1, result2, result3, result4}
 }
 
-func (fake *FakeImageResourceFetcher) FetchReturnsOnCall(i int, result1 worker.Volume, result2 io.ReadCloser, result3 atc.Version, result4 error) {
+func (fake *FakeImageResourceFetcher) FetchReturnsOnCall(i int, result1 worker.Volume, result2 io.ReadCloser, result3 types.Version, result4 error) {
 	fake.fetchMutex.Lock()
 	defer fake.fetchMutex.Unlock()
 	fake.FetchStub = nil
@@ -98,14 +98,14 @@ func (fake *FakeImageResourceFetcher) FetchReturnsOnCall(i int, result1 worker.V
 		fake.fetchReturnsOnCall = make(map[int]struct {
 			result1 worker.Volume
 			result2 io.ReadCloser
-			result3 atc.Version
+			result3 types.Version
 			result4 error
 		})
 	}
 	fake.fetchReturnsOnCall[i] = struct {
 		result1 worker.Volume
 		result2 io.ReadCloser
-		result3 atc.Version
+		result3 types.Version
 		result4 error
 	}{result1, result2, result3, result4}
 }

@@ -2,6 +2,7 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
@@ -22,15 +23,15 @@ type FakeTeam struct {
 	adminReturnsOnCall map[int]struct {
 		result1 bool
 	}
-	AuthStub        func() atc.TeamAuth
+	AuthStub        func() types.TeamAuth
 	authMutex       sync.RWMutex
 	authArgsForCall []struct {
 	}
 	authReturns struct {
-		result1 atc.TeamAuth
+		result1 types.TeamAuth
 	}
 	authReturnsOnCall map[int]struct {
-		result1 atc.TeamAuth
+		result1 types.TeamAuth
 	}
 	BuildsStub        func(db.Page) ([]db.Build, db.Pagination, error)
 	buildsMutex       sync.RWMutex
@@ -339,11 +340,11 @@ type FakeTeam struct {
 	renameReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SavePipelineStub        func(string, atc.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)
+	SavePipelineStub        func(string, types.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)
 	savePipelineMutex       sync.RWMutex
 	savePipelineArgsForCall []struct {
 		arg1 string
-		arg2 atc.Config
+		arg2 types.Config
 		arg3 db.ConfigVersion
 		arg4 bool
 	}
@@ -357,10 +358,10 @@ type FakeTeam struct {
 		result2 bool
 		result3 error
 	}
-	SaveWorkerStub        func(atc.Worker, time.Duration) (db.Worker, error)
+	SaveWorkerStub        func(types.Worker, time.Duration) (db.Worker, error)
 	saveWorkerMutex       sync.RWMutex
 	saveWorkerArgsForCall []struct {
-		arg1 atc.Worker
+		arg1 types.Worker
 		arg2 time.Duration
 	}
 	saveWorkerReturns struct {
@@ -371,10 +372,10 @@ type FakeTeam struct {
 		result1 db.Worker
 		result2 error
 	}
-	UpdateProviderAuthStub        func(atc.TeamAuth) error
+	UpdateProviderAuthStub        func(types.TeamAuth) error
 	updateProviderAuthMutex       sync.RWMutex
 	updateProviderAuthArgsForCall []struct {
-		arg1 atc.TeamAuth
+		arg1 types.TeamAuth
 	}
 	updateProviderAuthReturns struct {
 		result1 error
@@ -450,7 +451,7 @@ func (fake *FakeTeam) AdminReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
-func (fake *FakeTeam) Auth() atc.TeamAuth {
+func (fake *FakeTeam) Auth() types.TeamAuth {
 	fake.authMutex.Lock()
 	ret, specificReturn := fake.authReturnsOnCall[len(fake.authArgsForCall)]
 	fake.authArgsForCall = append(fake.authArgsForCall, struct {
@@ -473,32 +474,32 @@ func (fake *FakeTeam) AuthCallCount() int {
 	return len(fake.authArgsForCall)
 }
 
-func (fake *FakeTeam) AuthCalls(stub func() atc.TeamAuth) {
+func (fake *FakeTeam) AuthCalls(stub func() types.TeamAuth) {
 	fake.authMutex.Lock()
 	defer fake.authMutex.Unlock()
 	fake.AuthStub = stub
 }
 
-func (fake *FakeTeam) AuthReturns(result1 atc.TeamAuth) {
+func (fake *FakeTeam) AuthReturns(result1 types.TeamAuth) {
 	fake.authMutex.Lock()
 	defer fake.authMutex.Unlock()
 	fake.AuthStub = nil
 	fake.authReturns = struct {
-		result1 atc.TeamAuth
+		result1 types.TeamAuth
 	}{result1}
 }
 
-func (fake *FakeTeam) AuthReturnsOnCall(i int, result1 atc.TeamAuth) {
+func (fake *FakeTeam) AuthReturnsOnCall(i int, result1 types.TeamAuth) {
 	fake.authMutex.Lock()
 	defer fake.authMutex.Unlock()
 	fake.AuthStub = nil
 	if fake.authReturnsOnCall == nil {
 		fake.authReturnsOnCall = make(map[int]struct {
-			result1 atc.TeamAuth
+			result1 types.TeamAuth
 		})
 	}
 	fake.authReturnsOnCall[i] = struct {
-		result1 atc.TeamAuth
+		result1 types.TeamAuth
 	}{result1}
 }
 
@@ -1920,12 +1921,12 @@ func (fake *FakeTeam) RenameReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTeam) SavePipeline(arg1 string, arg2 atc.Config, arg3 db.ConfigVersion, arg4 bool) (db.Pipeline, bool, error) {
+func (fake *FakeTeam) SavePipeline(arg1 string, arg2 types.Config, arg3 db.ConfigVersion, arg4 bool) (db.Pipeline, bool, error) {
 	fake.savePipelineMutex.Lock()
 	ret, specificReturn := fake.savePipelineReturnsOnCall[len(fake.savePipelineArgsForCall)]
 	fake.savePipelineArgsForCall = append(fake.savePipelineArgsForCall, struct {
 		arg1 string
-		arg2 atc.Config
+		arg2 types.Config
 		arg3 db.ConfigVersion
 		arg4 bool
 	}{arg1, arg2, arg3, arg4})
@@ -1947,13 +1948,13 @@ func (fake *FakeTeam) SavePipelineCallCount() int {
 	return len(fake.savePipelineArgsForCall)
 }
 
-func (fake *FakeTeam) SavePipelineCalls(stub func(string, atc.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)) {
+func (fake *FakeTeam) SavePipelineCalls(stub func(string, types.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)) {
 	fake.savePipelineMutex.Lock()
 	defer fake.savePipelineMutex.Unlock()
 	fake.SavePipelineStub = stub
 }
 
-func (fake *FakeTeam) SavePipelineArgsForCall(i int) (string, atc.Config, db.ConfigVersion, bool) {
+func (fake *FakeTeam) SavePipelineArgsForCall(i int) (string, types.Config, db.ConfigVersion, bool) {
 	fake.savePipelineMutex.RLock()
 	defer fake.savePipelineMutex.RUnlock()
 	argsForCall := fake.savePipelineArgsForCall[i]
@@ -1989,11 +1990,11 @@ func (fake *FakeTeam) SavePipelineReturnsOnCall(i int, result1 db.Pipeline, resu
 	}{result1, result2, result3}
 }
 
-func (fake *FakeTeam) SaveWorker(arg1 atc.Worker, arg2 time.Duration) (db.Worker, error) {
+func (fake *FakeTeam) SaveWorker(arg1 types.Worker, arg2 time.Duration) (db.Worker, error) {
 	fake.saveWorkerMutex.Lock()
 	ret, specificReturn := fake.saveWorkerReturnsOnCall[len(fake.saveWorkerArgsForCall)]
 	fake.saveWorkerArgsForCall = append(fake.saveWorkerArgsForCall, struct {
-		arg1 atc.Worker
+		arg1 types.Worker
 		arg2 time.Duration
 	}{arg1, arg2})
 	fake.recordInvocation("SaveWorker", []interface{}{arg1, arg2})
@@ -2014,13 +2015,13 @@ func (fake *FakeTeam) SaveWorkerCallCount() int {
 	return len(fake.saveWorkerArgsForCall)
 }
 
-func (fake *FakeTeam) SaveWorkerCalls(stub func(atc.Worker, time.Duration) (db.Worker, error)) {
+func (fake *FakeTeam) SaveWorkerCalls(stub func(types.Worker, time.Duration) (db.Worker, error)) {
 	fake.saveWorkerMutex.Lock()
 	defer fake.saveWorkerMutex.Unlock()
 	fake.SaveWorkerStub = stub
 }
 
-func (fake *FakeTeam) SaveWorkerArgsForCall(i int) (atc.Worker, time.Duration) {
+func (fake *FakeTeam) SaveWorkerArgsForCall(i int) (types.Worker, time.Duration) {
 	fake.saveWorkerMutex.RLock()
 	defer fake.saveWorkerMutex.RUnlock()
 	argsForCall := fake.saveWorkerArgsForCall[i]
@@ -2053,11 +2054,11 @@ func (fake *FakeTeam) SaveWorkerReturnsOnCall(i int, result1 db.Worker, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeTeam) UpdateProviderAuth(arg1 atc.TeamAuth) error {
+func (fake *FakeTeam) UpdateProviderAuth(arg1 types.TeamAuth) error {
 	fake.updateProviderAuthMutex.Lock()
 	ret, specificReturn := fake.updateProviderAuthReturnsOnCall[len(fake.updateProviderAuthArgsForCall)]
 	fake.updateProviderAuthArgsForCall = append(fake.updateProviderAuthArgsForCall, struct {
-		arg1 atc.TeamAuth
+		arg1 types.TeamAuth
 	}{arg1})
 	fake.recordInvocation("UpdateProviderAuth", []interface{}{arg1})
 	fake.updateProviderAuthMutex.Unlock()
@@ -2077,13 +2078,13 @@ func (fake *FakeTeam) UpdateProviderAuthCallCount() int {
 	return len(fake.updateProviderAuthArgsForCall)
 }
 
-func (fake *FakeTeam) UpdateProviderAuthCalls(stub func(atc.TeamAuth) error) {
+func (fake *FakeTeam) UpdateProviderAuthCalls(stub func(types.TeamAuth) error) {
 	fake.updateProviderAuthMutex.Lock()
 	defer fake.updateProviderAuthMutex.Unlock()
 	fake.UpdateProviderAuthStub = stub
 }
 
-func (fake *FakeTeam) UpdateProviderAuthArgsForCall(i int) atc.TeamAuth {
+func (fake *FakeTeam) UpdateProviderAuthArgsForCall(i int) types.TeamAuth {
 	fake.updateProviderAuthMutex.RLock()
 	defer fake.updateProviderAuthMutex.RUnlock()
 	argsForCall := fake.updateProviderAuthArgsForCall[i]

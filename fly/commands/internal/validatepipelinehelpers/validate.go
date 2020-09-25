@@ -3,6 +3,7 @@ package validatepipelinehelpers
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/atc"
 
@@ -19,7 +20,7 @@ func Validate(yamlTemplate templatehelpers.YamlTemplateWithParams, strict bool, 
 		return err
 	}
 
-	var unmarshalledTemplate atc.Config
+	var unmarshalledTemplate types.Config
 	if strict {
 		// UnmarshalStrict will pick up fields in structs that have the wrong names, as well as any duplicate keys in maps
 		// we should consider always using this everywhere in a later release...

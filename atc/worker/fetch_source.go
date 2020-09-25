@@ -5,9 +5,9 @@ package worker
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/resource"
 	"github.com/concourse/concourse/atc/runtime"
@@ -29,7 +29,7 @@ type FetchSourceFactory interface {
 		owner db.ContainerOwner,
 		cache db.UsedResourceCache,
 		resource resource.Resource,
-		resourceTypes atc.VersionedResourceTypes,
+		resourceTypes types.VersionedResourceTypes,
 		containerSpec ContainerSpec,
 		processSpec runtime.ProcessSpec,
 		containerMetadata db.ContainerMetadata,
@@ -55,7 +55,7 @@ func (r *fetchSourceFactory) NewFetchSource(
 	owner db.ContainerOwner,
 	cache db.UsedResourceCache,
 	resource resource.Resource,
-	resourceTypes atc.VersionedResourceTypes,
+	resourceTypes types.VersionedResourceTypes,
 	containerSpec ContainerSpec,
 	processSpec runtime.ProcessSpec,
 	containerMetadata db.ContainerMetadata,
@@ -82,7 +82,7 @@ type fetchSource struct {
 	owner                  db.ContainerOwner
 	cache                  db.UsedResourceCache
 	resource               resource.Resource
-	resourceTypes          atc.VersionedResourceTypes
+	resourceTypes          types.VersionedResourceTypes
 	containerSpec          ContainerSpec
 	processSpec            runtime.ProcessSpec
 	containerMetadata      db.ContainerMetadata
@@ -115,9 +115,9 @@ func (s *fetchSource) Find() (GetResult, Volume, bool, error) {
 		"metadata": metadata.ToATCMetadata(),
 	})
 
-	atcMetaData := []atc.MetadataField{}
+	atcMetaData := []types.MetadataField{}
 	for _, m := range metadata {
-		atcMetaData = append(atcMetaData, atc.MetadataField{
+		atcMetaData = append(atcMetaData, types.MetadataField{
 			Name:  m.Name,
 			Value: m.Value,
 		})

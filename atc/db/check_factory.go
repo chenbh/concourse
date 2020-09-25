@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -25,18 +26,18 @@ type Checkable interface {
 	ResourceConfigScopeID() int
 	TeamName() string
 	Type() string
-	Source() atc.Source
-	Tags() atc.Tags
+	Source() types.Source
+	Tags() types.Tags
 	CheckEvery() string
 	CheckTimeout() string
 	LastCheckEndTime() time.Time
-	CurrentPinnedVersion() atc.Version
+	CurrentPinnedVersion() types.Version
 
 	HasWebhook() bool
 
 	SetResourceConfig(
-		atc.Source,
-		atc.VersionedResourceTypes,
+		types.Source,
+		types.VersionedResourceTypes,
 	) (ResourceConfigScope, error)
 
 	SetCheckSetupError(error) error
@@ -48,7 +49,7 @@ type CheckFactory interface {
 	Check(int) (Check, bool, error)
 	StartedChecks() ([]Check, error)
 	CreateCheck(int, bool, atc.Plan, CheckMetadata, SpanContext) (Check, bool, error)
-	TryCreateCheck(context.Context, Checkable, ResourceTypes, atc.Version, bool) (Check, bool, error)
+	TryCreateCheck(context.Context, Checkable, ResourceTypes, types.Version, bool) (Check, bool, error)
 	Resources() ([]Resource, error)
 	ResourceTypes() ([]ResourceType, error)
 	AcquireScanningLock(lager.Logger) (lock.Lock, bool, error)
@@ -137,7 +138,7 @@ func (c *checkFactory) StartedChecks() ([]Check, error) {
 	return checks, nil
 }
 
-func (c *checkFactory) TryCreateCheck(ctx context.Context, checkable Checkable, resourceTypes ResourceTypes, fromVersion atc.Version, manuallyTriggered bool) (Check, bool, error) {
+func (c *checkFactory) TryCreateCheck(ctx context.Context, checkable Checkable, resourceTypes ResourceTypes, fromVersion types.Version, manuallyTriggered bool) (Check, bool, error) {
 	logger := lagerctx.FromContext(ctx)
 
 	var err error
@@ -194,7 +195,7 @@ func (c *checkFactory) TryCreateCheck(ctx context.Context, checkable Checkable, 
 		}
 
 		if found {
-			fromVersion = atc.Version(rcv.Version())
+			fromVersion = types.Version(rcv.Version())
 		}
 	}
 

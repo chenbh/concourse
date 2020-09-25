@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"github.com/concourse/concourse/atc"
@@ -11,15 +12,15 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) Pipeline(pipelineName string) (atc.Pipeline, bool, error) {
+func (team *team) Pipeline(pipelineName string) (types.Pipeline, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var pipeline atc.Pipeline
+	var pipeline types.Pipeline
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.GetPipeline,
+		RequestName: types.GetPipeline,
 		Params:      params,
 	}, &internal.Response{
 		Result: &pipeline,
@@ -29,9 +30,9 @@ func (team *team) Pipeline(pipelineName string) (atc.Pipeline, bool, error) {
 	case nil:
 		return pipeline, true, nil
 	case internal.ResourceNotFoundError:
-		return atc.Pipeline{}, false, nil
+		return types.Pipeline{}, false, nil
 	default:
-		return atc.Pipeline{}, false, err
+		return types.Pipeline{}, false, err
 	}
 }
 
@@ -47,7 +48,7 @@ func (team *team) OrderingPipelines(pipelines []string) error {
 	}
 
 	return team.connection.Send(internal.Request{
-		RequestName: atc.OrderPipelines,
+		RequestName: types.OrderPipelines,
 		Params:      params,
 		Body:        buffer,
 		Header: http.Header{
@@ -56,14 +57,14 @@ func (team *team) OrderingPipelines(pipelines []string) error {
 	}, &internal.Response{})
 }
 
-func (team *team) ListPipelines() ([]atc.Pipeline, error) {
+func (team *team) ListPipelines() ([]types.Pipeline, error) {
 	params := rata.Params{
 		"team_name": team.name,
 	}
 
-	var pipelines []atc.Pipeline
+	var pipelines []types.Pipeline
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListPipelines,
+		RequestName: types.ListPipelines,
 		Params:      params,
 	}, &internal.Response{
 		Result: &pipelines,
@@ -72,10 +73,10 @@ func (team *team) ListPipelines() ([]atc.Pipeline, error) {
 	return pipelines, err
 }
 
-func (client *client) ListPipelines() ([]atc.Pipeline, error) {
-	var pipelines []atc.Pipeline
+func (client *client) ListPipelines() ([]types.Pipeline, error) {
+	var pipelines []types.Pipeline
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListAllPipelines,
+		RequestName: types.ListAllPipelines,
 	}, &internal.Response{
 		Result: &pipelines,
 	})
@@ -83,8 +84,8 @@ func (client *client) ListPipelines() ([]atc.Pipeline, error) {
 	return pipelines, err
 }
 
-func (team *team) CreatePipelineBuild(pipelineName string, plan atc.Plan) (atc.Build, error) {
-	var build atc.Build
+func (team *team) CreatePipelineBuild(pipelineName string, plan atc.Plan) (types.Build, error) {
+	var build types.Build
 
 	buffer := &bytes.Buffer{}
 	err := json.NewEncoder(buffer).Encode(plan)
@@ -93,7 +94,7 @@ func (team *team) CreatePipelineBuild(pipelineName string, plan atc.Plan) (atc.B
 	}
 
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.CreatePipelineBuild,
+		RequestName: types.CreatePipelineBuild,
 		Body:        buffer,
 		Params: rata.Params{
 			"team_name":     team.name,
@@ -109,27 +110,27 @@ func (team *team) CreatePipelineBuild(pipelineName string, plan atc.Plan) (atc.B
 	return build, err
 }
 func (team *team) DeletePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.DeletePipeline)
+	return team.managePipeline(pipelineName, types.DeletePipeline)
 }
 
 func (team *team) PausePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.PausePipeline)
+	return team.managePipeline(pipelineName, types.PausePipeline)
 }
 
 func (team *team) ArchivePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.ArchivePipeline)
+	return team.managePipeline(pipelineName, types.ArchivePipeline)
 }
 
 func (team *team) UnpausePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.UnpausePipeline)
+	return team.managePipeline(pipelineName, types.UnpausePipeline)
 }
 
 func (team *team) ExposePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.ExposePipeline)
+	return team.managePipeline(pipelineName, types.ExposePipeline)
 }
 
 func (team *team) HidePipeline(pipelineName string) (bool, error) {
-	return team.managePipeline(pipelineName, atc.HidePipeline)
+	return team.managePipeline(pipelineName, types.HidePipeline)
 }
 
 func (team *team) managePipeline(pipelineName string, endpoint string) (bool, error) {
@@ -158,14 +159,14 @@ func (team *team) RenamePipeline(pipelineName, name string) (bool, []ConfigWarni
 		"team_name":     team.name,
 	}
 
-	jsonBytes, err := json.Marshal(atc.RenameRequest{NewName: name})
+	jsonBytes, err := json.Marshal(types.RenameRequest{NewName: name})
 	if err != nil {
 		return false, []ConfigWarning{}, err
 	}
 
 	var response setConfigResponse
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.RenamePipeline,
+		RequestName: types.RenamePipeline,
 		Params:      params,
 		Body:        bytes.NewBuffer(jsonBytes),
 		Header:      http.Header{"Content-Type": []string{"application/json"}},
@@ -183,17 +184,17 @@ func (team *team) RenamePipeline(pipelineName, name string) (bool, []ConfigWarni
 	}
 }
 
-func (team *team) PipelineBuilds(pipelineName string, page Page) ([]atc.Build, Pagination, bool, error) {
+func (team *team) PipelineBuilds(pipelineName string, page Page) ([]types.Build, Pagination, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var builds []atc.Build
+	var builds []types.Build
 
 	headers := http.Header{}
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListPipelineBuilds,
+		RequestName: types.ListPipelineBuilds,
 		Params:      params,
 		Query:       page.QueryParams(),
 	}, &internal.Response{

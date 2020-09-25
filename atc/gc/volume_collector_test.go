@@ -2,9 +2,9 @@ package gc_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	"github.com/concourse/concourse/atc/gc"
@@ -44,13 +44,13 @@ var _ = Describe("VolumeCollector", func() {
 	Describe("Run", func() {
 		BeforeEach(func() {
 			var err error
-			team, err = teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+			team, err = teamFactory.CreateTeam(types.Team{Name: "some-team"})
 			Expect(err).ToNot(HaveOccurred())
 
 			build, err = team.CreateOneOffBuild()
 			Expect(err).ToNot(HaveOccurred())
 
-			worker, err = workerFactory.SaveWorker(atc.Worker{
+			worker, err = workerFactory.SaveWorker(types.Worker{
 				Name:            "some-worker",
 				GardenAddr:      "1.2.3.4:7777",
 				BaggageclaimURL: "1.2.3.4:7788",

@@ -1,20 +1,20 @@
 package atc_test
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Config", func() {
-	var config atc.Config
+	var config types.Config
 
 	Describe("determining if a job's builds are publically viewable", func() {
 		Context("when the job is publically viewable", func() {
 			BeforeEach(func() {
-				config = atc.Config{
-					Jobs: atc.JobConfigs{
+				config = types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name:   "some-job",
 							Public: true,
@@ -36,8 +36,8 @@ var _ = Describe("Config", func() {
 
 		Context("when the job is not publically viewable", func() {
 			BeforeEach(func() {
-				config = atc.Config{
-					Jobs: atc.JobConfigs{
+				config = types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name:   "some-job",
 							Public: false,
@@ -59,8 +59,8 @@ var _ = Describe("Config", func() {
 
 		Context("when the job with the given name can't be found", func() {
 			BeforeEach(func() {
-				config = atc.Config{
-					Jobs: atc.JobConfigs{
+				config = types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name:   "some-job",
 							Public: false,

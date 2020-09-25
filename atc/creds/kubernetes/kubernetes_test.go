@@ -2,9 +2,9 @@ package kubernetes_test
 
 import (
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/creds/kubernetes"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/vars"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -34,9 +34,9 @@ func (example Example) Assert(vs vars.Variables) {
 	switch t := example.Template.(type) {
 	case string:
 		res, err = creds.NewString(vs, t).Evaluate()
-	case atc.Source:
+	case types.Source:
 		res, err = creds.NewSource(vs, t).Evaluate()
-	case atc.Params:
+	case types.Params:
 		res, err = creds.NewParams(vs, t).Evaluate()
 	}
 
@@ -118,10 +118,10 @@ var _ = Describe("Kubernetes", func() {
 				})
 			},
 
-			Template: atc.Source{
+			Template: types.Source{
 				"some-source": "((" + secretName + "))",
 			},
-			Result: atc.Source{
+			Result: types.Source{
 				"some-source": map[string]interface{}{
 					"some-field": "some-field-value",
 				},

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/exec"
@@ -250,24 +250,24 @@ func (b *engineBuild) Run(ctx context.Context) {
 
 func (b *engineBuild) finish(logger lager.Logger, err error, succeeded bool) {
 	if errors.Is(err, context.Canceled) {
-		b.saveStatus(logger, atc.StatusAborted)
+		b.saveStatus(logger, types.StatusAborted)
 		logger.Info("aborted")
 
 	} else if err != nil {
-		b.saveStatus(logger, atc.StatusErrored)
+		b.saveStatus(logger, types.StatusErrored)
 		logger.Info("errored", lager.Data{"error": err.Error()})
 
 	} else if succeeded {
-		b.saveStatus(logger, atc.StatusSucceeded)
+		b.saveStatus(logger, types.StatusSucceeded)
 		logger.Info("succeeded")
 
 	} else {
-		b.saveStatus(logger, atc.StatusFailed)
+		b.saveStatus(logger, types.StatusFailed)
 		logger.Info("failed")
 	}
 }
 
-func (b *engineBuild) saveStatus(logger lager.Logger, status atc.BuildStatus) {
+func (b *engineBuild) saveStatus(logger lager.Logger, status types.BuildStatus) {
 	if err := b.build.Finish(db.BuildStatus(status)); err != nil {
 		logger.Error("failed-to-finish-build", err)
 	}

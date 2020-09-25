@@ -3,6 +3,7 @@ package db_test
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -22,31 +23,31 @@ var _ = Describe("Job", func() {
 
 	BeforeEach(func() {
 		var err error
-		team, err = teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+		team, err = teamFactory.CreateTeam(types.Team{Name: "some-team"})
 		Expect(err).ToNot(HaveOccurred())
 
 		var created bool
-		pipeline, created, err = team.SavePipeline("fake-pipeline", atc.Config{
-			Jobs: atc.JobConfigs{
+		pipeline, created, err = team.SavePipeline("fake-pipeline", types.Config{
+			Jobs: types.JobConfigs{
 				{
 					Name: "some-job",
 
 					Public: true,
 
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.PutStep{
+							Config: &types.PutStep{
 								Name: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 							},
 						},
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 								Passed:  []string{"job-1", "job-2"},
@@ -54,11 +55,11 @@ var _ = Describe("Job", func() {
 							},
 						},
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-task",
 								Privileged: true,
 								ConfigPath: "some/config/path.yml",
-								Config: &atc.TaskConfig{
+								Config: &types.TaskConfig{
 									RootfsURI: "some-image",
 								},
 							},
@@ -89,7 +90,7 @@ var _ = Describe("Job", func() {
 					DisableManualTrigger: true,
 				},
 			},
-			Resources: atc.ResourceConfigs{
+			Resources: types.ResourceConfigs{
 				{
 					Name: "some-resource",
 					Type: "some-type",
@@ -212,8 +213,8 @@ var _ = Describe("Job", func() {
 		BeforeEach(func() {
 			var created bool
 			var err error
-			otherPipeline, created, err = team.SavePipeline("other-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			otherPipeline, created, err = team.SavePipeline("other-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "some-job"},
 				},
 			}, db.ConfigVersion(0), false)
@@ -432,8 +433,8 @@ var _ = Describe("Job", func() {
 				found bool
 			)
 
-			config := atc.Config{
-				Jobs: atc.JobConfigs{
+			config := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -679,8 +680,8 @@ var _ = Describe("Job", func() {
 		saveMaxInFlightPipeline := func() {
 			BeforeEach(func() {
 				var err error
-				pipeline, _, err = team.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline, _, err = team.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 
@@ -688,20 +689,20 @@ var _ = Describe("Job", func() {
 
 							RawMaxInFlight: 2,
 
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.PutStep{
+									Config: &types.PutStep{
 										Name: "some-resource",
-										Params: atc.Params{
+										Params: types.Params{
 											"some-param": "some-value",
 										},
 									},
 								},
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-input",
 										Resource: "some-resource",
-										Params: atc.Params{
+										Params: types.Params{
 											"some-param": "some-value",
 										},
 										Passed:  []string{"job-1", "job-2"},
@@ -709,11 +710,11 @@ var _ = Describe("Job", func() {
 									},
 								},
 								{
-									Config: &atc.TaskStep{
+									Config: &types.TaskStep{
 										Name:       "some-task",
 										Privileged: true,
 										ConfigPath: "some/config/path.yml",
-										Config: &atc.TaskConfig{
+										Config: &types.TaskConfig{
 											RootfsURI: "some-image",
 										},
 									},
@@ -740,7 +741,7 @@ var _ = Describe("Job", func() {
 							Name: "job-2",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
@@ -758,8 +759,8 @@ var _ = Describe("Job", func() {
 		saveSerialGroupsPipeline := func() {
 			BeforeEach(func() {
 				var err error
-				pipeline, _, err = team.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline, _, err = team.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 
@@ -771,20 +772,20 @@ var _ = Describe("Job", func() {
 
 							RawMaxInFlight: 2,
 
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.PutStep{
+									Config: &types.PutStep{
 										Name: "some-resource",
-										Params: atc.Params{
+										Params: types.Params{
 											"some-param": "some-value",
 										},
 									},
 								},
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-input",
 										Resource: "some-resource",
-										Params: atc.Params{
+										Params: types.Params{
 											"some-param": "some-value",
 										},
 										Passed:  []string{"job-1", "job-2"},
@@ -792,11 +793,11 @@ var _ = Describe("Job", func() {
 									},
 								},
 								{
-									Config: &atc.TaskStep{
+									Config: &types.TaskStep{
 										Name:       "some-task",
 										Privileged: true,
 										ConfigPath: "some/config/path.yml",
-										Config: &atc.TaskConfig{
+										Config: &types.TaskConfig{
 											RootfsURI: "some-image",
 										},
 									},
@@ -825,7 +826,7 @@ var _ = Describe("Job", func() {
 							Name: "job-2",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
@@ -864,8 +865,8 @@ var _ = Describe("Job", func() {
 				BeforeEach(func() {
 					var created bool
 					var err error
-					pipeline, created, err = team.SavePipeline("other-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline, created, err = team.SavePipeline("other-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
 							},
@@ -1280,7 +1281,7 @@ var _ = Describe("Job", func() {
 
 	Describe("GetNextBuildInputs", func() {
 		var (
-			versions            []atc.ResourceVersion
+			versions            []types.ResourceVersion
 			job                 db.Job
 			resourceConfigScope db.ResourceConfigScope
 			resource            db.Resource
@@ -1300,13 +1301,13 @@ var _ = Describe("Job", func() {
 			Expect(setupTx.Commit()).To(Succeed())
 
 			var created bool
-			pipeline, created, err = team.SavePipeline("build-inputs-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, created, err = team.SavePipeline("build-inputs-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input",
 									Resource: "some-resource",
 									Passed:   []string{"job-1", "job-2"},
@@ -1314,7 +1315,7 @@ var _ = Describe("Job", func() {
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input-2",
 									Resource: "some-resource",
 									Passed:   []string{"job-1"},
@@ -1322,7 +1323,7 @@ var _ = Describe("Job", func() {
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input-3",
 									Resource: "some-resource",
 									Trigger:  true,
@@ -1337,7 +1338,7 @@ var _ = Describe("Job", func() {
 						Name: "job-2",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -1356,13 +1357,13 @@ var _ = Describe("Job", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope, err = resource.SetResourceConfig(atc.Source{}, atc.VersionedResourceTypes{})
+			resourceConfigScope, err = resource.SetResourceConfig(types.Source{}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
 			spanContext = db.SpanContext{"fake": "version"}
 			err = resourceConfigScope.SaveVersions(
 				spanContext,
-				[]atc.Version{
+				[]types.Version{
 					{"version": "v1"},
 					{"version": "v2"},
 					{"version": "v3"},
@@ -1374,7 +1375,7 @@ var _ = Describe("Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			versions = []atc.ResourceVersion{reversions[2], reversions[1], reversions[0]}
+			versions = []types.ResourceVersion{reversions[2], reversions[1], reversions[0]}
 		})
 
 		Describe("partial next build inputs", func() {
@@ -1442,21 +1443,21 @@ var _ = Describe("Job", func() {
 					{
 						Name:            "some-input-1",
 						ResourceID:      resource.ID(),
-						Version:         atc.Version{"version": "v1"},
+						Version:         types.Version{"version": "v1"},
 						FirstOccurrence: false,
 						Context:         spanContext,
 					},
 					{
 						Name:            "some-input-2",
 						ResourceID:      resource.ID(),
-						Version:         atc.Version{"version": "v2"},
+						Version:         types.Version{"version": "v2"},
 						FirstOccurrence: false,
 						Context:         spanContext,
 					},
 					{
 						Name:            "some-input-3",
 						ResourceID:      resource.ID(),
-						Version:         atc.Version{"version": "v3"},
+						Version:         types.Version{"version": "v3"},
 						FirstOccurrence: false,
 						Context:         spanContext,
 					},
@@ -1473,7 +1474,7 @@ var _ = Describe("Job", func() {
 	Describe("GetFullNextBuildInputs", func() {
 		var (
 			pipeline2           db.Pipeline
-			versions            []atc.ResourceVersion
+			versions            []types.ResourceVersion
 			job                 db.Job
 			job2                db.Job
 			resourceConfigScope db.ResourceConfigScope
@@ -1502,10 +1503,10 @@ var _ = Describe("Job", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope, err = resource.SetResourceConfig(atc.Source{}, atc.VersionedResourceTypes{})
+			resourceConfigScope, err = resource.SetResourceConfig(types.Source{}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = resourceConfigScope.SaveVersions(nil, []atc.Version{
+			err = resourceConfigScope.SaveVersions(nil, []types.Version{
 				{"version": "v1"},
 				{"version": "v2"},
 				{"version": "v3"},
@@ -1513,22 +1514,22 @@ var _ = Describe("Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// save metadata for v1
-			_, err = resource.SaveUncheckedVersion(atc.Version{"version": "v1"}, db.ResourceConfigMetadataFields{
+			_, err = resource.SaveUncheckedVersion(types.Version{"version": "v1"}, db.ResourceConfigMetadataFields{
 				db.ResourceConfigMetadataField{
 					Name:  "name1",
 					Value: "value1",
 				},
-			}, resourceConfigScope.ResourceConfig(), atc.VersionedResourceTypes{})
+			}, resourceConfigScope.ResourceConfig(), types.VersionedResourceTypes{})
 			Expect(err).NotTo(HaveOccurred())
 
 			reversions, _, found, err := resource.Versions(db.Page{Limit: 3}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			versions = []atc.ResourceVersion{reversions[2], reversions[1], reversions[0]}
+			versions = []types.ResourceVersion{reversions[2], reversions[1], reversions[0]}
 
-			config := atc.Config{
-				Jobs: atc.JobConfigs{
+			config := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -1536,7 +1537,7 @@ var _ = Describe("Job", func() {
 						Name: "some-other-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -1601,13 +1602,13 @@ var _ = Describe("Job", func() {
 				{
 					Name:            "some-input-1",
 					ResourceID:      resource.ID(),
-					Version:         atc.Version{"version": "v1"},
+					Version:         types.Version{"version": "v1"},
 					FirstOccurrence: false,
 				},
 				{
 					Name:            "some-input-2",
 					ResourceID:      resource.ID(),
-					Version:         atc.Version{"version": "v2"},
+					Version:         types.Version{"version": "v2"},
 					FirstOccurrence: true,
 				},
 			}
@@ -1648,13 +1649,13 @@ var _ = Describe("Job", func() {
 				{
 					Name:            "some-input-2",
 					ResourceID:      resource.ID(),
-					Version:         atc.Version{"version": "v3"},
+					Version:         types.Version{"version": "v3"},
 					FirstOccurrence: false,
 				},
 				{
 					Name:            "some-input-3",
 					ResourceID:      resource.ID(),
-					Version:         atc.Version{"version": "v3"},
+					Version:         types.Version{"version": "v3"},
 					FirstOccurrence: true,
 				},
 			}
@@ -1713,13 +1714,13 @@ var _ = Describe("Job", func() {
 		)
 
 		BeforeEach(func() {
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-other-resource",
 						Type: "some-type",
@@ -2201,21 +2202,21 @@ var _ = Describe("Job", func() {
 		Context("when there is an input configured for the job", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-input",
 										Resource: "some-resource",
-										Params: atc.Params{
+										Params: types.Params{
 											"some-param": "some-value",
 										},
 										Passed:  []string{"job-1", "job-2"},
 										Trigger: true,
-										Version: &atc.VersionConfig{Every: true},
+										Version: &types.VersionConfig{Every: true},
 									},
 								},
 							},
@@ -2227,7 +2228,7 @@ var _ = Describe("Job", func() {
 							Name: "job-2",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
@@ -2274,26 +2275,26 @@ var _ = Describe("Job", func() {
 		Context("when the input is pinned through the get step", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-pinned-input",
 										Resource: "some-resource",
-										Version:  &atc.VersionConfig{Pinned: atc.Version{"input": "pinned"}},
+										Version:  &types.VersionConfig{Pinned: types.Version{"input": "pinned"}},
 									},
 								},
 							},
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name:   "some-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 					},
 				}, db.ConfigVersion(0), false)
@@ -2315,7 +2316,7 @@ var _ = Describe("Job", func() {
 						Name:          "some-pinned-input",
 						JobID:         inputsJob.ID(),
 						ResourceID:    someResource.ID(),
-						PinnedVersion: atc.Version{"input": "pinned"},
+						PinnedVersion: types.Version{"input": "pinned"},
 					},
 				}))
 			})
@@ -2337,15 +2338,15 @@ var _ = Describe("Job", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(setupTx.Commit()).To(Succeed())
 
-					resourceConfigScope, err := pinnedResource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+					resourceConfigScope, err := pinnedResource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 
-					err = resourceConfigScope.SaveVersions(nil, []atc.Version{
+					err = resourceConfigScope.SaveVersions(nil, []types.Version{
 						{"api": "pinned"},
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					versionID, found, err := pinnedResource.ResourceConfigVersionID(atc.Version{"api": "pinned"})
+					versionID, found, err := pinnedResource.ResourceConfigVersionID(types.Version{"api": "pinned"})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
@@ -2364,7 +2365,7 @@ var _ = Describe("Job", func() {
 							Name:          "some-pinned-input",
 							JobID:         inputsJob.ID(),
 							ResourceID:    someResource.ID(),
-							PinnedVersion: atc.Version{"input": "pinned"},
+							PinnedVersion: types.Version{"input": "pinned"},
 						},
 					}))
 				})
@@ -2374,13 +2375,13 @@ var _ = Describe("Job", func() {
 		Context("when the input is pinned through the resource config", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-pinned-input",
 										Resource: "some-resource",
 									},
@@ -2388,12 +2389,12 @@ var _ = Describe("Job", func() {
 							},
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name:    "some-resource",
 							Type:    "some-type",
-							Source:  atc.Source{"some": "source"},
-							Version: atc.Version{"some": "version"},
+							Source:  types.Source{"some": "source"},
+							Version: types.Version{"some": "version"},
 						},
 					},
 				}, db.ConfigVersion(0), false)
@@ -2415,7 +2416,7 @@ var _ = Describe("Job", func() {
 						Name:          "some-pinned-input",
 						JobID:         inputsJob.ID(),
 						ResourceID:    someResource.ID(),
-						PinnedVersion: atc.Version{"some": "version"},
+						PinnedVersion: types.Version{"some": "version"},
 					},
 				}))
 			})
@@ -2424,13 +2425,13 @@ var _ = Describe("Job", func() {
 		Context("when the input is pinned through the api", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-pinned-input",
 										Resource: "some-resource",
 									},
@@ -2438,11 +2439,11 @@ var _ = Describe("Job", func() {
 							},
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name:   "some-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 					},
 				}, db.ConfigVersion(0), false)
@@ -2468,15 +2469,15 @@ var _ = Describe("Job", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(setupTx.Commit()).To(Succeed())
 
-				resourceConfigScope, err := pinnedResource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err := pinnedResource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = resourceConfigScope.SaveVersions(nil, []atc.Version{
+				err = resourceConfigScope.SaveVersions(nil, []types.Version{
 					{"some": "version"},
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				versionID, found, err := pinnedResource.ResourceConfigVersionID(atc.Version{"some": "version"})
+				versionID, found, err := pinnedResource.ResourceConfigVersionID(types.Version{"some": "version"})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(found).To(BeTrue())
 
@@ -2495,7 +2496,7 @@ var _ = Describe("Job", func() {
 						Name:          "some-pinned-input",
 						JobID:         inputsJob.ID(),
 						ResourceID:    someResource.ID(),
-						PinnedVersion: atc.Version{"some": "version"},
+						PinnedVersion: types.Version{"some": "version"},
 					},
 				}))
 			})
@@ -2504,38 +2505,38 @@ var _ = Describe("Job", func() {
 		Context("when there are multiple inputs", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-input",
 										Resource: "some-resource",
 										Trigger:  true,
-										Version:  &atc.VersionConfig{Every: true},
+										Version:  &types.VersionConfig{Every: true},
 									},
 								},
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name: "some-resource",
 									},
 								},
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:    "some-other-resource",
 										Trigger: true,
-										Version: &atc.VersionConfig{Latest: true},
+										Version: &types.VersionConfig{Latest: true},
 									},
 								},
 							},
 						},
 						{
 							Name: "some-other-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "other-job-resource",
 										Resource: "some-resource",
 									},
@@ -2543,7 +2544,7 @@ var _ = Describe("Job", func() {
 							},
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
@@ -2597,35 +2598,35 @@ var _ = Describe("Job", func() {
 		Context("when the job has puts and tasks", func() {
 			BeforeEach(func() {
 				var err error
-				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				inputsPipeline, _, err = team.SavePipeline("inputs-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.PutStep{
+									Config: &types.PutStep{
 										Name: "some-resource",
 									},
 								},
 								{
-									Config: &atc.TaskStep{
+									Config: &types.TaskStep{
 										Name:       "some-task",
 										Privileged: true,
 										ConfigPath: "some/config/path.yml",
-										Config: &atc.TaskConfig{
+										Config: &types.TaskConfig{
 											RootfsURI: "some-image",
 										},
 									},
 								},
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name: "some-resource",
 									},
 								},
 							},
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
@@ -2660,64 +2661,64 @@ var _ = Describe("Job", func() {
 		var inputsJob db.Job
 
 		BeforeEach(func() {
-			inputsPipeline, _, err := team.SavePipeline("inputs-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			inputsPipeline, _, err := team.SavePipeline("inputs-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input",
 									Resource: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 									Passed:  []string{"job-1", "job-2"},
 									Trigger: true,
-									Version: &atc.VersionConfig{Every: true},
+									Version: &types.VersionConfig{Every: true},
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									Privileged: true,
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
+									Config: &types.TaskConfig{
 										RootfsURI: "some-image",
 									},
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-other-input",
 									Resource: "some-resource",
-									Version:  &atc.VersionConfig{Latest: true},
+									Version:  &types.VersionConfig{Latest: true},
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:    "some-other-resource",
 									Trigger: true,
-									Version: &atc.VersionConfig{Pinned: atc.Version{"pinned": "version"}},
+									Version: &types.VersionConfig{Pinned: types.Version{"pinned": "version"}},
 								},
 							},
 						},
 					},
 					{
 						Name: "some-other-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "other-job-resource",
 									Resource: "some-resource",
 								},
@@ -2731,7 +2732,7 @@ var _ = Describe("Job", func() {
 						Name: "job-2",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -2754,24 +2755,24 @@ var _ = Describe("Job", func() {
 			inputs, err := inputsJob.Inputs()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(inputs).To(Equal([]atc.JobInput{
+			Expect(inputs).To(Equal([]types.JobInput{
 				{
 					Name:     "some-input",
 					Resource: "some-resource",
 					Passed:   []string{"job-1", "job-2"},
 					Trigger:  true,
-					Version:  &atc.VersionConfig{Every: true},
+					Version:  &types.VersionConfig{Every: true},
 				},
 				{
 					Name:     "some-other-input",
 					Resource: "some-resource",
-					Version:  &atc.VersionConfig{Latest: true},
+					Version:  &types.VersionConfig{Latest: true},
 				},
 				{
 					Name:     "some-other-resource",
 					Resource: "some-other-resource",
 					Trigger:  true,
-					Version:  &atc.VersionConfig{Pinned: atc.Version{"pinned": "version"}},
+					Version:  &types.VersionConfig{Pinned: types.Version{"pinned": "version"}},
 				},
 				{
 					Name:     "some-resource",
@@ -2785,39 +2786,39 @@ var _ = Describe("Job", func() {
 		var outputsJob db.Job
 
 		BeforeEach(func() {
-			outputsPipeline, _, err := team.SavePipeline("outputs-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			outputsPipeline, _, err := team.SavePipeline("outputs-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-other-resource",
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									Privileged: true,
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
+									Config: &types.TaskConfig{
 										RootfsURI: "some-image",
 									},
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name:     "some-output",
 									Resource: "some-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name:     "some-other-output",
 									Resource: "some-resource",
 								},
@@ -2826,9 +2827,9 @@ var _ = Describe("Job", func() {
 					},
 					{
 						Name: "some-other-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name:     "other-job-resource",
 									Resource: "some-resource",
 								},
@@ -2836,7 +2837,7 @@ var _ = Describe("Job", func() {
 						},
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -2859,7 +2860,7 @@ var _ = Describe("Job", func() {
 			outputs, err := outputsJob.Outputs()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(outputs).To(Equal([]atc.JobOutput{
+			Expect(outputs).To(Equal([]types.JobOutput{
 				{
 					Name:     "some-other-output",
 					Resource: "some-resource",

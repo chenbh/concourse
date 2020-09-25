@@ -3,6 +3,7 @@ package tsa
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,7 +14,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 
@@ -27,7 +27,7 @@ type Sweeper struct {
 	HTTPClient  *http.Client
 }
 
-func (l *Sweeper) Sweep(ctx context.Context, worker atc.Worker, resourceAction string) ([]byte, error) {
+func (l *Sweeper) Sweep(ctx context.Context, worker types.Worker, resourceAction string) ([]byte, error) {
 	logger := lagerctx.FromContext(ctx)
 
 	logger.Debug("start")
@@ -40,9 +40,9 @@ func (l *Sweeper) Sweep(ctx context.Context, worker atc.Worker, resourceAction s
 	)
 	switch resourceAction {
 	case SweepContainers:
-		request, err = l.ATCEndpoint.CreateRequest(atc.ListDestroyingContainers, nil, nil)
+		request, err = l.ATCEndpoint.CreateRequest(types.ListDestroyingContainers, nil, nil)
 	case SweepVolumes:
-		request, err = l.ATCEndpoint.CreateRequest(atc.ListDestroyingVolumes, nil, nil)
+		request, err = l.ATCEndpoint.CreateRequest(types.ListDestroyingVolumes, nil, nil)
 	default:
 		return nil, errors.New(ResourceActionMissing)
 	}

@@ -2,11 +2,11 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/eventstream"
 	"github.com/concourse/concourse/fly/rc"
@@ -34,7 +34,7 @@ func (command *TriggerJobCommand) Execute(args []string) error {
 	}
 
 	var (
-		build atc.Build
+		build types.Build
 		team  concourse.Team
 	)
 	if command.Team != "" {

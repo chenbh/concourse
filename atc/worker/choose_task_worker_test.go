@@ -3,6 +3,7 @@ package worker_test
 import (
 	"bytes"
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"strings"
 	"time"
@@ -202,7 +203,7 @@ func processSpecDummy(outputBuffer *bytes.Buffer) runtime.ProcessSpec {
 func imageFetcherDummy() worker.ImageFetcherSpec {
 	return worker.ImageFetcherSpec{
 		Delegate:      new(execfakes.FakeTaskDelegate),
-		ResourceTypes: atc.VersionedResourceTypes{},
+		ResourceTypes: types.VersionedResourceTypes{},
 	}
 }
 
@@ -225,9 +226,9 @@ func workerContainerDummy() worker.ContainerSpec {
 		ImageSpec: worker.ImageSpec{
 			ImageResource: &worker.ImageResource{
 				Type:    "docker",
-				Source:  atc.Source{"some": "secret-source-param"},
-				Params:  atc.Params{"some": "params"},
-				Version: atc.Version{"some": "version"},
+				Source:  types.Source{"some": "secret-source-param"},
+				Params:  types.Params{"some": "params"},
+				Version: types.Version{"some": "version"},
 			},
 			Privileged: false,
 		},

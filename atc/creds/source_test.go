@@ -1,8 +1,8 @@
 package creds_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/vars"
 
 	. "github.com/onsi/ginkgo"
@@ -16,7 +16,7 @@ var _ = Describe("Evaluate", func() {
 		variables := vars.StaticVariables{
 			"some-param": "lol",
 		}
-		source = creds.NewSource(variables, atc.Source{
+		source = creds.NewSource(variables, types.Source{
 			"some": map[string]interface{}{
 				"source-key": "((some-param))",
 			},
@@ -28,7 +28,7 @@ var _ = Describe("Evaluate", func() {
 			result, err := source.Evaluate()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(result).To(Equal(atc.Source{
+			Expect(result).To(Equal(types.Source{
 				"some": map[string]interface{}{
 					"source-key": "lol",
 				},

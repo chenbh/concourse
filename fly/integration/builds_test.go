@@ -2,11 +2,11 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	"github.com/onsi/gomega/gbytes"
@@ -52,7 +52,7 @@ var _ = Describe("Fly CLI", func() {
 			expectedURL        string
 			queryParams        string
 			returnedStatusCode int
-			returnedBuilds     []atc.Build
+			returnedBuilds     []types.Build
 			expectedHeaders    ui.TableRow
 		)
 
@@ -91,7 +91,7 @@ var _ = Describe("Fly CLI", func() {
 				queryParams = "limit=50"
 
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           2,
 						PipelineName: "some-pipeline",
@@ -331,7 +331,7 @@ var _ = Describe("Fly CLI", func() {
 				queryParams = "limit=1"
 
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           39,
 						PipelineName: "",
@@ -386,7 +386,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/builds"
 				queryParams = "limit=50"
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           3,
 						PipelineName: "some-pipeline",
@@ -466,7 +466,7 @@ var _ = Describe("Fly CLI", func() {
 
 					queryParams = "limit=98"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           3,
 							PipelineName: "some-pipeline",
@@ -506,7 +506,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/teams/main/builds"
 				queryParams = "limit=50"
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           3,
 						PipelineName: "some-pipeline",
@@ -555,7 +555,7 @@ var _ = Describe("Fly CLI", func() {
 
 					queryParams = "limit=98"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           3,
 							PipelineName: "some-pipeline",
@@ -597,7 +597,7 @@ var _ = Describe("Fly CLI", func() {
 					expectedURL = "/api/v1/teams/team1/builds"
 					queryParams = "limit=50"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           3,
 							PipelineName: "some-pipeline",
@@ -640,7 +640,7 @@ var _ = Describe("Fly CLI", func() {
 					expectedURL = "/api/v1/teams/team1/builds"
 					queryParams = "limit=50"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           3,
 							PipelineName: "some-pipeline",
@@ -658,7 +658,7 @@ var _ = Describe("Fly CLI", func() {
 					expectedURL = "/api/v1/teams/team2/builds"
 					queryParams = "limit=50"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           4,
 							PipelineName: "some-pipeline",
@@ -717,7 +717,7 @@ var _ = Describe("Fly CLI", func() {
 			BeforeEach(func() {
 				expectedURL = "/api/v1/teams"
 				returnedStatusCode = http.StatusOK
-				returnedTeams := []atc.Team{
+				returnedTeams := []types.Team{
 					{
 						ID:   1,
 						Name: "team1",
@@ -739,7 +739,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/teams/team1/builds"
 				queryParams = "limit=50"
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           3,
 						PipelineName: "some-pipeline",
@@ -757,7 +757,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/teams/team2/builds"
 				queryParams = "limit=50"
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           4,
 						PipelineName: "some-pipeline",
@@ -822,7 +822,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/builds"
 				queryParams = fmt.Sprintf("limit=50&from=%d&to=%d&timestamps=true", since.Unix(), until.Unix())
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           3,
 						PipelineName: "some-pipeline",
@@ -867,7 +867,7 @@ var _ = Describe("Fly CLI", func() {
 				expectedURL = "/api/v1/teams/main/pipelines/some-pipeline/builds"
 				queryParams = "limit=50"
 				returnedStatusCode = http.StatusOK
-				returnedBuilds = []atc.Build{
+				returnedBuilds = []types.Build{
 					{
 						ID:           3,
 						PipelineName: "some-pipeline",
@@ -927,7 +927,7 @@ var _ = Describe("Fly CLI", func() {
 
 					queryParams = "limit=98"
 					returnedStatusCode = http.StatusOK
-					returnedBuilds = []atc.Build{
+					returnedBuilds = []types.Build{
 						{
 							ID:           3,
 							PipelineName: "some-pipeline",

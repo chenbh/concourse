@@ -2,8 +2,8 @@ package db_test
 
 import (
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -138,7 +138,7 @@ var _ = Describe("Container", func() {
 
 				rows, err := psql.Select("handle").
 					From("containers").
-					Where(sq.Eq{"state": atc.ContainerStateFailed}).
+					Where(sq.Eq{"state": types.ContainerStateFailed}).
 					RunWith(dbConn).
 					Query()
 				Expect(err).NotTo(HaveOccurred())

@@ -1,11 +1,11 @@
 package auditor_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/auditor"
 
 	. "github.com/onsi/ginkgo"
@@ -79,7 +79,7 @@ var _ = Describe("Audit", func() {
 			EnableVolumeAuditLog = true
 		})
 		It("all routes are handled and does not panic", func() {
-			for _, route := range atc.Routes {
+			for _, route := range types.Routes {
 				aud.Audit(route.Name, userName, req)
 			}
 			logs := logger.Logs()

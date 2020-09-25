@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
@@ -23,7 +24,7 @@ type BuildStarter interface {
 //go:generate counterfeiter . BuildPlanner
 
 type BuildPlanner interface {
-	Create(atc.StepConfig, db.SchedulerResources, atc.VersionedResourceTypes, []db.BuildInput) (atc.Plan, error)
+	Create(types.StepConfig, db.SchedulerResources, types.VersionedResourceTypes, []db.BuildInput) (atc.Plan, error)
 }
 
 type Build interface {

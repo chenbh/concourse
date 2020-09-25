@@ -1,8 +1,8 @@
 package db_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -25,27 +25,27 @@ var _ = Describe("Pipeline Factory", func() {
 			err := defaultPipeline.Destroy()
 			Expect(err).ToNot(HaveOccurred())
 
-			team, err := teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+			team, err := teamFactory.CreateTeam(types.Team{Name: "some-team"})
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline1, _, err = team.SavePipeline("fake-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline1, _, err = team.SavePipeline("fake-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-name"},
 				},
 			}, db.ConfigVersion(1), false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pipeline1.Reload()).To(BeTrue())
 
-			pipeline2, _, err = defaultTeam.SavePipeline("fake-pipeline-two", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline2, _, err = defaultTeam.SavePipeline("fake-pipeline-two", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-fake"},
 				},
 			}, db.ConfigVersion(1), false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pipeline2.Reload()).To(BeTrue())
 
-			pipeline3, _, err = defaultTeam.SavePipeline("fake-pipeline-three", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline3, _, err = defaultTeam.SavePipeline("fake-pipeline-three", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-fake-two"},
 				},
 			}, db.ConfigVersion(1), false)
@@ -95,19 +95,19 @@ var _ = Describe("Pipeline Factory", func() {
 			err := defaultPipeline.Destroy()
 			Expect(err).ToNot(HaveOccurred())
 
-			team, err := teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+			team, err := teamFactory.CreateTeam(types.Team{Name: "some-team"})
 			Expect(err).ToNot(HaveOccurred())
 
-			pipeline2, _, err = team.SavePipeline("fake-pipeline-two", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline2, _, err = team.SavePipeline("fake-pipeline-two", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-fake"},
 				},
 			}, db.ConfigVersion(1), false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pipeline2.Reload()).To(BeTrue())
 
-			pipeline3, _, err = team.SavePipeline("fake-pipeline-three", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline3, _, err = team.SavePipeline("fake-pipeline-three", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-fake-two"},
 				},
 			}, db.ConfigVersion(1), false)
@@ -115,8 +115,8 @@ var _ = Describe("Pipeline Factory", func() {
 			Expect(pipeline3.Expose()).To(Succeed())
 			Expect(pipeline3.Reload()).To(BeTrue())
 
-			pipeline1, _, err = defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline1, _, err = defaultTeam.SavePipeline("fake-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{Name: "job-name"},
 				},
 			}, db.ConfigVersion(1), false)

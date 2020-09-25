@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/lib/pq"
 	uuid "github.com/nu7hatch/gouuid"
 )
@@ -183,7 +183,7 @@ type createdVolume struct {
 type VolumeResourceType struct {
 	WorkerBaseResourceType *UsedWorkerBaseResourceType
 	ResourceType           *VolumeResourceType
-	Version                atc.Version
+	Version                types.Version
 }
 
 func (volume *createdVolume) Handle() string          { return volume.handle }
@@ -256,7 +256,7 @@ func (volume *createdVolume) findVolumeResourceTypeByCacheID(resourceCacheID int
 		return nil, err
 	}
 
-	var version atc.Version
+	var version types.Version
 	err = json.Unmarshal(versionString, &version)
 	if err != nil {
 		return nil, err
@@ -406,7 +406,7 @@ func (volume *createdVolume) InitializeArtifact(name string, buildID int) (Worke
 
 	defer Rollback(tx)
 
-	atcWorkerArtifact := atc.WorkerArtifact{
+	atcWorkerArtifact := types.WorkerArtifact{
 		Name:    name,
 		BuildID: buildID,
 	}

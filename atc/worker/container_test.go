@@ -3,13 +3,13 @@ package worker_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	"github.com/concourse/concourse/atc/runtime"
@@ -120,7 +120,7 @@ var _ = Describe("RunScript", func() {
 			fakeOwner,
 			db.ContainerMetadata{},
 			worker.ContainerSpec{},
-			atc.VersionedResourceTypes{},
+			types.VersionedResourceTypes{},
 		)
 
 		runScriptCtx, runScriptCancel = context.WithCancel(context.Background())

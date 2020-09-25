@@ -3,6 +3,7 @@ package builder_test
 import (
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"time"
 
@@ -55,8 +56,8 @@ var _ = Describe("DelegateFactory", func() {
 
 		BeforeEach(func() {
 			info = runtime.VersionResult{
-				Version:  atc.Version{"foo": "bar"},
-				Metadata: []atc.MetadataField{{Name: "baz", Value: "shmaz"}},
+				Version:  types.Version{"foo": "bar"},
+				Metadata: []types.MetadataField{{Name: "baz", Value: "shmaz"}},
 			}
 
 			delegate = builder.NewGetDelegate(fakeBuild, "some-plan-id", buildVars, fakeClock)
@@ -165,8 +166,8 @@ var _ = Describe("DelegateFactory", func() {
 
 		BeforeEach(func() {
 			info = runtime.VersionResult{
-				Version:  atc.Version{"foo": "bar"},
-				Metadata: []atc.MetadataField{{Name: "baz", Value: "shmaz"}},
+				Version:  types.Version{"foo": "bar"},
+				Metadata: []types.MetadataField{{Name: "baz", Value: "shmaz"}},
 			}
 
 			delegate = builder.NewPutDelegate(fakeBuild, "some-plan-id", buildVars, fakeClock)
@@ -191,8 +192,8 @@ var _ = Describe("DelegateFactory", func() {
 
 		Describe("SaveOutput", func() {
 			var plan atc.PutPlan
-			var source atc.Source
-			var resourceTypes atc.VersionedResourceTypes
+			var source types.Source
+			var resourceTypes types.VersionedResourceTypes
 
 			JustBeforeEach(func() {
 				plan = atc.PutPlan{
@@ -200,8 +201,8 @@ var _ = Describe("DelegateFactory", func() {
 					Type:     "some-type",
 					Resource: "some-resource",
 				}
-				source = atc.Source{"some": "source"}
-				resourceTypes = atc.VersionedResourceTypes{}
+				source = types.Source{"some": "source"}
+				resourceTypes = types.VersionedResourceTypes{}
 
 				delegate.SaveOutput(logger, plan, source, resourceTypes, info)
 			})
@@ -224,14 +225,14 @@ var _ = Describe("DelegateFactory", func() {
 		var (
 			delegate   exec.TaskDelegate
 			exitStatus exec.ExitStatus
-			someConfig atc.TaskConfig
+			someConfig types.TaskConfig
 		)
 
 		BeforeEach(func() {
 			delegate = builder.NewTaskDelegate(fakeBuild, "some-plan-id", buildVars, fakeClock)
-			someConfig = atc.TaskConfig{
+			someConfig = types.TaskConfig{
 				Platform: "some-platform",
-				Run: atc.TaskRunConfig{
+				Run: types.TaskRunConfig{
 					Path: "some-foo-path",
 					Dir:  "some-bar-dir",
 				},
@@ -247,7 +248,7 @@ var _ = Describe("DelegateFactory", func() {
 			It("saves an event", func() {
 				Expect(fakeBuild.SaveEventCallCount()).To(Equal(1))
 				event := fakeBuild.SaveEventArgsForCall(0)
-				Expect(event.EventType()).To(Equal(atc.EventType("initialize-task")))
+				Expect(event.EventType()).To(Equal(types.EventType("initialize-task")))
 			})
 
 			It("calls SaveEvent with the taskConfig", func() {
@@ -266,7 +267,7 @@ var _ = Describe("DelegateFactory", func() {
 			It("saves an event", func() {
 				Expect(fakeBuild.SaveEventCallCount()).To(Equal(1))
 				event := fakeBuild.SaveEventArgsForCall(0)
-				Expect(event.EventType()).To(Equal(atc.EventType("start-task")))
+				Expect(event.EventType()).To(Equal(types.EventType("start-task")))
 			})
 
 			It("calls SaveEvent with the taskConfig", func() {
@@ -285,7 +286,7 @@ var _ = Describe("DelegateFactory", func() {
 			It("saves an event", func() {
 				Expect(fakeBuild.SaveEventCallCount()).To(Equal(1))
 				event := fakeBuild.SaveEventArgsForCall(0)
-				Expect(event.EventType()).To(Equal(atc.EventType("finish-task")))
+				Expect(event.EventType()).To(Equal(types.EventType("finish-task")))
 			})
 		})
 	})
@@ -294,14 +295,14 @@ var _ = Describe("DelegateFactory", func() {
 		var (
 			delegate  exec.CheckDelegate
 			fakeCheck *dbfakes.FakeCheck
-			versions  []atc.Version
+			versions  []types.Version
 		)
 
 		BeforeEach(func() {
 			fakeCheck = new(dbfakes.FakeCheck)
 
 			delegate = builder.NewCheckDelegate(fakeCheck, "some-plan-id", buildVars, fakeClock)
-			versions = []atc.Version{{"some": "version"}}
+			versions = []types.Version{{"some": "version"}}
 		})
 
 		Describe("SaveVersions", func() {
@@ -334,7 +335,7 @@ var _ = Describe("DelegateFactory", func() {
 			It("saves an event", func() {
 				Expect(fakeBuild.SaveEventCallCount()).To(Equal(1))
 				event := fakeBuild.SaveEventArgsForCall(0)
-				Expect(event.EventType()).To(Equal(atc.EventType("initialize")))
+				Expect(event.EventType()).To(Equal(types.EventType("initialize")))
 			})
 		})
 
@@ -346,7 +347,7 @@ var _ = Describe("DelegateFactory", func() {
 			It("saves an event", func() {
 				Expect(fakeBuild.SaveEventCallCount()).To(Equal(1))
 				event := fakeBuild.SaveEventArgsForCall(0)
-				Expect(event.EventType()).To(Equal(atc.EventType("finish")))
+				Expect(event.EventType()).To(Equal(types.EventType("finish")))
 			})
 		})
 

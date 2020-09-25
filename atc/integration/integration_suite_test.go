@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/atccmd"
 	"github.com/concourse/concourse/atc/postgresrunner"
 	"github.com/concourse/concourse/go-concourse/concourse"
@@ -127,7 +127,7 @@ func login(atcURL, username, password string) concourse.Client {
 	return concourse.NewClient(atcURL, httpClient, false)
 }
 
-func setupTeam(atcURL string, team atc.Team) {
+func setupTeam(atcURL string, team types.Team) {
 	ccClient := login(atcURL, "test", "test")
 	createdTeam, _, _, _, err := ccClient.Team(team.Name).CreateOrUpdate(team)
 

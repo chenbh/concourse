@@ -1,21 +1,21 @@
 package concourse
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) Resource(pipelineName string, resourceName string) (atc.Resource, bool, error) {
+func (team *team) Resource(pipelineName string, resourceName string) (types.Resource, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"resource_name": resourceName,
 		"team_name":     team.name,
 	}
 
-	var resource atc.Resource
+	var resource types.Resource
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.GetResource,
+		RequestName: types.GetResource,
 		Params:      params,
 	}, &internal.Response{
 		Result: &resource,
@@ -30,15 +30,15 @@ func (team *team) Resource(pipelineName string, resourceName string) (atc.Resour
 	}
 }
 
-func (team *team) ListResources(pipelineName string) ([]atc.Resource, error) {
+func (team *team) ListResources(pipelineName string) ([]types.Resource, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var resources []atc.Resource
+	var resources []types.Resource
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListResources,
+		RequestName: types.ListResources,
 		Params:      params,
 	}, &internal.Response{
 		Result: &resources,

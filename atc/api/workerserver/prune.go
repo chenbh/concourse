@@ -2,9 +2,9 @@ package workerserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -34,7 +34,7 @@ func (s *Server) PruneWorker(w http.ResponseWriter, r *http.Request) {
 
 	if err == db.ErrCannotPruneRunningWorker {
 		logger.Error("failed-to-prune-non-stalled-worker", err)
-		responseBody := atc.PruneWorkerResponseBody{
+		responseBody := types.PruneWorkerResponseBody{
 			Stderr: "cannot prune running worker",
 		}
 

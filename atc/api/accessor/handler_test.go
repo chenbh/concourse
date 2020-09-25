@@ -2,11 +2,11 @@ package accessor_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/http/httptest"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/auditor/auditorfakes"
@@ -67,7 +67,7 @@ var _ = Describe("Handler", func() {
 	Describe("Accessor Handler", func() {
 		Context("when there's a default role for the given action", func() {
 			BeforeEach(func() {
-				action = atc.SaveConfig
+				action = types.SaveConfig
 			})
 
 			Context("when the role has not been customized", func() {
@@ -85,7 +85,7 @@ var _ = Describe("Handler", func() {
 			Context("when the role has been customized", func() {
 				BeforeEach(func() {
 					customRoles = map[string]string{
-						atc.SaveConfig: accessor.ViewerRole,
+						types.SaveConfig: accessor.ViewerRole,
 					}
 				})
 

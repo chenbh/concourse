@@ -3,6 +3,7 @@ package skycmd
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"sigs.k8s.io/yaml"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/flag"
 )
 
@@ -55,7 +55,7 @@ type AuthTeamFlags struct {
 	Config     flag.File `short:"c" long:"config" description:"Configuration file for specifying team params"`
 }
 
-func (flag *AuthTeamFlags) Format() (atc.TeamAuth, error) {
+func (flag *AuthTeamFlags) Format() (types.TeamAuth, error) {
 
 	if path := flag.Config.Path(); path != "" {
 		return flag.formatFromFile()
@@ -74,7 +74,7 @@ func (flag *AuthTeamFlags) Format() (atc.TeamAuth, error) {
 // The github connector has configuration for: users, teams, orgs
 // The cf conncetor has configuration for: users, orgs, spaces
 
-func (flag *AuthTeamFlags) formatFromFile() (atc.TeamAuth, error) {
+func (flag *AuthTeamFlags) formatFromFile() (types.TeamAuth, error) {
 
 	content, err := ioutil.ReadFile(flag.Config.Path())
 	if err != nil {
@@ -88,7 +88,7 @@ func (flag *AuthTeamFlags) formatFromFile() (atc.TeamAuth, error) {
 		return nil, err
 	}
 
-	auth := atc.TeamAuth{}
+	auth := types.TeamAuth{}
 
 	for _, role := range data.Roles {
 		roleName := role["name"].(string)
@@ -154,7 +154,7 @@ func (flag *AuthTeamFlags) formatFromFile() (atc.TeamAuth, error) {
 // TeamConfig has already been populated by the flags library. All we need to
 // do is grab the teamConfig object and extract the users and groups.
 
-func (flag *AuthTeamFlags) formatFromFlags() (atc.TeamAuth, error) {
+func (flag *AuthTeamFlags) formatFromFlags() (types.TeamAuth, error) {
 
 	users := []string{}
 	groups := []string{}
@@ -183,10 +183,10 @@ func (flag *AuthTeamFlags) formatFromFlags() (atc.TeamAuth, error) {
 	}
 
 	if len(users) == 0 && len(groups) == 0 {
-		return nil, atc.ErrAuthConfigInvalid
+		return nil, types.ErrAuthConfigInvalid
 	}
 
-	return atc.TeamAuth{
+	return types.TeamAuth{
 		"owner": map[string][]string{
 			"users":  users,
 			"groups": groups,

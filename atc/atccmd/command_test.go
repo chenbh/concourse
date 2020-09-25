@@ -2,9 +2,9 @@ package atccmd_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"testing"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/atccmd"
 	"github.com/jessevdk/go-flags"
 	"github.com/stretchr/testify/require"
@@ -36,12 +36,12 @@ func (s *CommandSuite) TestInvalidConcurrentRequestLimitAction() {
 		"--client-secret",
 		"client-secret",
 		"--concurrent-request-limit",
-		fmt.Sprintf("%s:2", atc.GetInfo),
+		fmt.Sprintf("%s:2", types.GetInfo),
 	})
 
 	s.Contains(
 		err.Error(),
-		fmt.Sprintf("action '%s' is not supported", atc.GetInfo),
+		fmt.Sprintf("action '%s' is not supported", types.GetInfo),
 	)
 }
 

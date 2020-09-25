@@ -1,12 +1,12 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func User(user db.User) atc.User {
-	return atc.User{
+func User(user db.User) types.User {
+	return types.User{
 		ID:        user.ID(),
 		Username:  user.Name(),
 		Connector: user.Connector(),

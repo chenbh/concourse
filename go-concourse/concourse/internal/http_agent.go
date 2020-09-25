@@ -1,13 +1,13 @@
 package internal
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 
@@ -35,7 +35,7 @@ func NewHTTPAgent(apiURL string, httpClient *http.Client, tracing bool) HTTPAgen
 		httpClient: httpClient,
 		tracing:    tracing,
 
-		requestGenerator: rata.NewRequestGenerator(apiURL, atc.Routes),
+		requestGenerator: rata.NewRequestGenerator(apiURL, types.Routes),
 	}
 }
 

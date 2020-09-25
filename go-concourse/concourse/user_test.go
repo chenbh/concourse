@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -12,12 +12,12 @@ import (
 
 var _ = Describe("Skymarshal Handler User", func() {
 	Describe("UserInfo", func() {
-		var expectedUserInfo atc.UserInfo
+		var expectedUserInfo types.UserInfo
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/user"
 
-			expectedUserInfo = atc.UserInfo{
+			expectedUserInfo = types.UserInfo{
 				Email:    "test@test.com",
 				Teams:    map[string][]string{"test_team": {"owner", "viewer"}},
 				UserId:   "test_user_id",

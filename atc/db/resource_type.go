@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/lib/pq"
 )
@@ -33,9 +33,9 @@ type ResourceType interface {
 	Name() string
 	Type() string
 	Privileged() bool
-	Source() atc.Source
-	Params() atc.Params
-	Tags() atc.Tags
+	Source() types.Source
+	Params() types.Params
+	Tags() types.Tags
 	CheckEvery() string
 	CheckTimeout() string
 	LastCheckStartTime() time.Time
@@ -43,15 +43,15 @@ type ResourceType interface {
 	CheckSetupError() error
 	CheckError() error
 	UniqueVersionHistory() bool
-	CurrentPinnedVersion() atc.Version
+	CurrentPinnedVersion() types.Version
 	ResourceConfigScopeID() int
 
 	HasWebhook() bool
 
-	SetResourceConfig(atc.Source, atc.VersionedResourceTypes) (ResourceConfigScope, error)
+	SetResourceConfig(types.Source, types.VersionedResourceTypes) (ResourceConfigScope, error)
 	SetCheckSetupError(error) error
 
-	Version() atc.Version
+	Version() types.Version
 
 	Reload() (bool, error)
 }
@@ -83,12 +83,12 @@ func (resourceTypes ResourceTypes) Filter(checkable Checkable) ResourceTypes {
 	}
 }
 
-func (resourceTypes ResourceTypes) Deserialize() atc.VersionedResourceTypes {
-	var versionedResourceTypes atc.VersionedResourceTypes
+func (resourceTypes ResourceTypes) Deserialize() types.VersionedResourceTypes {
+	var versionedResourceTypes types.VersionedResourceTypes
 
 	for _, t := range resourceTypes {
-		versionedResourceTypes = append(versionedResourceTypes, atc.VersionedResourceType{
-			ResourceType: atc.ResourceType{
+		versionedResourceTypes = append(versionedResourceTypes, types.VersionedResourceType{
+			ResourceType: types.ResourceType{
 				Name:                 t.Name(),
 				Type:                 t.Type(),
 				Source:               t.Source(),
@@ -105,11 +105,11 @@ func (resourceTypes ResourceTypes) Deserialize() atc.VersionedResourceTypes {
 	return versionedResourceTypes
 }
 
-func (resourceTypes ResourceTypes) Configs() atc.ResourceTypes {
-	var configs atc.ResourceTypes
+func (resourceTypes ResourceTypes) Configs() types.ResourceTypes {
+	var configs types.ResourceTypes
 
 	for _, r := range resourceTypes {
-		configs = append(configs, atc.ResourceType{
+		configs = append(configs, types.ResourceType{
 			Name:                 r.Name(),
 			Type:                 r.Type(),
 			Source:               r.Source(),
@@ -165,10 +165,10 @@ type resourceType struct {
 	name                  string
 	type_                 string
 	privileged            bool
-	source                atc.Source
-	params                atc.Params
-	tags                  atc.Tags
-	version               atc.Version
+	source                types.Source
+	params                types.Params
+	tags                  types.Tags
+	version               types.Version
 	checkEvery            string
 	lastCheckStartTime    time.Time
 	lastCheckEndTime      time.Time
@@ -186,17 +186,17 @@ func (t *resourceType) Privileged() bool              { return t.privileged }
 func (t *resourceType) CheckEvery() string            { return t.checkEvery }
 func (t *resourceType) CheckTimeout() string          { return "" }
 func (r *resourceType) LastCheckStartTime() time.Time { return r.lastCheckStartTime }
-func (r *resourceType) LastCheckEndTime() time.Time   { return r.lastCheckEndTime }
-func (t *resourceType) Source() atc.Source            { return t.source }
-func (t *resourceType) Params() atc.Params            { return t.params }
-func (t *resourceType) Tags() atc.Tags                { return t.tags }
-func (t *resourceType) CheckSetupError() error        { return t.checkSetupError }
+func (r *resourceType) LastCheckEndTime() time.Time { return r.lastCheckEndTime }
+func (t *resourceType) Source() types.Source        { return t.source }
+func (t *resourceType) Params() types.Params        { return t.params }
+func (t *resourceType) Tags() types.Tags            { return t.tags }
+func (t *resourceType) CheckSetupError() error { return t.checkSetupError }
 func (t *resourceType) CheckError() error             { return t.checkError }
 func (t *resourceType) UniqueVersionHistory() bool    { return t.uniqueVersionHistory }
 func (t *resourceType) ResourceConfigScopeID() int    { return t.resourceConfigScopeID }
 
-func (t *resourceType) Version() atc.Version              { return t.version }
-func (t *resourceType) CurrentPinnedVersion() atc.Version { return nil }
+func (t *resourceType) Version() types.Version              { return t.version }
+func (t *resourceType) CurrentPinnedVersion() types.Version { return nil }
 
 func (t *resourceType) HasWebhook() bool {
 	return false
@@ -220,7 +220,7 @@ func (t *resourceType) Reload() (bool, error) {
 	return true, nil
 }
 
-func (t *resourceType) SetResourceConfig(source atc.Source, resourceTypes atc.VersionedResourceTypes) (ResourceConfigScope, error) {
+func (t *resourceType) SetResourceConfig(source types.Source, resourceTypes types.VersionedResourceTypes) (ResourceConfigScope, error) {
 	resourceConfigDescriptor, err := constructResourceConfigDescriptor(t.type_, source, resourceTypes)
 	if err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ func scanResourceType(t *resourceType, row scannable) error {
 		noncense = &nonce.String
 	}
 
-	var config atc.ResourceType
+	var config types.ResourceType
 	if configJSON.Valid {
 		decryptedConfig, err := es.Decrypt(configJSON.String, noncense)
 		if err != nil {
@@ -324,7 +324,7 @@ func scanResourceType(t *resourceType, row scannable) error {
 			return err
 		}
 	} else {
-		config = atc.ResourceType{}
+		config = types.ResourceType{}
 	}
 
 	t.source = config.Source

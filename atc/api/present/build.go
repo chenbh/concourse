@@ -1,16 +1,16 @@
 package present
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/tedsuo/rata"
 )
 
-func Build(build db.Build) atc.Build {
+func Build(build db.Build) types.Build {
 
-	apiURL, err := atc.Routes.CreatePathForRoute(atc.GetBuild, rata.Params{
+	apiURL, err := types.Routes.CreatePathForRoute(types.GetBuild, rata.Params{
 		"build_id":  strconv.Itoa(build.ID()),
 		"team_name": build.TeamName(),
 	})
@@ -18,7 +18,7 @@ func Build(build db.Build) atc.Build {
 		panic("failed to generate url: " + err.Error())
 	}
 
-	atcBuild := atc.Build{
+	atcBuild := types.Build{
 		ID:           build.ID(),
 		Name:         build.Name(),
 		JobName:      build.JobName(),
@@ -30,7 +30,7 @@ func Build(build db.Build) atc.Build {
 
 	if build.RerunOf() != 0 {
 		atcBuild.RerunNumber = build.RerunNumber()
-		atcBuild.RerunOf = &atc.RerunOfBuild{
+		atcBuild.RerunOf = &types.RerunOfBuild{
 			Name: build.RerunOfName(),
 			ID:   build.RerunOf(),
 		}

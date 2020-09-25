@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -28,9 +28,9 @@ var _ = Describe("Fly CLI", func() {
 			resourceVersionID   = "42"
 			enableVersion       = "some:value"
 			pipelineResource    = fmt.Sprintf("%s/%s", pipelineName, resourceName)
-			expectedVersion     = atc.ResourceVersion{
+			expectedVersion     = types.ResourceVersion{
 				ID:      42,
-				Version: atc.Version{"some": "value"},
+				Version: types.Version{"some": "value"},
 				Enabled: false,
 			}
 		)
@@ -50,14 +50,14 @@ var _ = Describe("Fly CLI", func() {
 		Context("when the resource is specified", func() {
 			Context("when the resource version json string is specified", func() {
 				BeforeEach(func() {
-					getPath, err = atc.Routes.CreatePathForRoute(atc.ListResourceVersions, rata.Params{
+					getPath, err = types.Routes.CreatePathForRoute(types.ListResourceVersions, rata.Params{
 						"pipeline_name": pipelineName,
 						"team_name":     teamName,
 						"resource_name": resourceName,
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					enablePath, err = atc.Routes.CreatePathForRoute(atc.EnableResourceVersion, rata.Params{
+					enablePath, err = types.Routes.CreatePathForRoute(types.EnableResourceVersion, rata.Params{
 						"pipeline_name":              pipelineName,
 						"team_name":                  teamName,
 						"resource_name":              resourceName,
@@ -71,7 +71,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", getPath, "filter=some:value"),
-							ghttp.RespondWithJSONEncoded(expectedGetStatus, []atc.ResourceVersion{expectedVersion}),
+							ghttp.RespondWithJSONEncoded(expectedGetStatus, []types.ResourceVersion{expectedVersion}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", enablePath),

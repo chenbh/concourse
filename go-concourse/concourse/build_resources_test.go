@@ -1,9 +1,8 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
-
-	"github.com/concourse/concourse/atc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,30 +14,30 @@ var _ = Describe("ATC Handler Build Resources", func() {
 		expectedURL := "/api/v1/builds/6/resources"
 
 		Context("when build exists", func() {
-			var expectedBuildInputsOutputs atc.BuildInputsOutputs
+			var expectedBuildInputsOutputs types.BuildInputsOutputs
 
 			BeforeEach(func() {
-				expectedBuildInputsOutputs = atc.BuildInputsOutputs{
-					Inputs: []atc.PublicBuildInput{
+				expectedBuildInputsOutputs = types.BuildInputsOutputs{
+					Inputs: []types.PublicBuildInput{
 						{
 							Name:    "input1",
-							Version: atc.Version{"version": "value1"},
+							Version: types.Version{"version": "value1"},
 						},
 						{
 							Name:            "input2",
-							Version:         atc.Version{"version": "value2"},
+							Version:         types.Version{"version": "value2"},
 							PipelineID:      57,
 							FirstOccurrence: false,
 						},
 					},
-					Outputs: []atc.PublicBuildOutput{
+					Outputs: []types.PublicBuildOutput{
 						{
 							Name:    "myresource3",
-							Version: atc.Version{"version": "value3"},
+							Version: types.Version{"version": "value3"},
 						},
 						{
 							Name:    "myresource4",
-							Version: atc.Version{"version": "value4"},
+							Version: types.Version{"version": "value4"},
 						},
 					},
 				}

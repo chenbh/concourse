@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"os"
 
@@ -27,7 +28,7 @@ func (command *FormatPipelineCommand) Execute(args []string) error {
 	placeholderWrapper := yamlpatch.NewPlaceholderWrapper("{{", "}}")
 	wrappedConfigBytes := placeholderWrapper.Wrap(configBytes)
 
-	var config atc.Config
+	var config types.Config
 	err = yaml.Unmarshal(wrappedConfigBytes, &config)
 	if err != nil {
 		displayhelpers.FailWithErrorf("could not unmarshal config", err)

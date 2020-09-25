@@ -2,11 +2,11 @@
 package execfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/exec"
 	"github.com/concourse/concourse/vars"
@@ -41,24 +41,24 @@ type FakeCheckDelegate struct {
 	initializingArgsForCall []struct {
 		arg1 lager.Logger
 	}
-	RedactImageSourceStub        func(atc.Source) (atc.Source, error)
+	RedactImageSourceStub        func(types.Source) (types.Source, error)
 	redactImageSourceMutex       sync.RWMutex
 	redactImageSourceArgsForCall []struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}
 	redactImageSourceReturns struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	redactImageSourceReturnsOnCall map[int]struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
-	SaveVersionsStub        func(db.SpanContext, []atc.Version) error
+	SaveVersionsStub        func(db.SpanContext, []types.Version) error
 	saveVersionsMutex       sync.RWMutex
 	saveVersionsArgsForCall []struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}
 	saveVersionsReturns struct {
 		result1 error
@@ -266,11 +266,11 @@ func (fake *FakeCheckDelegate) InitializingArgsForCall(i int) lager.Logger {
 	return argsForCall.arg1
 }
 
-func (fake *FakeCheckDelegate) RedactImageSource(arg1 atc.Source) (atc.Source, error) {
+func (fake *FakeCheckDelegate) RedactImageSource(arg1 types.Source) (types.Source, error) {
 	fake.redactImageSourceMutex.Lock()
 	ret, specificReturn := fake.redactImageSourceReturnsOnCall[len(fake.redactImageSourceArgsForCall)]
 	fake.redactImageSourceArgsForCall = append(fake.redactImageSourceArgsForCall, struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}{arg1})
 	fake.recordInvocation("RedactImageSource", []interface{}{arg1})
 	fake.redactImageSourceMutex.Unlock()
@@ -290,56 +290,56 @@ func (fake *FakeCheckDelegate) RedactImageSourceCallCount() int {
 	return len(fake.redactImageSourceArgsForCall)
 }
 
-func (fake *FakeCheckDelegate) RedactImageSourceCalls(stub func(atc.Source) (atc.Source, error)) {
+func (fake *FakeCheckDelegate) RedactImageSourceCalls(stub func(types.Source) (types.Source, error)) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = stub
 }
 
-func (fake *FakeCheckDelegate) RedactImageSourceArgsForCall(i int) atc.Source {
+func (fake *FakeCheckDelegate) RedactImageSourceArgsForCall(i int) types.Source {
 	fake.redactImageSourceMutex.RLock()
 	defer fake.redactImageSourceMutex.RUnlock()
 	argsForCall := fake.redactImageSourceArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCheckDelegate) RedactImageSourceReturns(result1 atc.Source, result2 error) {
+func (fake *FakeCheckDelegate) RedactImageSourceReturns(result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	fake.redactImageSourceReturns = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCheckDelegate) RedactImageSourceReturnsOnCall(i int, result1 atc.Source, result2 error) {
+func (fake *FakeCheckDelegate) RedactImageSourceReturnsOnCall(i int, result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	if fake.redactImageSourceReturnsOnCall == nil {
 		fake.redactImageSourceReturnsOnCall = make(map[int]struct {
-			result1 atc.Source
+			result1 types.Source
 			result2 error
 		})
 	}
 	fake.redactImageSourceReturnsOnCall[i] = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCheckDelegate) SaveVersions(arg1 db.SpanContext, arg2 []atc.Version) error {
-	var arg2Copy []atc.Version
+func (fake *FakeCheckDelegate) SaveVersions(arg1 db.SpanContext, arg2 []types.Version) error {
+	var arg2Copy []types.Version
 	if arg2 != nil {
-		arg2Copy = make([]atc.Version, len(arg2))
+		arg2Copy = make([]types.Version, len(arg2))
 		copy(arg2Copy, arg2)
 	}
 	fake.saveVersionsMutex.Lock()
 	ret, specificReturn := fake.saveVersionsReturnsOnCall[len(fake.saveVersionsArgsForCall)]
 	fake.saveVersionsArgsForCall = append(fake.saveVersionsArgsForCall, struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}{arg1, arg2Copy})
 	fake.recordInvocation("SaveVersions", []interface{}{arg1, arg2Copy})
 	fake.saveVersionsMutex.Unlock()
@@ -359,13 +359,13 @@ func (fake *FakeCheckDelegate) SaveVersionsCallCount() int {
 	return len(fake.saveVersionsArgsForCall)
 }
 
-func (fake *FakeCheckDelegate) SaveVersionsCalls(stub func(db.SpanContext, []atc.Version) error) {
+func (fake *FakeCheckDelegate) SaveVersionsCalls(stub func(db.SpanContext, []types.Version) error) {
 	fake.saveVersionsMutex.Lock()
 	defer fake.saveVersionsMutex.Unlock()
 	fake.SaveVersionsStub = stub
 }
 
-func (fake *FakeCheckDelegate) SaveVersionsArgsForCall(i int) (db.SpanContext, []atc.Version) {
+func (fake *FakeCheckDelegate) SaveVersionsArgsForCall(i int) (db.SpanContext, []types.Version) {
 	fake.saveVersionsMutex.RLock()
 	defer fake.saveVersionsMutex.RUnlock()
 	argsForCall := fake.saveVersionsArgsForCall[i]

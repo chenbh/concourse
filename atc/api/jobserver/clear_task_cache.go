@@ -3,10 +3,10 @@ package jobserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/google/jsonapi"
 )
@@ -16,7 +16,7 @@ func (s *Server) ClearTaskCache(pipeline db.Pipeline) http.Handler {
 		logger := s.logger.Session("clear-task-cache")
 		jobName := r.FormValue(":job_name")
 		stepName := r.FormValue(":step_name")
-		cachePath := r.FormValue(atc.ClearTaskCacheQueryPath)
+		cachePath := r.FormValue(types.ClearTaskCacheQueryPath)
 
 		job, found, err := pipeline.Job(jobName)
 		if err != nil {
@@ -55,7 +55,7 @@ func (s *Server) ClearTaskCache(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		s.writeJSONResponse(w, atc.ClearTaskCacheResponse{CachesRemoved: rowsDeleted})
+		s.writeJSONResponse(w, types.ClearTaskCacheResponse{CachesRemoved: rowsDeleted})
 	})
 }
 

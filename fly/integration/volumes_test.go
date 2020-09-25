@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -28,7 +28,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/volumes"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Volume{
+						ghttp.RespondWithJSONEncoded(200, []types.Volume{
 							{
 								ID:              "bbbbbb",
 								WorkerName:      "cccccc",
@@ -40,22 +40,22 @@ var _ = Describe("Fly CLI", func() {
 								ID:         "aaaaaa",
 								WorkerName: "dddddd",
 								Type:       "resource",
-								ResourceType: &atc.VolumeResourceType{
-									ResourceType: &atc.VolumeResourceType{
-										BaseResourceType: &atc.VolumeBaseResourceType{
+								ResourceType: &types.VolumeResourceType{
+									ResourceType: &types.VolumeResourceType{
+										BaseResourceType: &types.VolumeBaseResourceType{
 											Name:    "base-resource-type",
 											Version: "base-resource-version",
 										},
-										Version: atc.Version{"custom": "version"},
+										Version: types.Version{"custom": "version"},
 									},
-									Version: atc.Version{"a": "b", "c": "d"},
+									Version: types.Version{"a": "b", "c": "d"},
 								},
 							},
 							{
 								ID:         "aaabbb",
 								WorkerName: "cccccc",
 								Type:       "resource-type",
-								BaseResourceType: &atc.VolumeBaseResourceType{
+								BaseResourceType: &types.VolumeBaseResourceType{
 									Name:    "base-resource-type",
 									Version: "base-resource-version",
 								},

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
@@ -18,18 +18,18 @@ var ErrDestroyRefused = errors.New("not-permitted-to-destroy-as-requested")
 type setTeamResponse struct {
 	Errors   []string        `json:"errors,omitempty"`
 	Warnings []ConfigWarning `json:"warnings,omitempty"`
-	Team     atc.Team        `json:"team"`
+	Team     types.Team      `json:"team"`
 }
 
 // CreateOrUpdate creates or updates team teamName with the settings provided in passedTeam.
 // passedTeam should reflect the desired state of team's configuration.
-func (team *team) CreateOrUpdate(passedTeam atc.Team) (atc.Team, bool, bool, []ConfigWarning, error) {
+func (team *team) CreateOrUpdate(passedTeam types.Team) (types.Team, bool, bool, []ConfigWarning, error) {
 	params := rata.Params{"team_name": team.name}
 
 	buffer := &bytes.Buffer{}
 	err := json.NewEncoder(buffer).Encode(passedTeam)
 	if err != nil {
-		return atc.Team{}, false, false, []ConfigWarning{}, fmt.Errorf("Unable to marshal plan: %s", err)
+		return types.Team{}, false, false, []ConfigWarning{}, fmt.Errorf("Unable to marshal plan: %s", err)
 	}
 
 	var result setTeamResponse
@@ -37,7 +37,7 @@ func (team *team) CreateOrUpdate(passedTeam atc.Team) (atc.Team, bool, bool, []C
 		Result: &result,
 	}
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.SetTeam,
+		RequestName: types.SetTeam,
 		Params:      params,
 		Body:        buffer,
 		Header: http.Header{
@@ -63,7 +63,7 @@ func (team *team) CreateOrUpdate(passedTeam atc.Team) (atc.Team, bool, bool, []C
 func (team *team) DestroyTeam(teamName string) error {
 	params := rata.Params{"team_name": teamName}
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.DestroyTeam,
+		RequestName: types.DestroyTeam,
 		Params:      params,
 		Header: http.Header{
 			"Content-Type": {"application/json"},
@@ -82,14 +82,14 @@ func (team *team) RenameTeam(teamName, name string) (bool, []ConfigWarning, erro
 		"team_name": teamName,
 	}
 
-	jsonBytes, err := json.Marshal(atc.RenameRequest{NewName: name})
+	jsonBytes, err := json.Marshal(types.RenameRequest{NewName: name})
 	if err != nil {
 		return false, []ConfigWarning{}, err
 	}
 
 	var response setConfigResponse
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.RenameTeam,
+		RequestName: types.RenameTeam,
 		Params:      params,
 		Body:        bytes.NewBuffer(jsonBytes),
 		Header:      http.Header{"Content-Type": []string{"application/json"}},
@@ -107,10 +107,10 @@ func (team *team) RenameTeam(teamName, name string) (bool, []ConfigWarning, erro
 	}
 }
 
-func (client *client) ListTeams() ([]atc.Team, error) {
-	var teams []atc.Team
+func (client *client) ListTeams() ([]types.Team, error) {
+	var teams []types.Team
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListTeams,
+		RequestName: types.ListTeams,
 	}, &internal.Response{
 		Result: &teams,
 	})
@@ -119,9 +119,9 @@ func (client *client) ListTeams() ([]atc.Team, error) {
 }
 
 func (client *client) FindTeam(teamName string) (Team, error) {
-	var atcTeam atc.Team
+	var atcTeam types.Team
 	resp, err := client.httpAgent.Send(internal.Request{
-		RequestName: atc.GetTeam,
+		RequestName: types.GetTeam,
 		Params:      rata.Params{"team_name": teamName},
 	})
 

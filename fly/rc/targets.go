@@ -3,12 +3,11 @@ package rc
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"github.com/concourse/concourse/atc"
 
 	"sigs.k8s.io/yaml"
 )
@@ -204,7 +203,7 @@ func LoadTargets() (Targets, error) {
 
 	for name, targetProps := range targets {
 		if targetProps.TeamName == "" {
-			targetProps.TeamName = atc.DefaultTeamName
+			targetProps.TeamName = types.DefaultTeamName
 			targets[name] = targetProps
 		}
 	}

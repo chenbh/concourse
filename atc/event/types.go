@@ -1,55 +1,57 @@
 package event
 
-import "github.com/concourse/concourse/atc"
+import (
+	"github.com/concourse/concourse/atc/types"
+)
 
 const (
 	// build log (e.g. from input or build execution)
-	EventTypeLog atc.EventType = "log"
+	EventTypeLog types.EventType = "log"
 
 	// build status change (e.g. 'started', 'succeeded')
-	EventTypeStatus atc.EventType = "status"
+	EventTypeStatus types.EventType = "status"
 
 	// a step (get/put/task) selected worker
-	EventTypeSelectedWorker atc.EventType = "selected-worker"
+	EventTypeSelectedWorker types.EventType = "selected-worker"
 
 	// task execution started
-	EventTypeStartTask atc.EventType = "start-task"
+	EventTypeStartTask types.EventType = "start-task"
 
 	// task initializing (all inputs fetched; fetching image)
-	EventTypeInitializeTask atc.EventType = "initialize-task"
+	EventTypeInitializeTask types.EventType = "initialize-task"
 
 	// task execution finished
-	EventTypeFinishTask atc.EventType = "finish-task"
+	EventTypeFinishTask types.EventType = "finish-task"
 
 	// initialize getting something
-	EventTypeInitializeGet atc.EventType = "initialize-get"
+	EventTypeInitializeGet types.EventType = "initialize-get"
 
 	// started getting something
-	EventTypeStartGet atc.EventType = "start-get"
+	EventTypeStartGet types.EventType = "start-get"
 
 	// finished getting something
-	EventTypeFinishGet atc.EventType = "finish-get"
+	EventTypeFinishGet types.EventType = "finish-get"
 
 	// initialize putting something
-	EventTypeInitializePut atc.EventType = "initialize-put"
+	EventTypeInitializePut types.EventType = "initialize-put"
 
 	// started putting something
-	EventTypeStartPut atc.EventType = "start-put"
+	EventTypeStartPut types.EventType = "start-put"
 
 	// finished putting something
-	EventTypeFinishPut atc.EventType = "finish-put"
+	EventTypeFinishPut types.EventType = "finish-put"
 
-	EventTypeSetPipelineChanged atc.EventType = "set-pipeline-changed"
+	EventTypeSetPipelineChanged types.EventType = "set-pipeline-changed"
 
 	// initialize step
-	EventTypeInitialize atc.EventType = "initialize"
+	EventTypeInitialize types.EventType = "initialize"
 
 	// started step
-	EventTypeStart atc.EventType = "start"
+	EventTypeStart types.EventType = "start"
 
 	// finished step
-	EventTypeFinish atc.EventType = "finish"
+	EventTypeFinish types.EventType = "finish"
 
 	// error occurred
-	EventTypeError atc.EventType = "error"
+	EventTypeError types.EventType = "error"
 )

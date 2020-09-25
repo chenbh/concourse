@@ -3,9 +3,9 @@ package eventstream
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 	"github.com/vito/go-sse/sse"
 )
@@ -13,7 +13,7 @@ import (
 //go:generate counterfeiter . EventStream
 
 type EventStream interface {
-	NextEvent() (atc.Event, error)
+	NextEvent() (types.Event, error)
 	Close() error
 }
 
@@ -25,7 +25,7 @@ func NewSSEEventStream(reader *sse.EventSource) *SSEEventStream {
 	return &SSEEventStream{sseReader: reader}
 }
 
-func (s *SSEEventStream) NextEvent() (atc.Event, error) {
+func (s *SSEEventStream) NextEvent() (types.Event, error) {
 	se, err := s.sseReader.Next()
 	if err != nil {
 		return nil, err

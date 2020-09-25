@@ -3,6 +3,7 @@ package exec
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -33,7 +34,7 @@ type CheckStep struct {
 type CheckDelegate interface {
 	BuildStepDelegate
 
-	SaveVersions(db.SpanContext, []atc.Version) error
+	SaveVersions(db.SpanContext, []types.Version) error
 }
 
 func NewCheckStep(

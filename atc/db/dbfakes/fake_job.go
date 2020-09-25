@@ -3,11 +3,11 @@ package dbfakes
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 )
@@ -99,16 +99,16 @@ type FakeJob struct {
 		result1 int64
 		result2 error
 	}
-	ConfigStub        func() (atc.JobConfig, error)
+	ConfigStub        func() (types.JobConfig, error)
 	configMutex       sync.RWMutex
 	configArgsForCall []struct {
 	}
 	configReturns struct {
-		result1 atc.JobConfig
+		result1 types.JobConfig
 		result2 error
 	}
 	configReturnsOnCall map[int]struct {
-		result1 atc.JobConfig
+		result1 types.JobConfig
 		result2 error
 	}
 	CreateBuildStub        func() (db.Build, error)
@@ -226,16 +226,16 @@ type FakeJob struct {
 	iDReturnsOnCall map[int]struct {
 		result1 int
 	}
-	InputsStub        func() ([]atc.JobInput, error)
+	InputsStub        func() ([]types.JobInput, error)
 	inputsMutex       sync.RWMutex
 	inputsArgsForCall []struct {
 	}
 	inputsReturns struct {
-		result1 []atc.JobInput
+		result1 []types.JobInput
 		result2 error
 	}
 	inputsReturnsOnCall map[int]struct {
-		result1 []atc.JobInput
+		result1 []types.JobInput
 		result2 error
 	}
 	MaxInFlightStub        func() int
@@ -258,16 +258,16 @@ type FakeJob struct {
 	nameReturnsOnCall map[int]struct {
 		result1 string
 	}
-	OutputsStub        func() ([]atc.JobOutput, error)
+	OutputsStub        func() ([]types.JobOutput, error)
 	outputsMutex       sync.RWMutex
 	outputsArgsForCall []struct {
 	}
 	outputsReturns struct {
-		result1 []atc.JobOutput
+		result1 []types.JobOutput
 		result2 error
 	}
 	outputsReturnsOnCall map[int]struct {
-		result1 []atc.JobOutput
+		result1 []types.JobOutput
 		result2 error
 	}
 	PauseStub        func() error
@@ -864,7 +864,7 @@ func (fake *FakeJob) ClearTaskCacheReturnsOnCall(i int, result1 int64, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeJob) Config() (atc.JobConfig, error) {
+func (fake *FakeJob) Config() (types.JobConfig, error) {
 	fake.configMutex.Lock()
 	ret, specificReturn := fake.configReturnsOnCall[len(fake.configArgsForCall)]
 	fake.configArgsForCall = append(fake.configArgsForCall, struct {
@@ -887,34 +887,34 @@ func (fake *FakeJob) ConfigCallCount() int {
 	return len(fake.configArgsForCall)
 }
 
-func (fake *FakeJob) ConfigCalls(stub func() (atc.JobConfig, error)) {
+func (fake *FakeJob) ConfigCalls(stub func() (types.JobConfig, error)) {
 	fake.configMutex.Lock()
 	defer fake.configMutex.Unlock()
 	fake.ConfigStub = stub
 }
 
-func (fake *FakeJob) ConfigReturns(result1 atc.JobConfig, result2 error) {
+func (fake *FakeJob) ConfigReturns(result1 types.JobConfig, result2 error) {
 	fake.configMutex.Lock()
 	defer fake.configMutex.Unlock()
 	fake.ConfigStub = nil
 	fake.configReturns = struct {
-		result1 atc.JobConfig
+		result1 types.JobConfig
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeJob) ConfigReturnsOnCall(i int, result1 atc.JobConfig, result2 error) {
+func (fake *FakeJob) ConfigReturnsOnCall(i int, result1 types.JobConfig, result2 error) {
 	fake.configMutex.Lock()
 	defer fake.configMutex.Unlock()
 	fake.ConfigStub = nil
 	if fake.configReturnsOnCall == nil {
 		fake.configReturnsOnCall = make(map[int]struct {
-			result1 atc.JobConfig
+			result1 types.JobConfig
 			result2 error
 		})
 	}
 	fake.configReturnsOnCall[i] = struct {
-		result1 atc.JobConfig
+		result1 types.JobConfig
 		result2 error
 	}{result1, result2}
 }
@@ -1468,7 +1468,7 @@ func (fake *FakeJob) IDReturnsOnCall(i int, result1 int) {
 	}{result1}
 }
 
-func (fake *FakeJob) Inputs() ([]atc.JobInput, error) {
+func (fake *FakeJob) Inputs() ([]types.JobInput, error) {
 	fake.inputsMutex.Lock()
 	ret, specificReturn := fake.inputsReturnsOnCall[len(fake.inputsArgsForCall)]
 	fake.inputsArgsForCall = append(fake.inputsArgsForCall, struct {
@@ -1491,34 +1491,34 @@ func (fake *FakeJob) InputsCallCount() int {
 	return len(fake.inputsArgsForCall)
 }
 
-func (fake *FakeJob) InputsCalls(stub func() ([]atc.JobInput, error)) {
+func (fake *FakeJob) InputsCalls(stub func() ([]types.JobInput, error)) {
 	fake.inputsMutex.Lock()
 	defer fake.inputsMutex.Unlock()
 	fake.InputsStub = stub
 }
 
-func (fake *FakeJob) InputsReturns(result1 []atc.JobInput, result2 error) {
+func (fake *FakeJob) InputsReturns(result1 []types.JobInput, result2 error) {
 	fake.inputsMutex.Lock()
 	defer fake.inputsMutex.Unlock()
 	fake.InputsStub = nil
 	fake.inputsReturns = struct {
-		result1 []atc.JobInput
+		result1 []types.JobInput
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeJob) InputsReturnsOnCall(i int, result1 []atc.JobInput, result2 error) {
+func (fake *FakeJob) InputsReturnsOnCall(i int, result1 []types.JobInput, result2 error) {
 	fake.inputsMutex.Lock()
 	defer fake.inputsMutex.Unlock()
 	fake.InputsStub = nil
 	if fake.inputsReturnsOnCall == nil {
 		fake.inputsReturnsOnCall = make(map[int]struct {
-			result1 []atc.JobInput
+			result1 []types.JobInput
 			result2 error
 		})
 	}
 	fake.inputsReturnsOnCall[i] = struct {
-		result1 []atc.JobInput
+		result1 []types.JobInput
 		result2 error
 	}{result1, result2}
 }
@@ -1627,7 +1627,7 @@ func (fake *FakeJob) NameReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
-func (fake *FakeJob) Outputs() ([]atc.JobOutput, error) {
+func (fake *FakeJob) Outputs() ([]types.JobOutput, error) {
 	fake.outputsMutex.Lock()
 	ret, specificReturn := fake.outputsReturnsOnCall[len(fake.outputsArgsForCall)]
 	fake.outputsArgsForCall = append(fake.outputsArgsForCall, struct {
@@ -1650,34 +1650,34 @@ func (fake *FakeJob) OutputsCallCount() int {
 	return len(fake.outputsArgsForCall)
 }
 
-func (fake *FakeJob) OutputsCalls(stub func() ([]atc.JobOutput, error)) {
+func (fake *FakeJob) OutputsCalls(stub func() ([]types.JobOutput, error)) {
 	fake.outputsMutex.Lock()
 	defer fake.outputsMutex.Unlock()
 	fake.OutputsStub = stub
 }
 
-func (fake *FakeJob) OutputsReturns(result1 []atc.JobOutput, result2 error) {
+func (fake *FakeJob) OutputsReturns(result1 []types.JobOutput, result2 error) {
 	fake.outputsMutex.Lock()
 	defer fake.outputsMutex.Unlock()
 	fake.OutputsStub = nil
 	fake.outputsReturns = struct {
-		result1 []atc.JobOutput
+		result1 []types.JobOutput
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeJob) OutputsReturnsOnCall(i int, result1 []atc.JobOutput, result2 error) {
+func (fake *FakeJob) OutputsReturnsOnCall(i int, result1 []types.JobOutput, result2 error) {
 	fake.outputsMutex.Lock()
 	defer fake.outputsMutex.Unlock()
 	fake.OutputsStub = nil
 	if fake.outputsReturnsOnCall == nil {
 		fake.outputsReturnsOnCall = make(map[int]struct {
-			result1 []atc.JobOutput
+			result1 []types.JobOutput
 			result2 error
 		})
 	}
 	fake.outputsReturnsOnCall[i] = struct {
-		result1 []atc.JobOutput
+		result1 []types.JobOutput
 		result2 error
 	}{result1, result2}
 }

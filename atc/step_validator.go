@@ -2,6 +2,7 @@ package atc
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 	"time"
 )
@@ -14,7 +15,7 @@ type StepValidator struct {
 	// deprecations.
 	//
 	// This field will be populated after visiting the step.
-	Warnings []ConfigWarning
+	Warnings []types.ConfigWarning
 
 	// Errors is a slice of critical errors which will prevent configuring the
 	// pipeline.
@@ -22,7 +23,7 @@ type StepValidator struct {
 	// This field will be populated after visiting the step.
 	Errors []string
 
-	config  Config
+	config  types.Config
 	context []string
 
 	seenGetName    scope
@@ -39,7 +40,7 @@ type scope map[string]bool
 // The context argument contains the initial context used to annotate error and
 // warning messages. For example, []string{"jobs(foo)", ".plan"} will result in
 // errors like 'jobs(foo).plan.task(bar): blah blah'.
-func NewStepValidator(config Config, context []string) *StepValidator {
+func NewStepValidator(config types.Config, context []string) *StepValidator {
 	return &StepValidator{
 		config:         config,
 		context:        context,
@@ -48,7 +49,7 @@ func NewStepValidator(config Config, context []string) *StepValidator {
 	}
 }
 
-func (validator *StepValidator) Validate(step Step) error {
+func (validator *StepValidator) Validate(step types.Step) error {
 	if len(step.UnknownFields) > 0 {
 		var fieldNames []string
 		for field := range step.UnknownFields {
@@ -60,11 +61,11 @@ func (validator *StepValidator) Validate(step Step) error {
 	return step.Config.Visit(validator)
 }
 
-func (validator *StepValidator) VisitTask(plan *TaskStep) error {
+func (validator *StepValidator) VisitTask(plan *types.TaskStep) error {
 	validator.pushContext(fmt.Sprintf(".task(%s)", plan.Name))
 	defer validator.popContext()
 
-	warning := ValidateIdentifier(plan.Name, validator.context...)
+	warning := types.ValidateIdentifier(plan.Name, validator.context...)
 	if warning != nil {
 		validator.recordWarning(*warning)
 	}
@@ -78,7 +79,7 @@ func (validator *StepValidator) VisitTask(plan *TaskStep) error {
 	}
 
 	if plan.Config != nil && (plan.Config.RootfsURI != "" || plan.Config.ImageResource != nil) && plan.ImageArtifactName != "" {
-		validator.recordWarning(ConfigWarning{
+		validator.recordWarning(types.ConfigWarning{
 			Type:    "pipeline",
 			Message: validator.annotate("specifies image: on the step but also specifies an image under config: - the image: on the step takes precedence"),
 		})
@@ -88,7 +89,7 @@ func (validator *StepValidator) VisitTask(plan *TaskStep) error {
 		validator.pushContext(".config")
 
 		if err := plan.Config.Validate(); err != nil {
-			if validationErr, ok := err.(TaskValidationError); ok {
+			if validationErr, ok := err.(types.TaskValidationError); ok {
 				for _, msg := range validationErr.Errors {
 					validator.recordError(msg)
 				}
@@ -103,11 +104,11 @@ func (validator *StepValidator) VisitTask(plan *TaskStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitGet(step *GetStep) error {
+func (validator *StepValidator) VisitGet(step *types.GetStep) error {
 	validator.pushContext(fmt.Sprintf(".get(%s)", step.Name))
 	defer validator.popContext()
 
-	warning := ValidateIdentifier(step.Name, validator.context...)
+	warning := types.ValidateIdentifier(step.Name, validator.context...)
 	if warning != nil {
 		validator.recordWarning(*warning)
 	}
@@ -136,14 +137,14 @@ func (validator *StepValidator) VisitGet(step *GetStep) error {
 
 		foundResource := false
 
-		_ = jobConfig.StepConfig().Visit(StepRecursor{
-			OnGet: func(input *GetStep) error {
+		_ = jobConfig.StepConfig().Visit(types.StepRecursor{
+			OnGet: func(input *types.GetStep) error {
 				if input.ResourceName() == resourceName {
 					foundResource = true
 				}
 				return nil
 			},
-			OnPut: func(output *PutStep) error {
+			OnPut: func(output *types.PutStep) error {
 				if output.ResourceName() == resourceName {
 					foundResource = true
 				}
@@ -161,11 +162,11 @@ func (validator *StepValidator) VisitGet(step *GetStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitPut(step *PutStep) error {
+func (validator *StepValidator) VisitPut(step *types.PutStep) error {
 	validator.pushContext(".put(%s)", step.Name)
 	defer validator.popContext()
 
-	warning := ValidateIdentifier(step.Name, validator.context...)
+	warning := types.ValidateIdentifier(step.Name, validator.context...)
 	if warning != nil {
 		validator.recordWarning(*warning)
 	}
@@ -180,11 +181,11 @@ func (validator *StepValidator) VisitPut(step *PutStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitSetPipeline(step *SetPipelineStep) error {
+func (validator *StepValidator) VisitSetPipeline(step *types.SetPipelineStep) error {
 	validator.pushContext(".set_pipeline(%s)", step.Name)
 	defer validator.popContext()
 
-	warning := ValidateIdentifier(step.Name, validator.context...)
+	warning := types.ValidateIdentifier(step.Name, validator.context...)
 	if warning != nil {
 		validator.recordWarning(*warning)
 	}
@@ -196,11 +197,11 @@ func (validator *StepValidator) VisitSetPipeline(step *SetPipelineStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitLoadVar(step *LoadVarStep) error {
+func (validator *StepValidator) VisitLoadVar(step *types.LoadVarStep) error {
 	validator.pushContext(".load_var(%s)", step.Name)
 	defer validator.popContext()
 
-	warning := ValidateIdentifier(step.Name, validator.context...)
+	warning := types.ValidateIdentifier(step.Name, validator.context...)
 	if warning != nil {
 		validator.recordWarning(*warning)
 	}
@@ -214,14 +215,14 @@ func (validator *StepValidator) VisitLoadVar(step *LoadVarStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitTry(step *TryStep) error {
+func (validator *StepValidator) VisitTry(step *types.TryStep) error {
 	validator.pushContext(".try")
 	defer validator.popContext()
 
 	return validator.Validate(step.Step)
 }
 
-func (validator *StepValidator) VisitDo(step *DoStep) error {
+func (validator *StepValidator) VisitDo(step *types.DoStep) error {
 	validator.pushContext(".do")
 	defer validator.popContext()
 
@@ -239,7 +240,7 @@ func (validator *StepValidator) VisitDo(step *DoStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitInParallel(step *InParallelStep) error {
+func (validator *StepValidator) VisitInParallel(step *types.InParallelStep) error {
 	validator.pushContext(".in_parallel")
 	defer validator.popContext()
 
@@ -257,11 +258,11 @@ func (validator *StepValidator) VisitInParallel(step *InParallelStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitAggregate(step *AggregateStep) error {
+func (validator *StepValidator) VisitAggregate(step *types.AggregateStep) error {
 	validator.pushContext(".aggregate")
 	defer validator.popContext()
 
-	validator.recordWarning(ConfigWarning{
+	validator.recordWarning(types.ConfigWarning{
 		Type:    "pipeline",
 		Message: validator.annotate("the aggregate step is deprecated and will be removed in a future version"),
 	})
@@ -280,7 +281,7 @@ func (validator *StepValidator) VisitAggregate(step *AggregateStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitAcross(step *AcrossStep) error {
+func (validator *StepValidator) VisitAcross(step *types.AcrossStep) error {
 	validator.pushContext(".across")
 	defer validator.popContext()
 
@@ -311,7 +312,7 @@ func (validator *StepValidator) VisitAcross(step *AcrossStep) error {
 	return step.Step.Visit(validator)
 }
 
-func (validator *StepValidator) VisitTimeout(step *TimeoutStep) error {
+func (validator *StepValidator) VisitTimeout(step *types.TimeoutStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -328,7 +329,7 @@ func (validator *StepValidator) VisitTimeout(step *TimeoutStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitRetry(step *RetryStep) error {
+func (validator *StepValidator) VisitRetry(step *types.RetryStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -344,7 +345,7 @@ func (validator *StepValidator) VisitRetry(step *RetryStep) error {
 	return nil
 }
 
-func (validator *StepValidator) VisitOnSuccess(step *OnSuccessStep) error {
+func (validator *StepValidator) VisitOnSuccess(step *types.OnSuccessStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -356,7 +357,7 @@ func (validator *StepValidator) VisitOnSuccess(step *OnSuccessStep) error {
 	return validator.Validate(step.Hook)
 }
 
-func (validator *StepValidator) VisitOnFailure(step *OnFailureStep) error {
+func (validator *StepValidator) VisitOnFailure(step *types.OnFailureStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -368,7 +369,7 @@ func (validator *StepValidator) VisitOnFailure(step *OnFailureStep) error {
 	return validator.Validate(step.Hook)
 }
 
-func (validator *StepValidator) VisitOnAbort(step *OnAbortStep) error {
+func (validator *StepValidator) VisitOnAbort(step *types.OnAbortStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -380,7 +381,7 @@ func (validator *StepValidator) VisitOnAbort(step *OnAbortStep) error {
 	return validator.Validate(step.Hook)
 }
 
-func (validator *StepValidator) VisitOnError(step *OnErrorStep) error {
+func (validator *StepValidator) VisitOnError(step *types.OnErrorStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -392,7 +393,7 @@ func (validator *StepValidator) VisitOnError(step *OnErrorStep) error {
 	return validator.Validate(step.Hook)
 }
 
-func (validator *StepValidator) VisitEnsure(step *EnsureStep) error {
+func (validator *StepValidator) VisitEnsure(step *types.EnsureStep) error {
 	err := step.Step.Visit(validator)
 	if err != nil {
 		return err
@@ -404,7 +405,7 @@ func (validator *StepValidator) VisitEnsure(step *EnsureStep) error {
 	return validator.Validate(step.Hook)
 }
 
-func (validator *StepValidator) recordWarning(warning ConfigWarning) {
+func (validator *StepValidator) recordWarning(warning types.ConfigWarning) {
 	validator.Warnings = append(validator.Warnings, warning)
 }
 
@@ -449,7 +450,7 @@ func (validator *StepValidator) declareLocalVar(name string) {
 	if validator.currentLocalVarScope()[name] {
 		validator.recordError("repeated var name")
 	} else if validator.localVarIsDeclared(name) {
-		validator.recordWarning(ConfigWarning{
+		validator.recordWarning(types.ConfigWarning{
 			Type:    "var_shadowed",
 			Message: validator.annotate(fmt.Sprintf("shadows local var '%s'", name)),
 		})

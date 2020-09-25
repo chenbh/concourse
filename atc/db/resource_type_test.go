@@ -2,8 +2,8 @@ package db_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,29 +20,29 @@ var _ = Describe("ResourceType", func() {
 
 		pipeline, created, err = defaultTeam.SavePipeline(
 			"pipeline-with-types",
-			atc.Config{
-				ResourceTypes: atc.ResourceTypes{
+			types.Config{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name:   "some-type",
 						Type:   "registry-image",
-						Source: atc.Source{"some": "repository"},
+						Source: types.Source{"some": "repository"},
 					},
 					{
 						Name:       "some-other-type",
 						Type:       "registry-image-ng",
 						Privileged: true,
-						Source:     atc.Source{"some": "other-repository"},
+						Source:     types.Source{"some": "other-repository"},
 					},
 					{
 						Name:   "some-type-with-params",
 						Type:   "s3",
-						Source: atc.Source{"some": "repository"},
-						Params: atc.Params{"unpack": "true"},
+						Source: types.Source{"some": "repository"},
+						Params: types.Params{"unpack": "true"},
 					},
 					{
 						Name:       "some-type-with-custom-check",
 						Type:       "registry-image",
-						Source:     atc.Source{"some": "repository"},
+						Source:     types.Source{"some": "repository"},
 						CheckEvery: "10ms",
 					},
 				},
@@ -75,22 +75,22 @@ var _ = Describe("ResourceType", func() {
 				case "some-type":
 					Expect(t.Name()).To(Equal("some-type"))
 					Expect(t.Type()).To(Equal("registry-image"))
-					Expect(t.Source()).To(Equal(atc.Source{"some": "repository"}))
+					Expect(t.Source()).To(Equal(types.Source{"some": "repository"}))
 					Expect(t.Version()).To(BeNil())
 				case "some-other-type":
 					Expect(t.Name()).To(Equal("some-other-type"))
 					Expect(t.Type()).To(Equal("registry-image-ng"))
-					Expect(t.Source()).To(Equal(atc.Source{"some": "other-repository"}))
+					Expect(t.Source()).To(Equal(types.Source{"some": "other-repository"}))
 					Expect(t.Version()).To(BeNil())
 					Expect(t.Privileged()).To(BeTrue())
 				case "some-type-with-params":
 					Expect(t.Name()).To(Equal("some-type-with-params"))
 					Expect(t.Type()).To(Equal("s3"))
-					Expect(t.Params()).To(Equal(atc.Params{"unpack": "true"}))
+					Expect(t.Params()).To(Equal(types.Params{"unpack": "true"}))
 				case "some-type-with-custom-check":
 					Expect(t.Name()).To(Equal("some-type-with-custom-check"))
 					Expect(t.Type()).To(Equal("registry-image"))
-					Expect(t.Source()).To(Equal(atc.Source{"some": "repository"}))
+					Expect(t.Source()).To(Equal(types.Source{"some": "repository"}))
 					Expect(t.Version()).To(BeNil())
 					Expect(t.CheckEvery()).To(Equal("10ms"))
 				}
@@ -108,12 +108,12 @@ var _ = Describe("ResourceType", func() {
 
 				pipeline, created, err = defaultTeam.SavePipeline(
 					"pipeline-with-types",
-					atc.Config{
-						ResourceTypes: atc.ResourceTypes{
+					types.Config{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name:   "some-type",
 								Type:   "registry-image",
-								Source: atc.Source{"some": "repository"},
+								Source: types.Source{"some": "repository"},
 							},
 						},
 					},
@@ -139,19 +139,19 @@ var _ = Describe("ResourceType", func() {
 
 				pipeline, created, err = defaultTeam.SavePipeline(
 					"pipeline-with-types",
-					atc.Config{
-						Resources: atc.ResourceConfigs{
+					types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name:   "some-name",
 								Type:   "some-name",
-								Source: atc.Source{},
+								Source: types.Source{},
 							},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name:       "some-name",
 								Type:       "some-custom-type",
-								Source:     atc.Source{"some": "repository"},
+								Source:     types.Source{"some": "repository"},
 								CheckEvery: "10ms",
 							},
 						},
@@ -185,12 +185,12 @@ var _ = Describe("ResourceType", func() {
 
 				otherPipeline, created, err := defaultTeam.SavePipeline(
 					"pipeline-with-duplicate-type-name",
-					atc.Config{
-						ResourceTypes: atc.ResourceTypes{
+					types.Config{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name:       "some-custom-type",
 								Type:       "some-different-foo-type",
-								Source:     atc.Source{"some": "repository"},
+								Source:     types.Source{"some": "repository"},
 								CheckEvery: "10ms",
 							},
 						},
@@ -204,48 +204,48 @@ var _ = Describe("ResourceType", func() {
 
 				pipeline, created, err = defaultTeam.SavePipeline(
 					"pipeline-with-types",
-					atc.Config{
-						Resources: atc.ResourceConfigs{
+					types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name:   "some-resource",
 								Type:   "some-custom-type",
-								Source: atc.Source{},
+								Source: types.Source{},
 							},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name:   "registry-image",
 								Type:   "registry-image",
-								Source: atc.Source{"some": "repository"},
+								Source: types.Source{"some": "repository"},
 							},
 							{
 								Name:       "some-other-type",
 								Type:       "registry-image",
 								Privileged: true,
-								Source:     atc.Source{"some": "other-repository"},
+								Source:     types.Source{"some": "other-repository"},
 							},
 							{
 								Name:   "some-type-with-params",
 								Type:   "s3",
-								Source: atc.Source{"some": "repository"},
-								Params: atc.Params{"unpack": "true"},
+								Source: types.Source{"some": "repository"},
+								Params: types.Params{"unpack": "true"},
 							},
 							{
 								Name:       "some-type-with-custom-check",
 								Type:       "registry-image",
-								Source:     atc.Source{"some": "repository"},
+								Source:     types.Source{"some": "repository"},
 								CheckEvery: "10ms",
 							},
 							{
 								Name:       "some-custom-type",
 								Type:       "some-other-foo-type",
-								Source:     atc.Source{"some": "repository"},
+								Source:     types.Source{"some": "repository"},
 								CheckEvery: "10ms",
 							},
 							{
 								Name:       "some-other-foo-type",
 								Type:       "some-other-type",
-								Source:     atc.Source{"some": "repository"},
+								Source:     types.Source{"some": "repository"},
 								CheckEvery: "10ms",
 							},
 						},
@@ -350,7 +350,7 @@ var _ = Describe("ResourceType", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(setupTx.Commit()).To(Succeed())
 
-			resourceTypeScope, err = resourceType.SetResourceConfig(atc.Source{"some": "repository"}, atc.VersionedResourceTypes{})
+			resourceTypeScope, err = resourceType.SetResourceConfig(types.Source{"some": "repository"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -371,15 +371,15 @@ var _ = Describe("ResourceType", func() {
 
 		Context("when the resource type has proper versions", func() {
 			BeforeEach(func() {
-				err := resourceTypeScope.SaveVersions(nil, []atc.Version{
-					atc.Version{"version": "1"},
-					atc.Version{"version": "2"},
+				err := resourceTypeScope.SaveVersions(nil, []types.Version{
+					types.Version{"version": "1"},
+					types.Version{"version": "2"},
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("returns the version", func() {
-				Expect(resourceType.Version()).To(Equal(atc.Version{"version": "2"}))
+				Expect(resourceType.Version()).To(Equal(types.Version{"version": "2"}))
 			})
 		})
 	})

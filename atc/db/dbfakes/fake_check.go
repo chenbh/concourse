@@ -2,6 +2,7 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
@@ -197,11 +198,11 @@ type FakeCheck struct {
 	resourceConfigScopeIDReturnsOnCall map[int]struct {
 		result1 int
 	}
-	SaveVersionsStub        func(db.SpanContext, []atc.Version) error
+	SaveVersionsStub        func(db.SpanContext, []types.Version) error
 	saveVersionsMutex       sync.RWMutex
 	saveVersionsArgsForCall []struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}
 	saveVersionsReturns struct {
 		result1 error
@@ -1201,17 +1202,17 @@ func (fake *FakeCheck) ResourceConfigScopeIDReturnsOnCall(i int, result1 int) {
 	}{result1}
 }
 
-func (fake *FakeCheck) SaveVersions(arg1 db.SpanContext, arg2 []atc.Version) error {
-	var arg2Copy []atc.Version
+func (fake *FakeCheck) SaveVersions(arg1 db.SpanContext, arg2 []types.Version) error {
+	var arg2Copy []types.Version
 	if arg2 != nil {
-		arg2Copy = make([]atc.Version, len(arg2))
+		arg2Copy = make([]types.Version, len(arg2))
 		copy(arg2Copy, arg2)
 	}
 	fake.saveVersionsMutex.Lock()
 	ret, specificReturn := fake.saveVersionsReturnsOnCall[len(fake.saveVersionsArgsForCall)]
 	fake.saveVersionsArgsForCall = append(fake.saveVersionsArgsForCall, struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}{arg1, arg2Copy})
 	fake.recordInvocation("SaveVersions", []interface{}{arg1, arg2Copy})
 	fake.saveVersionsMutex.Unlock()
@@ -1231,13 +1232,13 @@ func (fake *FakeCheck) SaveVersionsCallCount() int {
 	return len(fake.saveVersionsArgsForCall)
 }
 
-func (fake *FakeCheck) SaveVersionsCalls(stub func(db.SpanContext, []atc.Version) error) {
+func (fake *FakeCheck) SaveVersionsCalls(stub func(db.SpanContext, []types.Version) error) {
 	fake.saveVersionsMutex.Lock()
 	defer fake.saveVersionsMutex.Unlock()
 	fake.SaveVersionsStub = stub
 }
 
-func (fake *FakeCheck) SaveVersionsArgsForCall(i int) (db.SpanContext, []atc.Version) {
+func (fake *FakeCheck) SaveVersionsArgsForCall(i int) (db.SpanContext, []types.Version) {
 	fake.saveVersionsMutex.RLock()
 	defer fake.saveVersionsMutex.RUnlock()
 	argsForCall := fake.saveVersionsArgsForCall[i]

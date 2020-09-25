@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -46,7 +47,7 @@ type Check interface {
 	Finish() error
 	FinishWithError(err error) error
 
-	SaveVersions(SpanContext, []atc.Version) error
+	SaveVersions(SpanContext, []types.Version) error
 	AllCheckables() ([]Checkable, error)
 	AcquireTrackingLock(lager.Logger) (lock.Lock, bool, error)
 	Reload() (bool, error)
@@ -327,7 +328,7 @@ func (c *check) AllCheckables() ([]Checkable, error) {
 	return checkables, nil
 }
 
-func (c *check) SaveVersions(spanContext SpanContext, versions []atc.Version) error {
+func (c *check) SaveVersions(spanContext SpanContext, versions []types.Version) error {
 	return saveVersions(c.conn, c.resourceConfigScopeID, versions, spanContext)
 }
 

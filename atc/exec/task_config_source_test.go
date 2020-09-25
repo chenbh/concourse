@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/atc/exec"
 	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/exec/execfakes"
@@ -22,8 +22,8 @@ import (
 
 var _ = Describe("TaskConfigSource", func() {
 	var (
-		taskConfig atc.TaskConfig
-		taskVars   atc.Params
+		taskConfig types.TaskConfig
+		taskVars   types.Params
 		repo       *build.Repository
 		logger     *lagertest.TestLogger
 	)
@@ -31,36 +31,36 @@ var _ = Describe("TaskConfigSource", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("task-config-source-test")
 		repo = build.NewRepository()
-		taskConfig = atc.TaskConfig{
+		taskConfig = types.TaskConfig{
 			Platform:  "some-platform",
 			RootfsURI: "some-image",
-			ImageResource: &atc.ImageResource{
+			ImageResource: &types.ImageResource{
 				Type: "docker",
-				Source: atc.Source{
+				Source: types.Source{
 					"a":               "b",
 					"evaluated-value": "((task-variable-name))",
 				},
-				Params: atc.Params{
+				Params: types.Params{
 					"some":            "params",
 					"evaluated-value": "((task-variable-name))",
 				},
-				Version: atc.Version{"some": "version"},
+				Version: types.Version{"some": "version"},
 			},
-			Params: atc.TaskEnv{
+			Params: types.TaskEnv{
 				"key1": "key1-((task-variable-name))",
 				"key2": "key2-((task-variable-name))",
 			},
-			Run: atc.TaskRunConfig{
+			Run: types.TaskRunConfig{
 				Path: "ls",
 				Args: []string{"-al", "((task-variable-name))"},
 				Dir:  "some/dir",
 				User: "some-user",
 			},
-			Inputs: []atc.TaskInputConfig{
+			Inputs: []types.TaskInputConfig{
 				{Name: "some-input", Path: "some-path"},
 			},
 		}
-		taskVars = atc.Params{
+		taskVars = types.Params{
 			"task-variable-name": "task-variable-value",
 		}
 	})
@@ -78,7 +78,7 @@ var _ = Describe("TaskConfigSource", func() {
 			configSource := StaticConfigSource{Config: nil}
 			fetchedConfig, fetchErr := configSource.FetchConfig(context.TODO(), logger, repo)
 			Expect(fetchErr).ToNot(HaveOccurred())
-			Expect(fetchedConfig).To(Equal(atc.TaskConfig{}))
+			Expect(fetchedConfig).To(Equal(types.TaskConfig{}))
 		})
 	})
 
@@ -154,7 +154,7 @@ var _ = Describe("TaskConfigSource", func() {
 				BeforeEach(func() {
 					invalidConfig := taskConfig
 					invalidConfig.Platform = ""
-					invalidConfig.Run = atc.TaskRunConfig{}
+					invalidConfig.Run = types.TaskRunConfig{}
 
 					marshalled, err := yaml.Marshal(invalidConfig)
 					Expect(err).NotTo(HaveOccurred())
@@ -241,27 +241,27 @@ run: {path: a/file}
 
 	Describe("OverrideParamsConfigSource", func() {
 		var (
-			config       atc.TaskConfig
+			config       types.TaskConfig
 			configSource TaskConfigSource
 
-			overrideParams atc.TaskEnv
+			overrideParams types.TaskEnv
 
-			fetchedConfig atc.TaskConfig
+			fetchedConfig types.TaskConfig
 			fetchErr      error
 		)
 
 		BeforeEach(func() {
-			config = atc.TaskConfig{
+			config = types.TaskConfig{
 				Platform:  "some-platform",
 				RootfsURI: "some-image",
-				Params:    atc.TaskEnv{"PARAM": "A", "ORIG_PARAM": "D"},
-				Run: atc.TaskRunConfig{
+				Params:    types.TaskEnv{"PARAM": "A", "ORIG_PARAM": "D"},
+				Run: types.TaskRunConfig{
 					Path: "echo",
 					Args: []string{"bananapants"},
 				},
 			}
 
-			overrideParams = atc.TaskEnv{"PARAM": "B", "EXTRA_PARAM": "C"}
+			overrideParams = types.TaskEnv{"PARAM": "B", "EXTRA_PARAM": "C"}
 		})
 
 		Context("when there are no params to override", func() {
@@ -305,7 +305,7 @@ run: {path: a/file}
 			})
 
 			It("returns the config with overridden parameters", func() {
-				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
+				Expect(fetchedConfig.Params).To(Equal(types.TaskEnv{
 					"ORIG_PARAM":  "D",
 					"PARAM":       "B",
 					"EXTRA_PARAM": "C",
@@ -325,7 +325,7 @@ run: {path: a/file}
 
 			configSource TaskConfigSource
 
-			fetchedConfig atc.TaskConfig
+			fetchedConfig types.TaskConfig
 			fetchErr      error
 		)
 
@@ -340,11 +340,11 @@ run: {path: a/file}
 		})
 
 		Context("when the config is valid", func() {
-			config := atc.TaskConfig{
+			config := types.TaskConfig{
 				Platform:  "some-platform",
 				RootfsURI: "some-image",
-				Params:    atc.TaskEnv{"PARAM": "A"},
-				Run: atc.TaskRunConfig{
+				Params:    types.TaskEnv{"PARAM": "A"},
+				Run: types.TaskRunConfig{
 					Path: "echo",
 					Args: []string{"bananapants"},
 				},
@@ -362,10 +362,10 @@ run: {path: a/file}
 
 		Context("when the config is invalid", func() {
 			BeforeEach(func() {
-				fakeConfigSource.FetchConfigReturns(atc.TaskConfig{
+				fakeConfigSource.FetchConfigReturns(types.TaskConfig{
 					RootfsURI: "some-image",
-					Params:    atc.TaskEnv{"PARAM": "A"},
-					Run: atc.TaskRunConfig{
+					Params:    types.TaskEnv{"PARAM": "A"},
+					Run: types.TaskRunConfig{
 						Args: []string{"bananapants"},
 					},
 				}, nil)
@@ -380,7 +380,7 @@ run: {path: a/file}
 			disaster := errors.New("nope")
 
 			BeforeEach(func() {
-				fakeConfigSource.FetchConfigReturns(atc.TaskConfig{}, disaster)
+				fakeConfigSource.FetchConfigReturns(types.TaskConfig{}, disaster)
 			})
 
 			It("returns the error", func() {
@@ -392,7 +392,7 @@ run: {path: a/file}
 	Describe("InterpolateTemplateConfigSource", func() {
 		var (
 			configSource  TaskConfigSource
-			fetchedConfig atc.TaskConfig
+			fetchedConfig types.TaskConfig
 			fetchErr      error
 			expectAllKeys bool
 		)
@@ -418,11 +418,11 @@ run: {path: a/file}
 
 			It("resolves task config parameters successfully", func() {
 				Expect(fetchedConfig.Run.Args).To(Equal([]string{"-al", "task-variable-value"}))
-				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
+				Expect(fetchedConfig.Params).To(Equal(types.TaskEnv{
 					"key1": "key1-task-variable-value",
 					"key2": "key2-task-variable-value",
 				}))
-				Expect(fetchedConfig.ImageResource.Source).To(Equal(atc.Source{
+				Expect(fetchedConfig.ImageResource.Source).To(Equal(types.Source{
 					"a":               "b",
 					"evaluated-value": "task-variable-value",
 				}))
@@ -432,7 +432,7 @@ run: {path: a/file}
 		Context("when not expect all keys", func() {
 			BeforeEach(func() {
 				expectAllKeys = false
-				taskVars = atc.Params{}
+				taskVars = types.Params{}
 			})
 
 			It("fetches task config successfully", func() {
@@ -441,11 +441,11 @@ run: {path: a/file}
 
 			It("resolves task config parameters successfully", func() {
 				Expect(fetchedConfig.Run.Args).To(Equal([]string{"-al", "((task-variable-name))"}))
-				Expect(fetchedConfig.Params).To(Equal(atc.TaskEnv{
+				Expect(fetchedConfig.Params).To(Equal(types.TaskEnv{
 					"key1": "key1-((task-variable-name))",
 					"key2": "key2-((task-variable-name))",
 				}))
-				Expect(fetchedConfig.ImageResource.Source).To(Equal(atc.Source{
+				Expect(fetchedConfig.ImageResource.Source).To(Equal(types.Source{
 					"a":               "b",
 					"evaluated-value": "((task-variable-name))",
 				}))

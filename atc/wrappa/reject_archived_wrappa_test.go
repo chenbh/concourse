@@ -1,9 +1,9 @@
 package wrappa_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/pipelineserver"
 	"github.com/concourse/concourse/atc/db/dbfakes"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/atc/wrappa"
 	"github.com/tedsuo/rata"
 
@@ -26,23 +26,23 @@ var _ = Describe("RejectArchivedWrappa", func() {
 	It("wraps endpoints", func() {
 		inputHandlers := rata.Handlers{}
 
-		for _, route := range atc.Routes {
+		for _, route := range types.Routes {
 			inputHandlers[route.Name] = &stupidHandler{}
 		}
 
 		rejectArchivedRoutes := []string{
-			atc.PausePipeline,
-			atc.UnpausePipeline,
-			atc.CreateJobBuild,
-			atc.ScheduleJob,
-			atc.CheckResource,
-			atc.CheckResourceType,
-			atc.DisableResourceVersion,
-			atc.EnableResourceVersion,
-			atc.PinResourceVersion,
-			atc.UnpinResource,
-			atc.SetPinCommentOnResource,
-			atc.RerunJobBuild,
+			types.PausePipeline,
+			types.UnpausePipeline,
+			types.CreateJobBuild,
+			types.ScheduleJob,
+			types.CheckResource,
+			types.CheckResourceType,
+			types.DisableResourceVersion,
+			types.EnableResourceVersion,
+			types.PinResourceVersion,
+			types.UnpinResource,
+			types.SetPinCommentOnResource,
+			types.RerunJobBuild,
 		}
 
 		rejectArchivedLookup := make(map[string]bool)

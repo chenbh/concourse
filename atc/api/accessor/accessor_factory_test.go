@@ -2,9 +2,9 @@ package accessor_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/onsi/ginkgo"
@@ -61,7 +61,7 @@ var _ = Describe("AccessorFactory", func() {
 					t := new(dbfakes.FakeTeam)
 					t.NameReturns(name)
 					if authenticated {
-						t.AuthReturns(atc.TeamAuth{"viewer": map[string][]string{
+						t.AuthReturns(types.TeamAuth{"viewer": map[string][]string{
 							"users": {"github:user1"},
 						}})
 					}

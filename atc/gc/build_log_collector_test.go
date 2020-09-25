@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/gc"
@@ -89,7 +89,7 @@ var _ = Describe("BuildLogCollector", func() {
 				fakeJob = new(dbfakes.FakeJob)
 				fakeJob.NameReturns("job-1")
 				fakeJob.FirstLoggedBuildIDReturns(5)
-				fakeJob.ConfigReturns(atc.JobConfig{
+				fakeJob.ConfigReturns(types.JobConfig{
 					BuildLogsToRetain: 2,
 				}, nil)
 
@@ -238,7 +238,7 @@ var _ = Describe("BuildLogCollector", func() {
 
 			Context("when the builds we want to reap are still running", func() {
 				BeforeEach(func() {
-					fakeJob.ConfigReturns(atc.JobConfig{
+					fakeJob.ConfigReturns(types.JobConfig{
 						BuildLogsToRetain: 3,
 					}, nil)
 					fakeJob.BuildsStub = func(page db.Page) ([]db.Build, db.Pagination, error) {
@@ -354,8 +354,8 @@ var _ = Describe("BuildLogCollector", func() {
 						return nil, db.Pagination{}, nil
 					}
 
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds: 1,
 							Days:   0,
 						},
@@ -385,8 +385,8 @@ var _ = Describe("BuildLogCollector", func() {
 						return nil, db.Pagination{}, nil
 					}
 
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds: 0,
 							Days:   3,
 						},
@@ -414,8 +414,8 @@ var _ = Describe("BuildLogCollector", func() {
 						return nil, db.Pagination{}, nil
 					}
 
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds: 1,
 							Days:   3,
 						},
@@ -445,8 +445,8 @@ var _ = Describe("BuildLogCollector", func() {
 						return nil, db.Pagination{}, nil
 					}
 
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds: 0,
 							Days:   1,
 						},
@@ -468,8 +468,8 @@ var _ = Describe("BuildLogCollector", func() {
 
 			Context("when min_success_build is set", func() {
 				BeforeEach(func() {
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds:                 5,
 							Days:                   0,
 							MinimumSucceededBuilds: 2,
@@ -520,8 +520,8 @@ var _ = Describe("BuildLogCollector", func() {
 
 			Context("when min_success_build equals builds", func() {
 				BeforeEach(func() {
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Builds:                 5,
 							Days:                   0,
 							MinimumSucceededBuilds: 5,
@@ -582,8 +582,8 @@ var _ = Describe("BuildLogCollector", func() {
 					fakeJob = new(dbfakes.FakeJob)
 					fakeJob.NameReturns("job-1")
 					fakeJob.FirstLoggedBuildIDReturns(5)
-					fakeJob.ConfigReturns(atc.JobConfig{
-						BuildLogRetention: &atc.BuildLogRetention{
+					fakeJob.ConfigReturns(types.JobConfig{
+						BuildLogRetention: &types.BuildLogRetention{
 							Days: 1,
 						},
 					}, nil)
@@ -610,7 +610,7 @@ var _ = Describe("BuildLogCollector", func() {
 					fakeJob = new(dbfakes.FakeJob)
 					fakeJob.NameReturns("job-1")
 					fakeJob.FirstLoggedBuildIDReturns(1)
-					fakeJob.ConfigReturns(atc.JobConfig{
+					fakeJob.ConfigReturns(types.JobConfig{
 						BuildLogsToRetain: 10,
 					}, nil)
 
@@ -666,7 +666,7 @@ var _ = Describe("BuildLogCollector", func() {
 				fakeJob = new(dbfakes.FakeJob)
 				fakeJob.NameReturns("job-1")
 				fakeJob.FirstLoggedBuildIDReturns(6)
-				fakeJob.ConfigReturns(atc.JobConfig{
+				fakeJob.ConfigReturns(types.JobConfig{
 					BuildLogsToRetain: 0,
 				}, nil)
 				fakeJob.TagsReturns([]string{})

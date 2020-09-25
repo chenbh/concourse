@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/url"
 	"os"
 	"os/signal"
@@ -107,7 +108,7 @@ func (command *ExecuteCommand) Execute(args []string) error {
 		return err
 	}
 
-	var build atc.Build
+	var build types.Build
 	var buildURL *url.URL
 
 	if command.InputsFrom.PipelineName != "" {
@@ -150,7 +151,7 @@ func (command *ExecuteCommand) Execute(args []string) error {
 		return err
 	}
 
-	artifacts := map[string]atc.WorkerArtifact{}
+	artifacts := map[string]types.WorkerArtifact{}
 
 	for _, artifact := range artifactList {
 		artifacts[artifact.Name] = artifact
@@ -183,7 +184,7 @@ func (command *ExecuteCommand) Execute(args []string) error {
 	return nil
 }
 
-func (command *ExecuteCommand) CreateTaskConfig(args []string) (atc.TaskConfig, error) {
+func (command *ExecuteCommand) CreateTaskConfig(args []string) (types.TaskConfig, error) {
 
 	taskTemplate := templatehelpers.NewYamlTemplateWithParams(
 		command.TaskConfig,
@@ -194,7 +195,7 @@ func (command *ExecuteCommand) CreateTaskConfig(args []string) (atc.TaskConfig, 
 
 	taskTemplateEvaluated, err := taskTemplate.Evaluate(false, false)
 	if err != nil {
-		return atc.TaskConfig{}, err
+		return types.TaskConfig{}, err
 	}
 
 	return config.OverrideTaskParams(taskTemplateEvaluated, args)
@@ -203,7 +204,7 @@ func (command *ExecuteCommand) CreateTaskConfig(args []string) (atc.TaskConfig, 
 func abortOnSignal(
 	client concourse.Client,
 	terminate <-chan os.Signal,
-	build atc.Build,
+	build types.Build,
 ) {
 	<-terminate
 

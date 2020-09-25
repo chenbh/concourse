@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 	"github.com/onsi/gomega/ghttp"
 
@@ -13,10 +13,10 @@ import (
 
 var _ = Describe("GetCheck", func() {
 	Context("when ATC request succeeds", func() {
-		var expectedCheck atc.Check
+		var expectedCheck types.Check
 
 		BeforeEach(func() {
-			expectedCheck = atc.Check{
+			expectedCheck = types.Check{
 				ID:         123,
 				Status:     "errored",
 				CreateTime: 100000000000,

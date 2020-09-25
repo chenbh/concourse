@@ -2,19 +2,19 @@ package teamserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 )
 
 type SetTeamResponse struct {
-	Errors   []string            `json:"errors,omitempty"`
-	Warnings []atc.ConfigWarning `json:"warnings,omitempty"`
-	Team     atc.Team            `json:"team"`
+	Errors   []string              `json:"errors,omitempty"`
+	Warnings []types.ConfigWarning `json:"warnings,omitempty"`
+	Team     types.Team            `json:"team"`
 }
 
 func (s *Server) SetTeam(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (s *Server) SetTeam(w http.ResponseWriter, r *http.Request) {
 
 	teamName := r.FormValue(":team_name")
 
-	var atcTeam atc.Team
+	var atcTeam types.Team
 	err := json.NewDecoder(r.Body).Decode(&atcTeam)
 	if err != nil {
 		hLog.Error("malformed-request", err)
@@ -69,7 +69,7 @@ func (s *Server) SetTeam(w http.ResponseWriter, r *http.Request) {
 	} else if acc.IsAdmin() {
 		hLog.Debug("creating team")
 
-		warning := atc.ValidateIdentifier(atcTeam.Name, "team")
+		warning := types.ValidateIdentifier(atcTeam.Name, "team")
 		if warning != nil {
 			response.Warnings = append(response.Warnings, *warning)
 		}

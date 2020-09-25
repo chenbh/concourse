@@ -2,10 +2,10 @@ package auditor
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 )
 
 //go:generate counterfeiter . Auditor
@@ -55,107 +55,107 @@ type auditor struct {
 
 func (a *auditor) ValidateAction(action string) bool {
 	switch action {
-	case atc.GetBuild,
-		atc.GetBuildPlan,
-		atc.CreateBuild,
-		atc.RerunJobBuild,
-		atc.ListBuilds,
-		atc.BuildEvents,
-		atc.BuildResources,
-		atc.AbortBuild,
-		atc.GetBuildPreparation,
-		atc.ListBuildsWithVersionAsInput,
-		atc.ListBuildsWithVersionAsOutput,
-		atc.CreateArtifact,
-		atc.GetArtifact,
-		atc.ListBuildArtifacts:
+	case types.GetBuild,
+		types.GetBuildPlan,
+		types.CreateBuild,
+		types.RerunJobBuild,
+		types.ListBuilds,
+		types.BuildEvents,
+		types.BuildResources,
+		types.AbortBuild,
+		types.GetBuildPreparation,
+		types.ListBuildsWithVersionAsInput,
+		types.ListBuildsWithVersionAsOutput,
+		types.CreateArtifact,
+		types.GetArtifact,
+		types.ListBuildArtifacts:
 		return a.EnableBuildAuditLog
-	case atc.ListContainers,
-		atc.GetContainer,
-		atc.HijackContainer,
-		atc.ListDestroyingContainers,
-		atc.ReportWorkerContainers:
+	case types.ListContainers,
+		types.GetContainer,
+		types.HijackContainer,
+		types.ListDestroyingContainers,
+		types.ReportWorkerContainers:
 		return a.EnableContainerAuditLog
-	case atc.GetJob,
-		atc.CreateJobBuild,
-		atc.ListAllJobs,
-		atc.ListJobs,
-		atc.ListJobBuilds,
-		atc.ListJobInputs,
-		atc.GetJobBuild,
-		atc.PauseJob,
-		atc.UnpauseJob,
-		atc.ScheduleJob,
-		atc.JobBadge,
-		atc.MainJobBadge:
+	case types.GetJob,
+		types.CreateJobBuild,
+		types.ListAllJobs,
+		types.ListJobs,
+		types.ListJobBuilds,
+		types.ListJobInputs,
+		types.GetJobBuild,
+		types.PauseJob,
+		types.UnpauseJob,
+		types.ScheduleJob,
+		types.JobBadge,
+		types.MainJobBadge:
 		return a.EnableJobAuditLog
-	case atc.ListAllPipelines,
-		atc.ListPipelines,
-		atc.GetPipeline,
-		atc.DeletePipeline,
-		atc.OrderPipelines,
-		atc.PausePipeline,
-		atc.ArchivePipeline,
-		atc.UnpausePipeline,
-		atc.ExposePipeline,
-		atc.HidePipeline,
-		atc.RenamePipeline,
-		atc.ListPipelineBuilds,
-		atc.CreatePipelineBuild,
-		atc.PipelineBadge:
+	case types.ListAllPipelines,
+		types.ListPipelines,
+		types.GetPipeline,
+		types.DeletePipeline,
+		types.OrderPipelines,
+		types.PausePipeline,
+		types.ArchivePipeline,
+		types.UnpausePipeline,
+		types.ExposePipeline,
+		types.HidePipeline,
+		types.RenamePipeline,
+		types.ListPipelineBuilds,
+		types.CreatePipelineBuild,
+		types.PipelineBadge:
 		return a.EnablePipelineAuditLog
-	case atc.ListAllResources,
-		atc.ListResources,
-		atc.ListResourceTypes,
-		atc.GetResource,
-		atc.UnpinResource,
-		atc.SetPinCommentOnResource,
-		atc.CheckResource,
-		atc.CheckResourceWebHook,
-		atc.CheckResourceType,
-		atc.ListResourceVersions,
-		atc.GetResourceVersion,
-		atc.EnableResourceVersion,
-		atc.DisableResourceVersion,
-		atc.PinResourceVersion,
-		atc.GetResourceCausality,
-		atc.GetCheck:
+	case types.ListAllResources,
+		types.ListResources,
+		types.ListResourceTypes,
+		types.GetResource,
+		types.UnpinResource,
+		types.SetPinCommentOnResource,
+		types.CheckResource,
+		types.CheckResourceWebHook,
+		types.CheckResourceType,
+		types.ListResourceVersions,
+		types.GetResourceVersion,
+		types.EnableResourceVersion,
+		types.DisableResourceVersion,
+		types.PinResourceVersion,
+		types.GetResourceCausality,
+		types.GetCheck:
 		return a.EnableResourceAuditLog
 	case
-		atc.SaveConfig,
-		atc.GetConfig,
-		atc.GetCC,
-		atc.GetVersionsDB,
-		atc.ClearTaskCache,
-		atc.SetLogLevel,
-		atc.GetLogLevel,
-		atc.DownloadCLI,
-		atc.GetInfo,
-		atc.GetInfoCreds,
-		atc.ListActiveUsersSince,
-		atc.GetUser,
-		atc.GetWall,
-		atc.SetWall,
-		atc.ClearWall:
+		types.SaveConfig,
+		types.GetConfig,
+		types.GetCC,
+		types.GetVersionsDB,
+		types.ClearTaskCache,
+		types.SetLogLevel,
+		types.GetLogLevel,
+		types.DownloadCLI,
+		types.GetInfo,
+		types.GetInfoCreds,
+		types.ListActiveUsersSince,
+		types.GetUser,
+		types.GetWall,
+		types.SetWall,
+		types.ClearWall:
 		return a.EnableSystemAuditLog
-	case atc.ListTeams,
-		atc.SetTeam,
-		atc.RenameTeam,
-		atc.DestroyTeam,
-		atc.ListTeamBuilds,
-		atc.GetTeam:
+	case types.ListTeams,
+		types.SetTeam,
+		types.RenameTeam,
+		types.DestroyTeam,
+		types.ListTeamBuilds,
+		types.GetTeam:
 		return a.EnableTeamAuditLog
-	case atc.RegisterWorker,
-		atc.LandWorker,
-		atc.RetireWorker,
-		atc.PruneWorker,
-		atc.HeartbeatWorker,
-		atc.ListWorkers,
-		atc.DeleteWorker:
+	case types.RegisterWorker,
+		types.LandWorker,
+		types.RetireWorker,
+		types.PruneWorker,
+		types.HeartbeatWorker,
+		types.ListWorkers,
+		types.DeleteWorker:
 		return a.EnableWorkerAuditLog
-	case atc.ListVolumes,
-		atc.ListDestroyingVolumes,
-		atc.ReportWorkerVolumes:
+	case types.ListVolumes,
+		types.ListDestroyingVolumes,
+		types.ReportWorkerVolumes:
 		return a.EnableVolumeAuditLog
 	default:
 		panic(fmt.Sprintf("unhandled action: %s", action))

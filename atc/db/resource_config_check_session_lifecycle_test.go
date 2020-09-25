@@ -1,10 +1,10 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 
 	. "github.com/onsi/ginkgo"
@@ -28,7 +28,7 @@ var _ = Describe("ResourceConfigCheckSessionLifecycle", func() {
 
 		Context("for resources", func() {
 			findOrCreateSessionForDefaultResource := func() int {
-				resourceConfigScope, err := defaultResource.SetResourceConfig(defaultResource.Source(), atc.VersionedResourceTypes{})
+				resourceConfigScope, err := defaultResource.SetResourceConfig(defaultResource.Source(), types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
 				owner := db.NewResourceConfigCheckSessionContainerOwner(
@@ -80,18 +80,18 @@ var _ = Describe("ResourceConfigCheckSessionLifecycle", func() {
 
 			It("removes check sessions for inactive resources", func() {
 				By("removing the default resource from the pipeline config")
-				_, _, err := defaultTeam.SavePipeline("default-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				_, _, err := defaultTeam.SavePipeline("default-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 						},
 					},
-					Resources: atc.ResourceConfigs{},
-					ResourceTypes: atc.ResourceTypes{
+					Resources: types.ResourceConfigs{},
+					ResourceTypes: types.ResourceTypes{
 						{
 							Name: "some-type",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some-type": "source",
 							},
 						},
@@ -128,7 +128,7 @@ var _ = Describe("ResourceConfigCheckSessionLifecycle", func() {
 			findOrCreateSessionForDefaultResourceType := func() int {
 				resourceConfigScope, err := defaultResourceType.SetResourceConfig(
 					defaultResourceType.Source(),
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -181,22 +181,22 @@ var _ = Describe("ResourceConfigCheckSessionLifecycle", func() {
 
 			It("removes check sessions for inactive resource types", func() {
 				By("removing the default resource from the pipeline config")
-				_, _, err := defaultTeam.SavePipeline("default-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				_, _, err := defaultTeam.SavePipeline("default-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some": "source",
 							},
 						},
 					},
-					ResourceTypes: atc.ResourceTypes{},
+					ResourceTypes: types.ResourceTypes{},
 				}, defaultPipeline.ConfigVersion(), false)
 				Expect(err).NotTo(HaveOccurred())
 

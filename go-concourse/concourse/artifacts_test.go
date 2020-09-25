@@ -2,10 +2,10 @@ package concourse_test
 
 import (
 	"bytes"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -39,7 +39,7 @@ var _ = Describe("ArtifactRepository", func() {
 						ghttp.VerifyRequest("POST", "/api/v1/teams/some-team/artifacts"),
 						ghttp.VerifyHeader(http.Header{"Content-Type": {"application/octet-stream"}}),
 						ghttp.VerifyBody([]byte("some-contents")),
-						ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.WorkerArtifact{ID: 17}),
+						ghttp.RespondWithJSONEncoded(http.StatusCreated, types.WorkerArtifact{ID: 17}),
 					),
 				)
 			})

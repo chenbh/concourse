@@ -3,9 +3,9 @@ package concourse_test
 import (
 	"errors"
 	"github.com/concourse/concourse/atc/api/teamserver"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 
@@ -18,7 +18,7 @@ var _ = Describe("ATC Handler Teams", func() {
 	Describe("FindTeam", func() {
 		teamName := "myTeam"
 		expectedURL := "/api/v1/teams/myTeam"
-		expectedAuth := atc.TeamAuth{
+		expectedAuth := types.TeamAuth{
 			"owner": map[string][]string{
 				"groups": {}, "users": {"local:username"},
 			},
@@ -29,7 +29,7 @@ var _ = Describe("ATC Handler Teams", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", expectedURL),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 							ID:   1,
 							Name: teamName,
 							Auth: expectedAuth,
@@ -100,14 +100,14 @@ var _ = Describe("ATC Handler Teams", func() {
 	})
 	Describe("CreateOrUpdate", func() {
 		var expectedURL = "/api/v1/teams/team venture"
-		var expectedTeam, desiredTeam atc.Team
+		var expectedTeam, desiredTeam types.Team
 		var expectedResponse teamserver.SetTeamResponse
 
 		BeforeEach(func() {
-			desiredTeam = atc.Team{
+			desiredTeam = types.Team{
 				Name: "team venture",
 			}
-			expectedTeam = atc.Team{
+			expectedTeam = types.Team{
 				ID:   1,
 				Name: "team venture",
 			}
@@ -173,7 +173,7 @@ var _ = Describe("ATC Handler Teams", func() {
 
 			Context("when the team has an invalid identifier", func() {
 				BeforeEach(func() {
-					expectedResponse.Warnings = []atc.ConfigWarning{
+					expectedResponse.Warnings = []types.ConfigWarning{
 						{Type: "invalid_identifier",
 							Message: "team: 'new venture' is not a valid identifier",
 						},
@@ -253,12 +253,12 @@ var _ = Describe("ATC Handler Teams", func() {
 	})
 
 	Describe("ListTeams", func() {
-		var expectedTeams []atc.Team
+		var expectedTeams []types.Team
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/teams"
 
-			expectedTeams = []atc.Team{
+			expectedTeams = []types.Team{
 				{
 					ID:   1,
 					Name: "main",

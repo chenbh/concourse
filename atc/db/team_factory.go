@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
 	"encoding/json"
@@ -14,7 +15,7 @@ import (
 //go:generate counterfeiter . TeamFactory
 
 type TeamFactory interface {
-	CreateTeam(atc.Team) (Team, error)
+	CreateTeam(types.Team) (Team, error)
 	FindTeam(string) (Team, bool, error)
 	GetTeams() ([]Team, error)
 	GetByID(teamID int) Team
@@ -35,11 +36,11 @@ func NewTeamFactory(conn Conn, lockFactory lock.LockFactory) TeamFactory {
 	}
 }
 
-func (factory *teamFactory) CreateTeam(t atc.Team) (Team, error) {
+func (factory *teamFactory) CreateTeam(t types.Team) (Team, error) {
 	return factory.createTeam(t, false)
 }
 
-func (factory *teamFactory) createTeam(t atc.Team, admin bool) (Team, error) {
+func (factory *teamFactory) createTeam(t types.Team, admin bool) (Team, error) {
 	tx, err := factory.conn.Begin()
 	if err != nil {
 		return nil, err
@@ -142,7 +143,7 @@ func (factory *teamFactory) GetTeams() ([]Team, error) {
 func (factory *teamFactory) CreateDefaultTeamIfNotExists() (Team, error) {
 	_, err := psql.Update("teams").
 		Set("admin", true).
-		Where(sq.Eq{"LOWER(name)": strings.ToLower(atc.DefaultTeamName)}).
+		Where(sq.Eq{"LOWER(name)": strings.ToLower(types.DefaultTeamName)}).
 		RunWith(factory.conn).
 		Exec()
 
@@ -150,7 +151,7 @@ func (factory *teamFactory) CreateDefaultTeamIfNotExists() (Team, error) {
 		return nil, err
 	}
 
-	t, found, err := factory.FindTeam(atc.DefaultTeamName)
+	t, found, err := factory.FindTeam(types.DefaultTeamName)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +161,8 @@ func (factory *teamFactory) CreateDefaultTeamIfNotExists() (Team, error) {
 	}
 
 	//not found, have to create
-	return factory.createTeam(atc.Team{
-		Name: atc.DefaultTeamName,
+	return factory.createTeam(types.Team{
+		Name: types.DefaultTeamName,
 	},
 		true,
 	)

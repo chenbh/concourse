@@ -1,10 +1,10 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/lib/pq"
 	. "github.com/onsi/ginkgo"
@@ -26,21 +26,21 @@ var _ = Describe("VolumeRepository", func() {
 		usedResourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 			db.ForBuild(build.ID()),
 			"some-type",
-			atc.Version{"some": "version"},
-			atc.Source{
+			types.Version{"some": "version"},
+			types.Source{
 				"some": "source",
 			},
-			atc.Params{"some": "params"},
-			atc.VersionedResourceTypes{
-				atc.VersionedResourceType{
-					ResourceType: atc.ResourceType{
+			types.Params{"some": "params"},
+			types.VersionedResourceTypes{
+				types.VersionedResourceType{
+					ResourceType: types.ResourceType{
 						Name: "some-type",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some-type": "source",
 						},
 					},
-					Version: atc.Version{"some-type": "version"},
+					Version: types.Version{"some-type": "version"},
 				},
 			},
 		)
@@ -88,7 +88,7 @@ var _ = Describe("VolumeRepository", func() {
 				team1handles = []string{}
 				team2handles = []string{}
 
-				team2, err = teamFactory.CreateTeam(atc.Team{Name: "some-other-defaultTeam"})
+				team2, err = teamFactory.CreateTeam(types.Team{Name: "some-other-defaultTeam"})
 				Expect(err).ToNot(HaveOccurred())
 
 				creatingVolume1, err := volumeRepository.CreateContainerVolume(defaultTeam.ID(), defaultWorker.Name(), creatingContainer, "some-path-1")
@@ -233,7 +233,7 @@ var _ = Describe("VolumeRepository", func() {
 			newVersion.Version = "some-new-brt-version"
 
 			newWorker := defaultWorkerPayload
-			newWorker.ResourceTypes = []atc.WorkerResourceType{newVersion}
+			newWorker.ResourceTypes = []types.WorkerResourceType{newVersion}
 
 			defaultWorker, err = workerFactory.SaveWorker(newWorker, 0)
 			Expect(err).ToNot(HaveOccurred())
@@ -489,21 +489,21 @@ var _ = Describe("VolumeRepository", func() {
 			usedResourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForBuild(build.ID()),
 				"some-type",
-				atc.Version{"some": "version"},
-				atc.Source{
+				types.Version{"some": "version"},
+				types.Source{
 					"some": "source",
 				},
-				atc.Params{"some": "params"},
-				atc.VersionedResourceTypes{
-					atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+				types.Params{"some": "params"},
+				types.VersionedResourceTypes{
+					types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name: "some-type",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some-type": "source",
 							},
 						},
-						Version: atc.Version{"some-type": "version"},
+						Version: types.Version{"some-type": "version"},
 					},
 				},
 			)

@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"database/sql"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -13,19 +14,19 @@ import (
 
 var _ = Describe("Worker Lifecycle", func() {
 	var (
-		atcWorker atc.Worker
+		atcWorker types.Worker
 		worker    db.Worker
 	)
 
 	BeforeEach(func() {
-		atcWorker = atc.Worker{
+		atcWorker = types.Worker{
 			GardenAddr:       "some-garden-addr",
 			BaggageclaimURL:  "some-bc-url",
 			HTTPProxyURL:     "some-http-proxy-url",
 			HTTPSProxyURL:    "some-https-proxy-url",
 			NoProxy:          "some-no-proxy",
 			ActiveContainers: 140,
-			ResourceTypes: []atc.WorkerResourceType{
+			ResourceTypes: []types.WorkerResourceType{
 				{
 					Type:    "some-resource-type",
 					Image:   "some-image",
@@ -38,7 +39,7 @@ var _ = Describe("Worker Lifecycle", func() {
 				},
 			},
 			Platform:  "some-platform",
-			Tags:      atc.Tags{"some", "tags"},
+			Tags:      types.Tags{"some", "tags"},
 			Ephemeral: true,
 			Name:      "some-name",
 			StartTime: 55,
@@ -224,8 +225,8 @@ var _ = Describe("Worker Lifecycle", func() {
 
 			Context("when worker has build with uninterruptible job", func() {
 				BeforeEach(func() {
-					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name:          "some-job",
 								Interruptible: false,
@@ -256,8 +257,8 @@ var _ = Describe("Worker Lifecycle", func() {
 
 			Context("when worker has build with interruptible job", func() {
 				BeforeEach(func() {
-					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name:          "some-job",
 								Interruptible: true,
@@ -471,8 +472,8 @@ var _ = Describe("Worker Lifecycle", func() {
 
 			Context("when worker has build with uninterruptible job", func() {
 				BeforeEach(func() {
-					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name:          "some-job",
 								Interruptible: false,
@@ -503,8 +504,8 @@ var _ = Describe("Worker Lifecycle", func() {
 
 			Context("when worker has build with interruptible job", func() {
 				BeforeEach(func() {
-					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline, created, err := defaultTeam.SavePipeline("some-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name:          "some-job",
 								Interruptible: true,

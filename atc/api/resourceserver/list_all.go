@@ -2,9 +2,9 @@ package resourceserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
@@ -30,7 +30,7 @@ func (s *Server) ListAllResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resources := []atc.Resource{}
+	resources := []types.Resource{}
 
 	for _, resource := range dbResources {
 		resources = append(

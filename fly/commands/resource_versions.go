@@ -1,12 +1,12 @@
 package commands
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
@@ -36,7 +36,7 @@ func (command *ResourceVersionsCommand) Execute([]string) error {
 
 	team := target.Team()
 
-	versions, _, _, err := team.ResourceVersions(command.Resource.PipelineName, command.Resource.ResourceName, page, atc.Version{})
+	versions, _, _, err := team.ResourceVersions(command.Resource.PipelineName, command.Resource.ResourceName, page, types.Version{})
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/vito/go-sse/sse"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -29,13 +29,13 @@ var _ = Describe("Fly CLI", func() {
 		)
 
 		BeforeEach(func() {
-			mainPath, err = atc.Routes.CreatePathForRoute(atc.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "main"})
+			mainPath, err = types.Routes.CreatePathForRoute(types.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "main"})
 			Expect(err).NotTo(HaveOccurred())
 
-			otherPath, err = atc.Routes.CreatePathForRoute(atc.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "other-team"})
+			otherPath, err = types.Routes.CreatePathForRoute(types.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "other-team"})
 			Expect(err).NotTo(HaveOccurred())
 
-			otherRandomPath, err = atc.Routes.CreatePathForRoute(atc.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "random-team"})
+			otherRandomPath, err = types.Routes.CreatePathForRoute(types.CreateJobBuild, rata.Params{"pipeline_name": "awesome-pipeline", "job_name": "awesome-job", "team_name": "random-team"})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -48,7 +48,7 @@ var _ = Describe("Fly CLI", func() {
 							atcServer.AppendHandlers(
 								ghttp.CombineHandlers(
 									ghttp.VerifyRequest("POST", mainPath),
-									ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{ID: 57, Name: "42"}),
+									ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{ID: 57, Name: "42"}),
 								),
 							)
 						})
@@ -72,13 +72,13 @@ var _ = Describe("Fly CLI", func() {
 							atcServer.AppendHandlers(
 								ghttp.CombineHandlers(
 									ghttp.VerifyRequest("GET", "/api/v1/teams/other-team"),
-									ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+									ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 										Name: "other-team",
 									}),
 								),
 								ghttp.CombineHandlers(
 									ghttp.VerifyRequest("POST", otherPath),
-									ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{ID: 57, Name: "42"}),
+									ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{ID: 57, Name: "42"}),
 								),
 							)
 						})
@@ -100,15 +100,15 @@ var _ = Describe("Fly CLI", func() {
 
 				Context("when -w option is provided", func() {
 					var streaming chan struct{}
-					var events chan atc.Event
+					var events chan types.Event
 
 					BeforeEach(func() {
 						streaming = make(chan struct{})
-						events = make(chan atc.Event)
+						events = make(chan types.Event)
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("POST", mainPath),
-								ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{ID: 57, Name: "42"}),
+								ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{ID: 57, Name: "42"}),
 							),
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/builds/57/events"),
@@ -180,10 +180,10 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/random-team"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: "random-team",
 								ID:   0,
-								Auth: atc.TeamAuth{},
+								Auth: types.TeamAuth{},
 							}),
 						),
 						ghttp.CombineHandlers(
@@ -232,7 +232,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+						ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 							{Name: "some-pipeline-1", Paused: false, Public: false},
 							{Name: "some-pipeline-2", Paused: false, Public: false},
 							{Name: "another-pipeline", Paused: false, Public: false},
@@ -253,7 +253,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Job{
+						ghttp.RespondWithJSONEncoded(200, []types.Job{
 							{Name: "some-job-1"},
 							{Name: "some-job-2"},
 							{Name: "another-job"},

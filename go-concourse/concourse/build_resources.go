@@ -1,21 +1,21 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (client *client) BuildResources(buildID int) (atc.BuildInputsOutputs, bool, error) {
+func (client *client) BuildResources(buildID int) (types.BuildInputsOutputs, bool, error) {
 	params := rata.Params{
 		"build_id": strconv.Itoa(buildID),
 	}
 
-	var buildInputsOutputs atc.BuildInputsOutputs
+	var buildInputsOutputs types.BuildInputsOutputs
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.BuildResources,
+		RequestName: types.BuildResources,
 		Params:      params,
 	}, &internal.Response{
 		Result: &buildInputsOutputs,

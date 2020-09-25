@@ -4,6 +4,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/concourse/atc/builds"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/vars"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -145,16 +146,16 @@ var _ = Describe("Builder", func() {
 							Name:     "some-put",
 							Resource: "some-output-resource",
 							Type:     "put",
-							Source:   atc.Source{"some": "source"},
-							Params:   atc.Params{"some": "params"},
+							Source:   types.Source{"some": "source"},
+							Params:   types.Params{"some": "params"},
 						})
 
 						otherPutPlan = planFactory.NewPlan(atc.PutPlan{
 							Name:     "some-put-2",
 							Resource: "some-output-resource-2",
 							Type:     "put",
-							Source:   atc.Source{"some": "source-2"},
-							Params:   atc.Params{"some": "params-2"},
+							Source:   types.Source{"some": "source-2"},
+							Params:   types.Params{"some": "params-2"},
 						})
 
 						expectedPlan = planFactory.NewPlan(atc.AggregatePlan{
@@ -215,16 +216,16 @@ var _ = Describe("Builder", func() {
 							Name:     "some-put",
 							Resource: "some-output-resource",
 							Type:     "put",
-							Source:   atc.Source{"some": "source"},
-							Params:   atc.Params{"some": "params"},
+							Source:   types.Source{"some": "source"},
+							Params:   types.Params{"some": "params"},
 						})
 
 						otherPutPlan = planFactory.NewPlan(atc.PutPlan{
 							Name:     "some-put-2",
 							Resource: "some-output-resource-2",
 							Type:     "put",
-							Source:   atc.Source{"some": "source-2"},
-							Params:   atc.Params{"some": "params-2"},
+							Source:   types.Source{"some": "source-2"},
+							Params:   types.Params{"some": "params-2"},
 						})
 
 						expectedPlan = planFactory.NewPlan(atc.InParallelPlan{
@@ -292,14 +293,14 @@ var _ = Describe("Builder", func() {
 							Name:     "some-get",
 							Resource: "some-input-resource",
 							Type:     "get",
-							Source:   atc.Source{"some": "source"},
-							Params:   atc.Params{"some": "params"},
+							Source:   types.Source{"some": "source"},
+							Params:   types.Params{"some": "params"},
 						})
 
 						taskPlan = planFactory.NewPlan(atc.TaskPlan{
 							Name:       "some-task",
 							Privileged: false,
-							Tags:       atc.Tags{"some", "task", "tags"},
+							Tags:       types.Tags{"some", "task", "tags"},
 							ConfigPath: "some-config-path",
 						})
 
@@ -427,7 +428,7 @@ var _ = Describe("Builder", func() {
 						leafPlan = planFactory.NewPlan(atc.TaskPlan{
 							Name:       "some-task",
 							Privileged: false,
-							Tags:       atc.Tags{"some", "task", "tags"},
+							Tags:       types.Tags{"some", "task", "tags"},
 							ConfigPath: "some-config-path",
 						})
 
@@ -486,9 +487,9 @@ var _ = Describe("Builder", func() {
 								Resource: "some-input-resource",
 								Type:     "get",
 								Tags:     []string{"some", "get", "tags"},
-								Version:  &atc.Version{"some": "version"},
-								Source:   atc.Source{"some": "source"},
-								Params:   atc.Params{"some": "params"},
+								Version:  &types.Version{"some": "version"},
+								Source:   types.Source{"some": "source"},
+								Params:   types.Params{"some": "params"},
 							})
 						})
 
@@ -580,8 +581,8 @@ var _ = Describe("Builder", func() {
 								Resource: "some-output-resource",
 								Tags:     []string{"some", "putget", "tags"},
 								Type:     "put",
-								Source:   atc.Source{"some": "source"},
-								Params:   atc.Params{"some": "params"},
+								Source:   types.Source{"some": "source"},
+								Params:   types.Params{"some": "params"},
 							})
 
 							dependentGetPlan = planFactory.NewPlan(atc.GetPlan{
@@ -590,8 +591,8 @@ var _ = Describe("Builder", func() {
 								Tags:        []string{"some", "putget", "tags"},
 								Type:        "get",
 								VersionFrom: &putPlan.ID,
-								Source:      atc.Source{"some": "source"},
-								Params:      atc.Params{"another": "params"},
+								Source:      types.Source{"some": "source"},
+								Params:      types.Params{"another": "params"},
 							})
 
 							expectedPlan = planFactory.NewPlan(atc.OnSuccessPlan{
@@ -650,19 +651,19 @@ var _ = Describe("Builder", func() {
 							})
 							failureTaskPlan = planFactory.NewPlan(atc.TaskPlan{
 								Name:   "some-failure-task",
-								Config: &atc.TaskConfig{},
+								Config: &types.TaskConfig{},
 							})
 							successTaskPlan = planFactory.NewPlan(atc.TaskPlan{
 								Name:   "some-success-task",
-								Config: &atc.TaskConfig{},
+								Config: &types.TaskConfig{},
 							})
 							completionTaskPlan = planFactory.NewPlan(atc.TaskPlan{
 								Name:   "some-completion-task",
-								Config: &atc.TaskConfig{},
+								Config: &types.TaskConfig{},
 							})
 							nextTaskPlan = planFactory.NewPlan(atc.TaskPlan{
 								Name:   "some-next-task",
-								Config: &atc.TaskConfig{},
+								Config: &types.TaskConfig{},
 							})
 
 							expectedPlan = planFactory.NewPlan(atc.OnSuccessPlan{
@@ -802,9 +803,9 @@ var _ = Describe("Builder", func() {
 					BeforeEach(func() {
 						planner := builds.NewPlanner(planFactory)
 
-						step := &atc.AcrossStep{
-							Step: &atc.TaskStep{Name: "some-task"},
-							Vars: []atc.AcrossVarConfig{
+						step := &types.AcrossStep{
+							Step: &types.TaskStep{Name: "some-task"},
+							Vars: []types.AcrossVarConfig{
 								{
 									Var:    "var1",
 									Values: []interface{}{"a1", "a2"},
@@ -985,7 +986,7 @@ var _ = Describe("Builder", func() {
 						expectedPlan = planFactory.NewPlan(atc.CheckPlan{
 							Name:   "some-check",
 							Type:   "git",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						})
 					})
 

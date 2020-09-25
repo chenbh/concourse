@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,7 +13,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/tracing"
 	"github.com/lib/pq"
@@ -25,7 +25,7 @@ type InputConfig struct {
 	Trigger         bool
 	Passed          JobSet
 	UseEveryVersion bool
-	PinnedVersion   atc.Version
+	PinnedVersion   types.Version
 	ResourceID      int
 	JobID           int
 }
@@ -68,9 +68,9 @@ type Job interface {
 	MaxInFlight() int
 	DisableManualTrigger() bool
 
-	Config() (atc.JobConfig, error)
-	Inputs() ([]atc.JobInput, error)
-	Outputs() ([]atc.JobOutput, error)
+	Config() (types.JobConfig, error)
+	Inputs() ([]types.JobInput, error)
+	Outputs() ([]types.JobOutput, error)
 	AlgorithmInputs() (InputConfigs, error)
 
 	Reload() (bool, error)
@@ -136,7 +136,7 @@ type job struct {
 	maxInFlight           int
 	disableManualTrigger  bool
 
-	config    *atc.JobConfig
+	config    *types.JobConfig
 	rawConfig *string
 	nonce     *string
 }
@@ -169,8 +169,8 @@ func (j *job) SetHasNewInputs(hasNewInputs bool) error {
 
 type Jobs []Job
 
-func (jobs Jobs) Configs() (atc.JobConfigs, error) {
-	var configs atc.JobConfigs
+func (jobs Jobs) Configs() (types.JobConfigs, error) {
+	var configs types.JobConfigs
 
 	for _, j := range jobs {
 		config, err := j.Config()
@@ -197,7 +197,7 @@ func (j *job) ScheduleRequestedTime() time.Time { return j.scheduleRequestedTime
 func (j *job) MaxInFlight() int                 { return j.maxInFlight }
 func (j *job) DisableManualTrigger() bool       { return j.disableManualTrigger }
 
-func (j *job) Config() (atc.JobConfig, error) {
+func (j *job) Config() (types.JobConfig, error) {
 	if j.config != nil {
 		return *j.config, nil
 	}
@@ -205,18 +205,18 @@ func (j *job) Config() (atc.JobConfig, error) {
 	es := j.conn.EncryptionStrategy()
 
 	if j.rawConfig == nil {
-		return atc.JobConfig{}, nil
+		return types.JobConfig{}, nil
 	}
 
 	decryptedConfig, err := es.Decrypt(*j.rawConfig, j.nonce)
 	if err != nil {
-		return atc.JobConfig{}, err
+		return types.JobConfig{}, err
 	}
 
-	var config atc.JobConfig
+	var config types.JobConfig
 	err = json.Unmarshal(decryptedConfig, &config)
 	if err != nil {
-		return atc.JobConfig{}, err
+		return types.JobConfig{}, err
 	}
 
 	j.config = &config
@@ -264,9 +264,9 @@ func (j *job) AlgorithmInputs() (InputConfigs, error) {
 			}
 		}
 
-		var version *atc.VersionConfig
+		var version *types.VersionConfig
 		if configVersionString.Valid {
-			version = &atc.VersionConfig{}
+			version = &types.VersionConfig{}
 			err = version.UnmarshalJSON([]byte(configVersionString.String))
 			if err != nil {
 				return nil, err
@@ -296,7 +296,7 @@ func (j *job) AlgorithmInputs() (InputConfigs, error) {
 	return inputs, nil
 }
 
-func (j *job) Inputs() ([]atc.JobInput, error) {
+func (j *job) Inputs() ([]types.JobInput, error) {
 	rows, err := psql.Select("ji.name", "r.name", "array_agg(p.name ORDER BY p.id)", "ji.trigger", "ji.version").
 		From("job_inputs ji").
 		Join("resources r ON r.id = ji.resource_id").
@@ -311,7 +311,7 @@ func (j *job) Inputs() ([]atc.JobInput, error) {
 		return nil, err
 	}
 
-	var inputs []atc.JobInput
+	var inputs []types.JobInput
 	for rows.Next() {
 		var passedString []sql.NullString
 		var versionString sql.NullString
@@ -323,9 +323,9 @@ func (j *job) Inputs() ([]atc.JobInput, error) {
 			return nil, err
 		}
 
-		var version *atc.VersionConfig
+		var version *types.VersionConfig
 		if versionString.Valid {
-			version = &atc.VersionConfig{}
+			version = &types.VersionConfig{}
 			err = version.UnmarshalJSON([]byte(versionString.String))
 			if err != nil {
 				return nil, err
@@ -339,7 +339,7 @@ func (j *job) Inputs() ([]atc.JobInput, error) {
 			}
 		}
 
-		inputs = append(inputs, atc.JobInput{
+		inputs = append(inputs, types.JobInput{
 			Name:     inputName,
 			Resource: resourceName,
 			Trigger:  trigger,
@@ -355,7 +355,7 @@ func (j *job) Inputs() ([]atc.JobInput, error) {
 	return inputs, nil
 }
 
-func (j *job) Outputs() ([]atc.JobOutput, error) {
+func (j *job) Outputs() ([]types.JobOutput, error) {
 	rows, err := psql.Select("jo.name", "r.name").
 		From("job_outputs jo").
 		Join("resources r ON r.id = jo.resource_id").
@@ -368,9 +368,9 @@ func (j *job) Outputs() ([]atc.JobOutput, error) {
 		return nil, err
 	}
 
-	var outputs []atc.JobOutput
+	var outputs []types.JobOutput
 	for rows.Next() {
-		var output atc.JobOutput
+		var output types.JobOutput
 		err = rows.Scan(&output.Name, &output.Resource)
 		if err != nil {
 			return nil, err
@@ -1306,7 +1306,7 @@ func (j *job) getNextBuildInputs(tx Tx) ([]BuildInput, error) {
 			return nil, err
 		}
 
-		var version atc.Version
+		var version types.Version
 		if versionBlob.Valid {
 			err = json.Unmarshal([]byte(versionBlob.String), &version)
 			if err != nil {

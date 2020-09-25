@@ -1,9 +1,9 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +19,7 @@ var _ = Describe("Volume", func() {
 			Max: 1 * time.Hour,
 		}
 
-		resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig("some-base-resource-type", atc.Source{}, atc.VersionedResourceTypes{})
+		resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig("some-base-resource-type", types.Source{}, types.VersionedResourceTypes{})
 		Expect(err).ToNot(HaveOccurred())
 
 		defaultCreatingContainer, err = defaultWorker.CreateContainer(
@@ -195,21 +195,21 @@ var _ = Describe("Volume", func() {
 			resourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForBuild(build.ID()),
 				"some-type",
-				atc.Version{"some": "version"},
-				atc.Source{
+				types.Version{"some": "version"},
+				types.Source{
 					"some": "source",
 				},
-				atc.Params{"some": "params"},
-				atc.VersionedResourceTypes{
-					atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+				types.Params{"some": "params"},
+				types.VersionedResourceTypes{
+					types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name: "some-type",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some-type": "source",
 							},
 						},
-						Version: atc.Version{"some-type": "version"},
+						Version: types.Version{"some-type": "version"},
 					},
 				},
 			)
@@ -417,40 +417,40 @@ var _ = Describe("Volume", func() {
 			resourceCache, err := resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForBuild(build.ID()),
 				"some-type",
-				atc.Version{"some": "version"},
-				atc.Source{"some": "source"},
-				atc.Params{"some": "params"},
+				types.Version{"some": "version"},
+				types.Source{"some": "source"},
+				types.Params{"some": "params"},
 
-				atc.VersionedResourceTypes{
+				types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "some-type",
 							Type:   "some-base-resource-type",
-							Source: atc.Source{"some-type": "((source-param))"},
+							Source: types.Source{"some-type": "((source-param))"},
 						},
-						Version: atc.Version{"some-custom-type": "version"},
+						Version: types.Version{"some-custom-type": "version"},
 					},
 				},
 			)
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceConfigScope, err := defaultResourceType.SetResourceConfig(
-				atc.Source{"some": "source"},
-				atc.VersionedResourceTypes{
+				types.Source{"some": "source"},
+				types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "some-type",
 							Type:   "some-base-resource-type",
-							Source: atc.Source{"some-type": "((source-param))"},
+							Source: types.Source{"some-type": "((source-param))"},
 						},
-						Version: atc.Version{"some-custom-type": "version"},
+						Version: types.Version{"some-custom-type": "version"},
 					},
 				},
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			resourceConfigScope.SaveVersions(nil, []atc.Version{atc.Version{"some": "version"}})
-			resourceConfigScope.SaveVersions(nil, []atc.Version{atc.Version{"some-custom-type": "version"}})
+			resourceConfigScope.SaveVersions(nil, []types.Version{types.Version{"some": "version"}})
+			resourceConfigScope.SaveVersions(nil, []types.Version{types.Version{"some-custom-type": "version"}})
 
 			creatingContainer, err := defaultWorker.CreateContainer(db.NewBuildStepContainerOwner(build.ID(), "some-plan", defaultTeam.ID()), db.ContainerMetadata{
 				Type:     "get",
@@ -475,8 +475,8 @@ var _ = Describe("Volume", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(volumeResourceType.ResourceType.WorkerBaseResourceType.Name).To(Equal("some-base-resource-type"))
 			Expect(volumeResourceType.ResourceType.WorkerBaseResourceType.Version).To(Equal("some-brt-version"))
-			Expect(volumeResourceType.ResourceType.Version).To(Equal(atc.Version{"some-custom-type": "version"}))
-			Expect(volumeResourceType.Version).To(Equal(atc.Version{"some": "version"}))
+			Expect(volumeResourceType.ResourceType.Version).To(Equal(types.Version{"some-custom-type": "version"}))
+			Expect(volumeResourceType.Version).To(Equal(types.Version{"some": "version"}))
 
 			createdVolume, found, err := volumeRepository.FindResourceCacheVolume(defaultWorker.Name(), resourceCache)
 			Expect(err).ToNot(HaveOccurred())
@@ -486,8 +486,8 @@ var _ = Describe("Volume", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(volumeResourceType.ResourceType.WorkerBaseResourceType.Name).To(Equal("some-base-resource-type"))
 			Expect(volumeResourceType.ResourceType.WorkerBaseResourceType.Version).To(Equal("some-brt-version"))
-			Expect(volumeResourceType.ResourceType.Version).To(Equal(atc.Version{"some-custom-type": "version"}))
-			Expect(volumeResourceType.Version).To(Equal(atc.Version{"some": "version"}))
+			Expect(volumeResourceType.ResourceType.Version).To(Equal(types.Version{"some-custom-type": "version"}))
+			Expect(volumeResourceType.Version).To(Equal(types.Version{"some": "version"}))
 		})
 	})
 
@@ -562,17 +562,17 @@ var _ = Describe("Volume", func() {
 			usedResourceCache, err := resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForBuild(build.ID()),
 				"some-type",
-				atc.Version{"some": "version"},
-				atc.Source{"some": "source"},
-				atc.Params{"some": "params"},
-				atc.VersionedResourceTypes{
+				types.Version{"some": "version"},
+				types.Source{"some": "source"},
+				types.Params{"some": "params"},
+				types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "some-type",
 							Type:   "some-base-resource-type",
-							Source: atc.Source{"some-type": "source"},
+							Source: types.Source{"some-type": "source"},
 						},
-						Version: atc.Version{"some-custom-type": "version"},
+						Version: types.Version{"some-custom-type": "version"},
 					},
 				},
 			)

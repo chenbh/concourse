@@ -2,9 +2,9 @@ package db_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 
 	. "github.com/onsi/ginkgo"
@@ -148,26 +148,26 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 						})
 						It("does not remove the resource caches from other jobs", func() {
 							By("creating a second pipeline")
-							secondPipeline, _, err := defaultTeam.SavePipeline("second-pipeline", atc.Config{
-								Jobs: atc.JobConfigs{
+							secondPipeline, _, err := defaultTeam.SavePipeline("second-pipeline", types.Config{
+								Jobs: types.JobConfigs{
 									{
 										Name: "some-job",
 									},
 								},
-								Resources: atc.ResourceConfigs{
+								Resources: types.ResourceConfigs{
 									{
 										Name: "some-resource",
 										Type: "some-base-resource-type",
-										Source: atc.Source{
+										Source: types.Source{
 											"some": "source",
 										},
 									},
 								},
-								ResourceTypes: atc.ResourceTypes{
+								ResourceTypes: types.ResourceTypes{
 									{
 										Name: "some-type",
 										Type: "some-base-resource-type",
-										Source: atc.Source{
+										Source: types.Source{
 											"some-type": "source",
 										},
 									},
@@ -220,10 +220,10 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 				var err error
 				resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
 					"some-base-resource-type",
-					atc.Source{
+					types.Source{
 						"some": "source",
 					},
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -275,19 +275,19 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 			It("does not remove the cache if the type is still configured", func() {
 				_, err := resourceConfigFactory.FindOrCreateResourceConfig(
 					"some-type",
-					atc.Source{
+					types.Source{
 						"some": "source",
 					},
-					atc.VersionedResourceTypes{
-						atc.VersionedResourceType{
-							ResourceType: atc.ResourceType{
+					types.VersionedResourceTypes{
+						types.VersionedResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-type",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
-							Version: atc.Version{"showme": "whatyougot"},
+							Version: types.Version{"showme": "whatyougot"},
 						},
 					},
 				)
@@ -303,19 +303,19 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 			It("removes the cache if the type is no longer configured", func() {
 				_, err := resourceConfigFactory.FindOrCreateResourceConfig(
 					"some-type",
-					atc.Source{
+					types.Source{
 						"some": "source",
 					},
-					atc.VersionedResourceTypes{
-						atc.VersionedResourceType{
-							ResourceType: atc.ResourceType{
+					types.VersionedResourceTypes{
+						types.VersionedResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-type",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
-							Version: atc.Version{"showme": "whatyougot"},
+							Version: types.Version{"showme": "whatyougot"},
 						},
 					},
 				)
@@ -342,8 +342,8 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				resourceConfigScope, err := defaultResource.SetResourceConfig(
-					atc.Source{"some": "source"},
-					atc.VersionedResourceTypes{},
+					types.Source{"some": "source"},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -358,10 +358,10 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 
 				_ = createResourceCacheWithUser(db.ForContainer(container.ID()))
 
-				err = resourceConfigScope.SaveVersions(nil, []atc.Version{{"some": "version"}})
+				err = resourceConfigScope.SaveVersions(nil, []types.Version{{"some": "version"}})
 				Expect(err).ToNot(HaveOccurred())
 
-				resourceConfigVersion, found, err := resourceConfigScope.FindVersion(atc.Version{"some": "version"})
+				resourceConfigVersion, found, err := resourceConfigScope.FindVersion(types.Version{"some": "version"})
 				Expect(found).To(BeTrue())
 				Expect(err).ToNot(HaveOccurred())
 
@@ -369,7 +369,7 @@ var _ = Describe("ResourceCacheLifecycle", func() {
 					"some-resource": db.InputResult{
 						Input: &db.AlgorithmInput{
 							AlgorithmVersion: db.AlgorithmVersion{
-								Version:    db.ResourceVersion(convertToMD5(atc.Version(resourceConfigVersion.Version()))),
+								Version:    db.ResourceVersion(convertToMD5(types.Version(resourceConfigVersion.Version()))),
 								ResourceID: defaultResource.ID(),
 							},
 						},
@@ -415,12 +415,12 @@ func createResourceCacheWithUser(resourceCacheUser db.ResourceCacheUser) db.Used
 	usedResourceCache, err := resourceCacheFactory.FindOrCreateResourceCache(
 		resourceCacheUser,
 		"some-base-resource-type",
-		atc.Version{"some": "version"},
-		atc.Source{
+		types.Version{"some": "version"},
+		types.Source{
 			"some": "source",
 		},
-		atc.Params{"some": fmt.Sprintf("param-%d", time.Now().UnixNano())},
-		atc.VersionedResourceTypes{},
+		types.Params{"some": fmt.Sprintf("param-%d", time.Now().UnixNano())},
+		types.VersionedResourceTypes{},
 	)
 	Expect(err).ToNot(HaveOccurred())
 

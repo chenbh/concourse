@@ -3,11 +3,11 @@ package resourceserver
 import (
 	"context"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/tedsuo/rata"
@@ -19,7 +19,7 @@ func (s *Server) CheckResource(dbPipeline db.Pipeline) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resourceName := rata.Param(r, "resource_name")
 
-		var reqBody atc.CheckRequestBody
+		var reqBody types.CheckRequestBody
 		err := json.NewDecoder(r.Body).Decode(&reqBody)
 		if err != nil {
 			logger.Info("malformed-request", lager.Data{"error": err.Error()})

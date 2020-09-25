@@ -1,6 +1,9 @@
 package atc
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
+)
 
 func (plan Plan) Public() *json.RawMessage {
 	var public struct {
@@ -193,10 +196,10 @@ func (plan EnsurePlan) Public() *json.RawMessage {
 
 func (plan GetPlan) Public() *json.RawMessage {
 	return enc(struct {
-		Type     string   `json:"type"`
-		Name     string   `json:"name,omitempty"`
-		Resource string   `json:"resource"`
-		Version  *Version `json:"version,omitempty"`
+		Type     string         `json:"type"`
+		Name     string         `json:"name,omitempty"`
+		Resource string         `json:"resource"`
+		Version  *types.Version `json:"version,omitempty"`
 	}{
 		Type:     plan.Type,
 		Name:     plan.Name,

@@ -1,21 +1,21 @@
 package db_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Team Factory", func() {
 	var (
-		atcTeam atc.Team
+		atcTeam types.Team
 	)
 
 	BeforeEach(func() {
-		atcTeam = atc.Team{
+		atcTeam = types.Team{
 			Name: "some-team",
-			Auth: atc.TeamAuth{
+			Auth: types.TeamAuth{
 				"owner": {"users": []string{"local:username"}},
 			},
 		}
@@ -75,7 +75,7 @@ var _ = Describe("Team Factory", func() {
 
 	Describe("CreateDefaultTeamIfNotExists", func() {
 		It("creates the default team", func() {
-			t, found, err := teamFactory.FindTeam(atc.DefaultTeamName)
+			t, found, err := teamFactory.FindTeam(types.DefaultTeamName)
 			Expect(err).NotTo(HaveOccurred())
 			if found {
 				Expect(t.Admin()).To(BeFalse())
@@ -85,7 +85,7 @@ var _ = Describe("Team Factory", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(team.Admin()).To(BeTrue())
 
-			t, found, err = teamFactory.FindTeam(atc.DefaultTeamName)
+			t, found, err = teamFactory.FindTeam(types.DefaultTeamName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(t.ID()).To(Equal(team.ID()))
@@ -140,7 +140,7 @@ var _ = Describe("Team Factory", func() {
 				var err error
 				_, err = teamFactory.CreateTeam(atcTeam)
 				Expect(err).ToNot(HaveOccurred())
-				_, err = teamFactory.CreateTeam(atc.Team{
+				_, err = teamFactory.CreateTeam(types.Team{
 					Name: "some-other-team",
 				})
 				Expect(err).ToNot(HaveOccurred())

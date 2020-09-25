@@ -3,6 +3,7 @@ package tsa_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/baggageclaim/baggageclaimfakes"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/worker/gclient"
 	"github.com/concourse/concourse/atc/worker/gclient/gclientfakes"
 	. "github.com/concourse/concourse/tsa"
@@ -28,7 +28,7 @@ import (
 
 var _ = Describe("Heartbeater", func() {
 	type registration struct {
-		worker atc.Worker
+		worker types.Worker
 		ttl    time.Duration
 	}
 
@@ -40,9 +40,9 @@ var _ = Describe("Heartbeater", func() {
 		fakeClock      *fakeclock.FakeClock
 		interval       time.Duration
 		cprInterval    time.Duration
-		resourceTypes  []atc.WorkerResourceType
+		resourceTypes  []types.WorkerResourceType
 
-		expectedWorker         atc.Worker
+		expectedWorker         types.Worker
 		fakeGardenClient       *gclientfakes.FakeClient
 		fakeBaggageclaimClient *baggageclaimfakes.FakeClient
 		fakeATC1               *ghttp.Server
@@ -58,7 +58,7 @@ var _ = Describe("Heartbeater", func() {
 		heartbeats    <-chan registration
 		clientWriter  *gbytes.Buffer
 
-		worker atc.Worker
+		worker types.Worker
 	)
 
 	BeforeEach(func() {
@@ -68,14 +68,14 @@ var _ = Describe("Heartbeater", func() {
 		fakeClock = fakeclock.NewFakeClock(time.Unix(123, 456))
 		interval = time.Second
 		cprInterval = 100 * time.Millisecond
-		resourceTypes = []atc.WorkerResourceType{
+		resourceTypes = []types.WorkerResourceType{
 			{
 				Type:  "git",
 				Image: "/path/to/git/resource",
 			},
 		}
 
-		worker = atc.Worker{
+		worker = types.Worker{
 			Name:          "some-name",
 			GardenAddr:    addrToRegister,
 			ResourceTypes: resourceTypes,
@@ -88,7 +88,7 @@ var _ = Describe("Heartbeater", func() {
 		fakeATC1 = ghttp.NewServer()
 		fakeATC2 = ghttp.NewServer()
 
-		registerRoute, found := atc.Routes.FindRouteByName(atc.RegisterWorker)
+		registerRoute, found := types.Routes.FindRouteByName(types.RegisterWorker)
 		Expect(found).To(BeTrue())
 
 		registered := make(chan registration, 100)
@@ -100,7 +100,7 @@ var _ = Describe("Heartbeater", func() {
 		verifyRegister = ghttp.CombineHandlers(
 			ghttp.VerifyRequest(registerRoute.Method, registerRoute.Path),
 			func(w http.ResponseWriter, r *http.Request) {
-				var worker atc.Worker
+				var worker types.Worker
 				Expect(r.Header.Get("Authorization")).To(Equal("Bearer yo"))
 
 				err := json.NewDecoder(r.Body).Decode(&worker)
@@ -116,7 +116,7 @@ var _ = Describe("Heartbeater", func() {
 		verifyHeartbeat = ghttp.CombineHandlers(
 			ghttp.VerifyRequest("PUT", "/api/v1/workers/some-name/heartbeat"),
 			func(w http.ResponseWriter, r *http.Request) {
-				var worker atc.Worker
+				var worker types.Worker
 				Expect(r.Header.Get("Authorization")).To(Equal("Bearer yo"))
 
 				err := json.NewDecoder(r.Body).Decode(&worker)
@@ -142,10 +142,10 @@ var _ = Describe("Heartbeater", func() {
 			pickCallCount++
 
 			if pickCallCount%2 == 0 {
-				return rata.NewRequestGenerator(fakeATC2.URL(), atc.Routes)
+				return rata.NewRequestGenerator(fakeATC2.URL(), types.Routes)
 			}
 
-			return rata.NewRequestGenerator(fakeATC1.URL(), atc.Routes)
+			return rata.NewRequestGenerator(fakeATC1.URL(), types.Routes)
 		}
 
 		token := &oauth2.Token{TokenType: "Bearer", AccessToken: "yo"}
@@ -282,7 +282,7 @@ var _ = Describe("Heartbeater", func() {
 				fakeATC2.AppendHandlers(ghttp.CombineHandlers(
 					ghttp.VerifyRequest("PUT", "/api/v1/workers/some-name/heartbeat"),
 					func(w http.ResponseWriter, r *http.Request) {
-						var worker atc.Worker
+						var worker types.Worker
 						Expect(r.Header.Get("Authorization")).To(Equal("Bearer yo"))
 
 						err := json.NewDecoder(r.Body).Decode(&worker)
@@ -293,7 +293,7 @@ var _ = Describe("Heartbeater", func() {
 
 						heartbeated <- registration{worker, ttl}
 
-						json.NewEncoder(w).Encode(atc.Worker{
+						json.NewEncoder(w).Encode(types.Worker{
 							State: "landed",
 						})
 					},

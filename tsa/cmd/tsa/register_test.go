@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,14 +18,13 @@ import (
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/tsa"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 type registration struct {
-	worker atc.Worker
+	worker types.Worker
 	ttl    time.Duration
 }
 
@@ -52,7 +52,7 @@ var _ = Describe("Register", func() {
 		heartbeatResults = make(chan workerState, 100)
 
 		atcServer.RouteToHandler("POST", "/api/v1/workers", func(w http.ResponseWriter, r *http.Request) {
-			var worker atc.Worker
+			var worker types.Worker
 
 			err := json.NewDecoder(r.Body).Decode(&worker)
 			Expect(err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = Describe("Register", func() {
 		})
 
 		atcServer.RouteToHandler("PUT", "/api/v1/workers/some-worker/heartbeat", func(w http.ResponseWriter, r *http.Request) {
-			var worker atc.Worker
+			var worker types.Worker
 
 			err := json.NewDecoder(r.Body).Decode(&worker)
 			Expect(err).NotTo(HaveOccurred())

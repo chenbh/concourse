@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
@@ -14,10 +14,10 @@ import (
 
 var _ = Describe("CheckResource", func() {
 	Context("when ATC request succeeds", func() {
-		var expectedCheck atc.Check
+		var expectedCheck types.Check
 
 		BeforeEach(func() {
-			expectedCheck = atc.Check{
+			expectedCheck = types.Check{
 				ID:         123,
 				Status:     "started",
 				CreateTime: 100000000000,
@@ -36,7 +36,7 @@ var _ = Describe("CheckResource", func() {
 		})
 
 		It("sends check resource request to ATC", func() {
-			check, found, err := team.CheckResource("mypipeline", "myresource", atc.Version{"ref": "fake-ref"})
+			check, found, err := team.CheckResource("mypipeline", "myresource", types.Version{"ref": "fake-ref"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(check).To(Equal(expectedCheck))
@@ -58,7 +58,7 @@ var _ = Describe("CheckResource", func() {
 		})
 
 		It("returns a ResourceNotFoundError", func() {
-			_, found, err := team.CheckResource("mypipeline", "myresource", atc.Version{"ref": "fake-ref"})
+			_, found, err := team.CheckResource("mypipeline", "myresource", types.Version{"ref": "fake-ref"})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeFalse())
 		})
@@ -78,7 +78,7 @@ var _ = Describe("CheckResource", func() {
 		})
 
 		It("returns an error", func() {
-			_, _, err := team.CheckResource("mypipeline", "myresource", atc.Version{"ref": "fake-ref"})
+			_, _, err := team.CheckResource("mypipeline", "myresource", types.Version{"ref": "fake-ref"})
 			Expect(err).To(HaveOccurred())
 
 			Expect(err.Error()).To(ContainSubstring("bad request"))
@@ -99,7 +99,7 @@ var _ = Describe("CheckResource", func() {
 		})
 
 		It("returns an error with body", func() {
-			_, _, err := team.CheckResource("mypipeline", "myresource", atc.Version{"ref": "fake-ref"})
+			_, _, err := team.CheckResource("mypipeline", "myresource", types.Version{"ref": "fake-ref"})
 			Expect(err).To(HaveOccurred())
 
 			cre, ok := err.(concourse.GenericError)

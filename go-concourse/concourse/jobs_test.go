@@ -2,9 +2,9 @@ package concourse_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
@@ -14,12 +14,12 @@ import (
 
 var _ = Describe("ATC Handler Jobs", func() {
 	Describe("team.ListJobs", func() {
-		var expectedJobs []atc.Job
+		var expectedJobs []types.Job
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/teams/some-team/pipelines/mypipeline/jobs"
 
-			expectedJobs = []atc.Job{
+			expectedJobs = []types.Job{
 				{
 					Name:      "myjob-1",
 					NextBuild: nil,
@@ -46,12 +46,12 @@ var _ = Describe("ATC Handler Jobs", func() {
 	})
 
 	Describe("client.ListAllJobs", func() {
-		var expectedJobs []atc.Job
+		var expectedJobs []types.Job
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/jobs"
 
-			expectedJobs = []atc.Job{
+			expectedJobs = []types.Job{
 				{
 					Name:      "myjob-1",
 					NextBuild: nil,
@@ -80,24 +80,24 @@ var _ = Describe("ATC Handler Jobs", func() {
 	Describe("Job", func() {
 		Context("when job exists", func() {
 			var (
-				expectedJob atc.Job
+				expectedJob types.Job
 				expectedURL string
 			)
 
 			BeforeEach(func() {
 				expectedURL = fmt.Sprint("/api/v1/teams/some-team/pipelines/mypipeline/jobs/myjob")
 
-				expectedJob = atc.Job{
+				expectedJob = types.Job{
 					Name:      "myjob",
 					NextBuild: nil,
-					FinishedBuild: &atc.Build{
+					FinishedBuild: &types.Build{
 						ID:      123,
 						Name:    "mybuild",
 						Status:  "succeeded",
 						JobName: "myjob",
 						APIURL:  "api/v1/teams/some-team/builds/123",
 					},
-					Inputs: []atc.JobInput{
+					Inputs: []types.JobInput{
 						{
 							Name:     "myfirstinput",
 							Resource: "myfirstinput",
@@ -111,7 +111,7 @@ var _ = Describe("ATC Handler Jobs", func() {
 							Trigger:  true,
 						},
 					},
-					Outputs: []atc.JobOutput{
+					Outputs: []types.JobOutput{
 						{
 							Name:     "myfirstoutput",
 							Resource: "myfirstoutput",
@@ -162,13 +162,13 @@ var _ = Describe("ATC Handler Jobs", func() {
 
 	Describe("JobBuilds", func() {
 		var (
-			expectedBuilds []atc.Build
+			expectedBuilds []types.Build
 			expectedURL    string
 			expectedQuery  string
 		)
 
 		JustBeforeEach(func() {
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					Name: "some-build",
 				},
@@ -568,7 +568,7 @@ var _ = Describe("ATC Handler Jobs", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest(requestMethod, expectedURL),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ClearTaskCacheResponse{CachesRemoved: 1}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.ClearTaskCacheResponse{CachesRemoved: 1}),
 					),
 				)
 			})
@@ -607,7 +607,7 @@ var _ = Describe("ATC Handler Jobs", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest(requestMethod, expectedURL),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ClearTaskCacheResponse{CachesRemoved: 0}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.ClearTaskCacheResponse{CachesRemoved: 0}),
 					),
 				)
 			})

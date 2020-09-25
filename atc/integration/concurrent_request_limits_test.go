@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/wrappa"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,7 +12,7 @@ import (
 var _ = Describe("Concurrent request limits", func() {
 	BeforeEach(func() {
 		cmd.ConcurrentRequestLimits = map[wrappa.LimitedRoute]int{
-			wrappa.LimitedRoute(atc.ListAllJobs): 0,
+			wrappa.LimitedRoute(types.ListAllJobs): 0,
 		}
 	})
 

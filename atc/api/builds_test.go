@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -26,8 +27,8 @@ var _ = Describe("Builds API", func() {
 		BeforeEach(func() {
 			plan = atc.Plan{
 				Task: &atc.TaskPlan{
-					Config: &atc.TaskConfig{
-						Run: atc.TaskRunConfig{
+					Config: &types.TaskConfig{
+						Run: types.TaskRunConfig{
 							Path: "ls",
 						},
 					},
@@ -682,13 +683,13 @@ var _ = Describe("Builds API", func() {
 						build.ResourcesReturns([]db.BuildInput{
 							{
 								Name:            "input1",
-								Version:         atc.Version{"version": "value1"},
+								Version:         types.Version{"version": "value1"},
 								ResourceID:      1,
 								FirstOccurrence: true,
 							},
 							{
 								Name:            "input2",
-								Version:         atc.Version{"version": "value2"},
+								Version:         types.Version{"version": "value2"},
 								ResourceID:      2,
 								FirstOccurrence: false,
 							},
@@ -696,11 +697,11 @@ var _ = Describe("Builds API", func() {
 							[]db.BuildOutput{
 								{
 									Name:    "myresource3",
-									Version: atc.Version{"version": "value3"},
+									Version: types.Version{"version": "value3"},
 								},
 								{
 									Name:    "myresource4",
-									Version: atc.Version{"version": "value4"},
+									Version: types.Version{"version": "value4"},
 								},
 							}, nil)
 					})

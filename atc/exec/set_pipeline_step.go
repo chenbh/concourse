@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -179,7 +180,7 @@ func (step *SetPipelineStep) run(ctx context.Context, state RunState) error {
 		if !permitted {
 			return fmt.Errorf(
 				"only %s team can set another team's pipeline",
-				atc.DefaultTeamName,
+				types.DefaultTeamName,
 			)
 		}
 
@@ -192,9 +193,9 @@ func (step *SetPipelineStep) run(ctx context.Context, state RunState) error {
 		return err
 	}
 
-	var existingConfig atc.Config
+	var existingConfig types.Config
 	if !found {
-		existingConfig = atc.Config{}
+		existingConfig = types.Config{}
 	} else {
 		fromVersion = pipeline.ConfigVersion()
 		existingConfig, err = pipeline.Config()
@@ -270,10 +271,10 @@ func (s setPipelineSource) Validate() error {
 
 // FetchConfig streams pipeline config file and var files from other resources
 // and construct an atc.Config object
-func (s setPipelineSource) FetchPipelineConfig() (atc.Config, error) {
+func (s setPipelineSource) FetchPipelineConfig() (types.Config, error) {
 	config, err := s.fetchPipelineBits(s.step.plan.File)
 	if err != nil {
-		return atc.Config{}, err
+		return types.Config{}, err
 	}
 
 	staticVars := []vars.Variables{}
@@ -283,13 +284,13 @@ func (s setPipelineSource) FetchPipelineConfig() (atc.Config, error) {
 	for _, lvf := range s.step.plan.VarFiles {
 		bytes, err := s.fetchPipelineBits(lvf)
 		if err != nil {
-			return atc.Config{}, err
+			return types.Config{}, err
 		}
 
 		sv := vars.StaticVariables{}
 		err = yaml.Unmarshal(bytes, &sv)
 		if err != nil {
-			return atc.Config{}, err
+			return types.Config{}, err
 		}
 
 		staticVars = append(staticVars, sv)
@@ -298,14 +299,14 @@ func (s setPipelineSource) FetchPipelineConfig() (atc.Config, error) {
 	if len(staticVars) > 0 {
 		config, err = vars.NewTemplateResolver(config, staticVars).Resolve(false, false)
 		if err != nil {
-			return atc.Config{}, err
+			return types.Config{}, err
 		}
 	}
 
-	atcConfig := atc.Config{}
-	err = atc.UnmarshalConfig(config, &atcConfig)
+	atcConfig := types.Config{}
+	err = types.UnmarshalConfig(config, &atcConfig)
 	if err != nil {
-		return atc.Config{}, err
+		return types.Config{}, err
 	}
 
 	return atcConfig, nil

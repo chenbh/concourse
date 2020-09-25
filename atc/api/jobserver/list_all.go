@@ -2,6 +2,7 @@ package jobserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"github.com/concourse/concourse/atc"
@@ -29,7 +30,7 @@ func (s *Server) ListAllJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs := []atc.Job{}
+	jobs := []types.Job{}
 
 	for _, job := range dashboard {
 		jobs = append(

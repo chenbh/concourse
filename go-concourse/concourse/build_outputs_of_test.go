@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -13,14 +13,14 @@ var _ = Describe("ATC Handler Build Outputs", func() {
 	Describe("BuildsWithVersionAsOutput", func() {
 		expectedURL := "/api/v1/teams/some-team/pipelines/some-pipeline/resources/myresource/versions/2/output_of"
 
-		var expectedBuilds []atc.Build
+		var expectedBuilds []types.Build
 
-		var actualBuilds []atc.Build
+		var actualBuilds []types.Build
 		var found bool
 		var clientErr error
 
 		BeforeEach(func() {
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					ID:     2,
 					Name:   "some-build",

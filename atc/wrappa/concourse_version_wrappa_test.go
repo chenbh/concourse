@@ -1,9 +1,9 @@
 package wrappa_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/wrappa"
 	"github.com/tedsuo/rata"
 
@@ -39,7 +39,7 @@ var _ = Describe("ConcourseVersionWrappa", func() {
 		BeforeEach(func() {
 			inputHandlers = rata.Handlers{}
 
-			for _, route := range atc.Routes {
+			for _, route := range types.Routes {
 				inputHandlers[route.Name] = &stupidHandler{}
 			}
 

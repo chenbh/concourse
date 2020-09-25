@@ -2,11 +2,11 @@ package retire
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/worker"
 )
 
@@ -21,7 +21,7 @@ func (cmd *RetireWorkerCommand) Execute(args []string) error {
 	logger := lager.NewLogger("retire-worker")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	client := cmd.TSA.Client(atc.Worker{
+	client := cmd.TSA.Client(types.Worker{
 		Name: cmd.WorkerName,
 		Team: cmd.WorkerTeam,
 	})

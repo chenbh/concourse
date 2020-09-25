@@ -2,6 +2,7 @@ package builds_test
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"testing"
 
 	"github.com/concourse/concourse/atc"
@@ -25,7 +26,7 @@ func TestPlanner(t *testing.T) {
 type PlannerTest struct {
 	Title string
 
-	Config atc.StepConfig
+	Config types.StepConfig
 	Inputs []db.BuildInput
 
 	CompareIDs bool
@@ -37,35 +38,35 @@ var resources = db.SchedulerResources{
 	db.SchedulerResource{
 		Name:   "some-resource",
 		Type:   "some-resource-type",
-		Source: atc.Source{"some": "source"},
+		Source: types.Source{"some": "source"},
 	},
 }
 
-var resourceTypes = atc.VersionedResourceTypes{
+var resourceTypes = types.VersionedResourceTypes{
 	{
-		ResourceType: atc.ResourceType{
+		ResourceType: types.ResourceType{
 			Name:   "some-resource-type",
 			Type:   "some-base-resource-type",
-			Source: atc.Source{"some": "type-source"},
+			Source: types.Source{"some": "type-source"},
 		},
-		Version: atc.Version{"some": "type-version"},
+		Version: types.Version{"some": "type-version"},
 	},
 }
 
 var factoryTests = []PlannerTest{
 	{
 		Title: "get step",
-		Config: &atc.GetStep{
+		Config: &types.GetStep{
 			Name:     "some-name",
 			Resource: "some-resource",
-			Params:   atc.Params{"some": "params"},
-			Version:  &atc.VersionConfig{Pinned: atc.Version{"doesnt": "matter"}},
-			Tags:     atc.Tags{"tag-1", "tag-2"},
+			Params:   types.Params{"some": "params"},
+			Version:  &types.VersionConfig{Pinned: types.Version{"doesnt": "matter"}},
+			Tags:     types.Tags{"tag-1", "tag-2"},
 		},
 		Inputs: []db.BuildInput{
 			{
 				Name:    "some-name",
-				Version: atc.Version{"some": "version"},
+				Version: types.Version{"some": "version"},
 			},
 		},
 		PlanJSON: `{
@@ -91,7 +92,7 @@ var factoryTests = []PlannerTest{
 	},
 	{
 		Title: "get step with unknown resource",
-		Config: &atc.GetStep{
+		Config: &types.GetStep{
 			Name:     "some-name",
 			Resource: "bogus-resource",
 		},
@@ -99,7 +100,7 @@ var factoryTests = []PlannerTest{
 	},
 	{
 		Title: "get step with no available version",
-		Config: &atc.GetStep{
+		Config: &types.GetStep{
 			Name:     "some-name",
 			Resource: "some-resource",
 		},
@@ -107,18 +108,18 @@ var factoryTests = []PlannerTest{
 	},
 	{
 		Title: "put step",
-		Config: &atc.PutStep{
+		Config: &types.PutStep{
 			Name:      "some-name",
 			Resource:  "some-resource",
-			Params:    atc.Params{"some": "params"},
-			Tags:      atc.Tags{"tag-1", "tag-2"},
-			Inputs:    &atc.InputsConfig{All: true},
-			GetParams: atc.Params{"some": "get-params"},
+			Params:    types.Params{"some": "params"},
+			Tags:      types.Tags{"tag-1", "tag-2"},
+			Inputs:    &types.InputsConfig{All: true},
+			GetParams: types.Params{"some": "get-params"},
 		},
 		Inputs: []db.BuildInput{
 			{
 				Name:    "some-name",
-				Version: atc.Version{"some": "version"},
+				Version: types.Version{"some": "version"},
 			},
 		},
 
@@ -173,17 +174,17 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "task step",
 
-		Config: &atc.TaskStep{
+		Config: &types.TaskStep{
 			Name:       "some-task",
 			Privileged: true,
-			Config: &atc.TaskConfig{
+			Config: &types.TaskConfig{
 				Platform: "linux",
-				Run:      atc.TaskRunConfig{Path: "hello"},
+				Run:      types.TaskRunConfig{Path: "hello"},
 			},
 			ConfigPath:        "some-task-file",
-			Vars:              atc.Params{"some": "vars"},
-			Params:            atc.TaskEnv{"SOME": "PARAMS"},
-			Tags:              atc.Tags{"tag-1", "tag-2"},
+			Vars:              types.Params{"some": "vars"},
+			Params:            types.TaskEnv{"SOME": "PARAMS"},
+			Tags:              types.Tags{"tag-1", "tag-2"},
 			InputMapping:      map[string]string{"generic": "specific"},
 			OutputMapping:     map[string]string{"specific": "generic"},
 			ImageArtifactName: "some-image",
@@ -219,10 +220,10 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "set_pipeline step",
 
-		Config: &atc.SetPipelineStep{
+		Config: &types.SetPipelineStep{
 			Name:     "some-pipeline",
 			File:     "some-pipeline-file",
-			Vars:     atc.Params{"some": "vars"},
+			Vars:     types.Params{"some": "vars"},
 			VarFiles: []string{"file-1", "file-2"},
 		},
 
@@ -239,7 +240,7 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "load_var step",
 
-		Config: &atc.LoadVarStep{
+		Config: &types.LoadVarStep{
 			Name:   "some-var",
 			File:   "some-var-file",
 			Format: "raw",
@@ -259,9 +260,9 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "try step",
 
-		Config: &atc.TryStep{
-			Step: atc.Step{
-				Config: &atc.LoadVarStep{
+		Config: &types.TryStep{
+			Step: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-var",
 					File: "some-file",
 				},
@@ -284,16 +285,16 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "do step",
 
-		Config: &atc.DoStep{
-			Steps: []atc.Step{
+		Config: &types.DoStep{
+			Steps: []types.Step{
 				{
-					Config: &atc.LoadVarStep{
+					Config: &types.LoadVarStep{
 						Name: "some-var",
 						File: "some-file",
 					},
 				},
 				{
-					Config: &atc.LoadVarStep{
+					Config: &types.LoadVarStep{
 						Name: "some-other-var",
 						File: "some-other-file",
 					},
@@ -324,19 +325,19 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "in_parallel step",
 
-		Config: &atc.InParallelStep{
-			Config: atc.InParallelConfig{
+		Config: &types.InParallelStep{
+			Config: types.InParallelConfig{
 				Limit:    3,
 				FailFast: true,
-				Steps: []atc.Step{
+				Steps: []types.Step{
 					{
-						Config: &atc.LoadVarStep{
+						Config: &types.LoadVarStep{
 							Name: "some-var",
 							File: "some-file",
 						},
 					},
 					{
-						Config: &atc.LoadVarStep{
+						Config: &types.LoadVarStep{
 							Name: "some-other-var",
 							File: "some-other-file",
 						},
@@ -372,16 +373,16 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "aggregate step",
 
-		Config: &atc.AggregateStep{
-			Steps: []atc.Step{
+		Config: &types.AggregateStep{
+			Steps: []types.Step{
 				{
-					Config: &atc.LoadVarStep{
+					Config: &types.LoadVarStep{
 						Name: "some-var",
 						File: "some-file",
 					},
 				},
 				{
-					Config: &atc.LoadVarStep{
+					Config: &types.LoadVarStep{
 						Name: "some-other-var",
 						File: "some-other-file",
 					},
@@ -412,16 +413,16 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "across step",
 
-		Config: &atc.AcrossStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.AcrossStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Vars: []atc.AcrossVarConfig{
+			Vars: []types.AcrossVarConfig{
 				{
 					Var:         "var1",
 					Values:      []interface{}{"a1", "a2"},
-					MaxInFlight: &atc.MaxInFlightConfig{All: true},
+					MaxInFlight: &types.MaxInFlightConfig{All: true},
 				},
 				{
 					Var:    "var2",
@@ -493,8 +494,8 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "timeout modifier",
 
-		Config: &atc.TimeoutStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.TimeoutStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
@@ -518,8 +519,8 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "attempts modifier",
 
-		Config: &atc.RetryStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.RetryStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
@@ -557,13 +558,13 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "on_success step",
 
-		Config: &atc.OnSuccessStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.OnSuccessStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Hook: atc.Step{
-				Config: &atc.LoadVarStep{
+			Hook: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-other-var",
 					File: "some-other-file",
 				},
@@ -593,13 +594,13 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "on_failure step",
 
-		Config: &atc.OnFailureStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.OnFailureStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Hook: atc.Step{
-				Config: &atc.LoadVarStep{
+			Hook: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-other-var",
 					File: "some-other-file",
 				},
@@ -629,13 +630,13 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "on_error step",
 
-		Config: &atc.OnErrorStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.OnErrorStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Hook: atc.Step{
-				Config: &atc.LoadVarStep{
+			Hook: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-other-var",
 					File: "some-other-file",
 				},
@@ -665,13 +666,13 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "on_abort step",
 
-		Config: &atc.OnAbortStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.OnAbortStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Hook: atc.Step{
-				Config: &atc.LoadVarStep{
+			Hook: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-other-var",
 					File: "some-other-file",
 				},
@@ -701,13 +702,13 @@ var factoryTests = []PlannerTest{
 	{
 		Title: "ensure step",
 
-		Config: &atc.EnsureStep{
-			Step: &atc.LoadVarStep{
+		Config: &types.EnsureStep{
+			Step: &types.LoadVarStep{
 				Name: "some-var",
 				File: "some-file",
 			},
-			Hook: atc.Step{
-				Config: &atc.LoadVarStep{
+			Hook: types.Step{
+				Config: &types.LoadVarStep{
 					Name: "some-other-var",
 					File: "some-other-file",
 				},

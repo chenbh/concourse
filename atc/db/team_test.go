@@ -3,6 +3,7 @@ package db_test
 import (
 	"database/sql"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
@@ -24,7 +25,7 @@ var _ = Describe("Team", func() {
 		otherTeam db.Team
 	)
 
-	expectConfigsEqual := func(config, expectedConfig atc.Config) {
+	expectConfigsEqual := func(config, expectedConfig types.Config) {
 		ExpectWithOffset(1, config.Groups).To(ConsistOf(expectedConfig.Groups))
 		ExpectWithOffset(1, config.Resources).To(ConsistOf(expectedConfig.Resources))
 		ExpectWithOffset(1, config.ResourceTypes).To(ConsistOf(expectedConfig.ResourceTypes))
@@ -33,9 +34,9 @@ var _ = Describe("Team", func() {
 
 	BeforeEach(func() {
 		var err error
-		team, err = teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+		team, err = teamFactory.CreateTeam(types.Team{Name: "some-team"})
 		Expect(err).ToNot(HaveOccurred())
-		otherTeam, err = teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+		otherTeam, err = teamFactory.CreateTeam(types.Team{Name: "some-other-team"})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -77,25 +78,25 @@ var _ = Describe("Team", func() {
 		var (
 			team      db.Team
 			otherTeam db.Team
-			atcWorker atc.Worker
+			atcWorker types.Worker
 			err       error
 		)
 
 		BeforeEach(func() {
 			postgresRunner.Truncate()
-			team, err = teamFactory.CreateTeam(atc.Team{Name: "team"})
+			team, err = teamFactory.CreateTeam(types.Team{Name: "team"})
 			Expect(err).ToNot(HaveOccurred())
 
-			otherTeam, err = teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+			otherTeam, err = teamFactory.CreateTeam(types.Team{Name: "some-other-team"})
 			Expect(err).ToNot(HaveOccurred())
-			atcWorker = atc.Worker{
+			atcWorker = types.Worker{
 				GardenAddr:       "some-garden-addr",
 				BaggageclaimURL:  "some-bc-url",
 				HTTPProxyURL:     "some-http-proxy-url",
 				HTTPSProxyURL:    "some-https-proxy-url",
 				NoProxy:          "some-no-proxy",
 				ActiveContainers: 140,
-				ResourceTypes: []atc.WorkerResourceType{
+				ResourceTypes: []types.WorkerResourceType{
 					{
 						Type:    "some-resource-type",
 						Image:   "some-image",
@@ -108,7 +109,7 @@ var _ = Describe("Team", func() {
 					},
 				},
 				Platform:  "some-platform",
-				Tags:      atc.Tags{"some", "tags"},
+				Tags:      types.Tags{"some", "tags"},
 				Name:      "some-name",
 				StartTime: 55,
 			}
@@ -148,25 +149,25 @@ var _ = Describe("Team", func() {
 		var (
 			team      db.Team
 			otherTeam db.Team
-			atcWorker atc.Worker
+			atcWorker types.Worker
 			err       error
 		)
 
 		BeforeEach(func() {
 			postgresRunner.Truncate()
-			team, err = teamFactory.CreateTeam(atc.Team{Name: "team"})
+			team, err = teamFactory.CreateTeam(types.Team{Name: "team"})
 			Expect(err).ToNot(HaveOccurred())
 
-			otherTeam, err = teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+			otherTeam, err = teamFactory.CreateTeam(types.Team{Name: "some-other-team"})
 			Expect(err).ToNot(HaveOccurred())
-			atcWorker = atc.Worker{
+			atcWorker = types.Worker{
 				GardenAddr:       "some-garden-addr",
 				BaggageclaimURL:  "some-bc-url",
 				HTTPProxyURL:     "some-http-proxy-url",
 				HTTPSProxyURL:    "some-https-proxy-url",
 				NoProxy:          "some-no-proxy",
 				ActiveContainers: 140,
-				ResourceTypes: []atc.WorkerResourceType{
+				ResourceTypes: []types.WorkerResourceType{
 					{
 						Type:    "some-resource-type",
 						Image:   "some-image",
@@ -179,7 +180,7 @@ var _ = Describe("Team", func() {
 					},
 				},
 				Platform:  "some-platform",
-				Tags:      atc.Tags{"some", "tags"},
+				Tags:      types.Tags{"some", "tags"},
 				Name:      "some-name",
 				StartTime: 55,
 			}
@@ -458,8 +459,8 @@ var _ = Describe("Team", func() {
 			var resourceContainer db.Container
 
 			BeforeEach(func() {
-				atcWorker := atc.Worker{
-					ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+				atcWorker := types.Worker{
+					ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 					Name:            "default-team-worker",
 					GardenAddr:      "3.4.5.6:7777",
 					BaggageclaimURL: "7.8.9.10:7878",
@@ -474,7 +475,7 @@ var _ = Describe("Team", func() {
 					Max: 1 * time.Hour,
 				}
 
-				resourceConfigScope, err = defaultResource.SetResourceConfig(defaultResource.Source(), atc.VersionedResourceTypes{})
+				resourceConfigScope, err = defaultResource.SetResourceConfig(defaultResource.Source(), types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
 				resourceContainer, err = worker.CreateContainer(
@@ -505,29 +506,29 @@ var _ = Describe("Team", func() {
 				)
 
 				BeforeEach(func() {
-					otherTeam, err = teamFactory.CreateTeam(atc.Team{Name: "other-team"})
+					otherTeam, err = teamFactory.CreateTeam(types.Team{Name: "other-team"})
 					Expect(err).NotTo(HaveOccurred())
 
-					otherPipeline, _, err := otherTeam.SavePipeline("other-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					otherPipeline, _, err := otherTeam.SavePipeline("other-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
 							},
 						},
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name: "some-type",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some-type": "source",
 								},
 							},
@@ -539,8 +540,8 @@ var _ = Describe("Team", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
-					atcWorker := atc.Worker{
-						ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+					atcWorker := types.Worker{
+						ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 						Name:            "other-team-worker",
 						GardenAddr:      "4.5.6.7:7777",
 						BaggageclaimURL: "8.9.10.11:7878",
@@ -555,7 +556,7 @@ var _ = Describe("Team", func() {
 						Max: 1 * time.Hour,
 					}
 
-					resourceConfigScope, err = otherResource.SetResourceConfig(otherResource.Source(), atc.VersionedResourceTypes{})
+					resourceConfigScope, err = otherResource.SetResourceConfig(otherResource.Source(), types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 
 					resource2Container, err = worker.CreateContainer(
@@ -590,7 +591,7 @@ var _ = Describe("Team", func() {
 						Max: 1 * time.Hour,
 					}
 
-					resourceConfigScope, err := defaultResource.SetResourceConfig(defaultResource.Source(), atc.VersionedResourceTypes{})
+					resourceConfigScope, err := defaultResource.SetResourceConfig(defaultResource.Source(), types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 
 					globalResourceContainer, err = defaultWorker.CreateContainer(
@@ -625,7 +626,7 @@ var _ = Describe("Team", func() {
 					Max: 1 * time.Hour,
 				}
 
-				resourceConfigScope, err := defaultResourceType.SetResourceConfig(defaultResourceType.Source(), atc.VersionedResourceTypes{})
+				resourceConfigScope, err := defaultResourceType.SetResourceConfig(defaultResourceType.Source(), types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
 				resourceContainer, err = defaultWorker.CreateContainer(
@@ -796,11 +797,11 @@ var _ = Describe("Team", func() {
 
 	Describe("Updating Auth", func() {
 		var (
-			authProvider atc.TeamAuth
+			authProvider types.TeamAuth
 		)
 
 		BeforeEach(func() {
-			authProvider = atc.TeamAuth{
+			authProvider = types.TeamAuth{
 				"owner": {"users": []string{"local:username"}},
 			}
 		})
@@ -829,7 +830,7 @@ var _ = Describe("Team", func() {
 
 			Context("when team auth is already set", func() {
 				BeforeEach(func() {
-					team.UpdateProviderAuth(atc.TeamAuth{
+					team.UpdateProviderAuth(types.TeamAuth{
 						"owner":  {"users": []string{"local:somebody"}},
 						"viewer": {"users": []string{"local:someone"}},
 					})
@@ -861,15 +862,15 @@ var _ = Describe("Team", func() {
 		Context("when the team has configured pipelines", func() {
 			BeforeEach(func() {
 				var err error
-				pipeline1, _, err = team.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err = team.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline2, _, err = team.SavePipeline("fake-pipeline-two", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline2, _, err = team.SavePipeline("fake-pipeline-two", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-fake"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -903,15 +904,15 @@ var _ = Describe("Team", func() {
 		Context("when the team has configured pipelines", func() {
 			BeforeEach(func() {
 				var err error
-				_, _, err = team.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				_, _, err = team.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline2, _, err = team.SavePipeline("fake-pipeline-two", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline2, _, err = team.SavePipeline("fake-pipeline-two", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-fake"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -944,14 +945,14 @@ var _ = Describe("Team", func() {
 
 		BeforeEach(func() {
 			var err error
-			pipeline1, _, err = team.SavePipeline("pipeline-name-a", atc.Config{}, 0, false)
+			pipeline1, _, err = team.SavePipeline("pipeline-name-a", types.Config{}, 0, false)
 			Expect(err).ToNot(HaveOccurred())
-			pipeline2, _, err = team.SavePipeline("pipeline-name-b", atc.Config{}, 0, false)
+			pipeline2, _, err = team.SavePipeline("pipeline-name-b", types.Config{}, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			otherPipeline1, _, err = otherTeam.SavePipeline("pipeline-name-a", atc.Config{}, 0, false)
+			otherPipeline1, _, err = otherTeam.SavePipeline("pipeline-name-a", types.Config{}, 0, false)
 			Expect(err).ToNot(HaveOccurred())
-			otherPipeline2, _, err = otherTeam.SavePipeline("pipeline-name-b", atc.Config{}, 0, false)
+			otherPipeline2, _, err = otherTeam.SavePipeline("pipeline-name-b", types.Config{}, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -1019,20 +1020,20 @@ var _ = Describe("Team", func() {
 					Type:     "some-type",
 					Name:     "some-name",
 					Resource: "some-resource",
-					Source:   atc.Source{"some": "source"},
-					Params:   atc.Params{"some": "params"},
-					Version:  &atc.Version{"some": "version"},
-					Tags:     atc.Tags{"some-tags"},
-					VersionedResourceTypes: atc.VersionedResourceTypes{
+					Source:   types.Source{"some": "source"},
+					Params:   types.Params{"some": "params"},
+					Version:  &types.Version{"some": "version"},
+					Tags:     types.Tags{"some-tags"},
+					VersionedResourceTypes: types.VersionedResourceTypes{
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name:       "some-name",
-								Source:     atc.Source{"some": "source"},
+								Source:     types.Source{"some": "source"},
 								Type:       "some-type",
 								Privileged: true,
-								Tags:       atc.Tags{"some-tags"},
+								Tags:       types.Tags{"some-tags"},
 							},
-							Version: atc.Version{"some-resource-type": "version"},
+							Version: types.Version{"some-resource-type": "version"},
 						},
 					},
 				},
@@ -1069,7 +1070,7 @@ var _ = Describe("Team", func() {
 			defer db.Close(events)
 
 			Expect(events.Next()).To(Equal(envelope(event.Status{
-				Status: atc.StatusStarted,
+				Status: types.StatusStarted,
 				Time:   startedBuild.StartTime().Unix(),
 			})))
 		})
@@ -1099,8 +1100,8 @@ var _ = Describe("Team", func() {
 					allBuilds[i] = build
 				}
 
-				config := atc.Config{
-					Jobs: atc.JobConfigs{
+				config := types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 						},
@@ -1171,10 +1172,10 @@ var _ = Describe("Team", func() {
 				var caseInsensitiveTeamB db.Team
 
 				BeforeEach(func() {
-					_, err := teamFactory.CreateTeam(atc.Team{Name: "team-a"})
+					_, err := teamFactory.CreateTeam(types.Team{Name: "team-a"})
 					Expect(err).ToNot(HaveOccurred())
 
-					_, err = teamFactory.CreateTeam(atc.Team{Name: "team-b"})
+					_, err = teamFactory.CreateTeam(types.Team{Name: "team-b"})
 					Expect(err).ToNot(HaveOccurred())
 
 					var found bool
@@ -1248,8 +1249,8 @@ var _ = Describe("Team", func() {
 				found bool
 			)
 
-			config := atc.Config{
-				Jobs: atc.JobConfigs{
+			config := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -1354,8 +1355,8 @@ var _ = Describe("Team", func() {
 			Expect(err).NotTo(HaveOccurred())
 			expectedBuilds = append(expectedBuilds, oneOffBuild)
 
-			config := atc.Config{
-				Jobs: atc.JobConfigs{
+			config := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -1443,10 +1444,10 @@ var _ = Describe("Team", func() {
 			var caseInsensitiveTeamB db.Team
 
 			BeforeEach(func() {
-				_, err := teamFactory.CreateTeam(atc.Team{Name: "team-a"})
+				_, err := teamFactory.CreateTeam(types.Team{Name: "team-a"})
 				Expect(err).ToNot(HaveOccurred())
 
-				_, err = teamFactory.CreateTeam(atc.Team{Name: "team-b"})
+				_, err = teamFactory.CreateTeam(types.Team{Name: "team-b"})
 				Expect(err).ToNot(HaveOccurred())
 
 				var found bool
@@ -1513,14 +1514,14 @@ var _ = Describe("Team", func() {
 		}
 
 		var (
-			config       atc.Config
-			otherConfig  atc.Config
+			config       types.Config
+			otherConfig  types.Config
 			pipelineName string
 		)
 
 		BeforeEach(func() {
-			config = atc.Config{
-				Groups: atc.GroupConfigs{
+			config = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"job-1", "job-2"},
@@ -1528,27 +1529,27 @@ var _ = Describe("Team", func() {
 					},
 				},
 
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-resource-type",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 
@@ -1557,12 +1558,12 @@ var _ = Describe("Team", func() {
 						Serial:       true,
 						SerialGroups: []string{"serial-group-1", "serial-group-2"},
 
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input",
 									Resource: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 									Passed:  []string{"job-1", "job-2"},
@@ -1570,19 +1571,19 @@ var _ = Describe("Team", func() {
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									Privileged: true,
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
+									Config: &types.TaskConfig{
 										RootfsURI: "some-image",
 									},
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 								},
@@ -1598,8 +1599,8 @@ var _ = Describe("Team", func() {
 				},
 			}
 
-			otherConfig = atc.Config{
-				Groups: atc.GroupConfigs{
+			otherConfig = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"some-other-job", "job-1", "job-2"},
@@ -1607,17 +1608,17 @@ var _ = Describe("Team", func() {
 					},
 				},
 
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-other-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-other-job",
 					},
@@ -1694,7 +1695,7 @@ var _ = Describe("Team", func() {
 			requestedSchedule1 := requestedJob.ScheduleRequestedTime()
 			requestedSchedule2 := otherJob.ScheduleRequestedTime()
 
-			config.Resources[0].Source = atc.Source{
+			config.Resources[0].Source = types.Source{
 				"source-other-config": "some-other-value",
 			}
 
@@ -1721,7 +1722,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(resource.Type()).To(Equal("some-type"))
-			Expect(resource.Source()).To(Equal(atc.Source{
+			Expect(resource.Source()).To(Equal(types.Source{
 				"source-config": "some-value",
 			}))
 		})
@@ -1730,7 +1731,7 @@ var _ = Describe("Team", func() {
 			pipeline, _, err := team.SavePipeline(pipelineName, config, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			config.Resources[0].Source = atc.Source{
+			config.Resources[0].Source = types.Source{
 				"source-other-config": "some-other-value",
 			}
 
@@ -1741,7 +1742,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(resource.Type()).To(Equal("some-type"))
-			Expect(resource.Source()).To(Equal(atc.Source{
+			Expect(resource.Source()).To(Equal(types.Source{
 				"source-other-config": "some-other-value",
 			}))
 		})
@@ -1765,16 +1766,16 @@ var _ = Describe("Team", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(setupTx.Commit()).To(Succeed())
 
-			rc, err := resource.SetResourceConfig(atc.Source{"source-config": "some-value"}, atc.VersionedResourceTypes{})
+			rc, err := resource.SetResourceConfig(types.Source{"source-config": "some-value"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = rc.SaveVersions(nil, []atc.Version{
-				atc.Version{"version": "v1"},
-				atc.Version{"version": "v2"},
+			err = rc.SaveVersions(nil, []types.Version{
+				types.Version{"version": "v1"},
+				types.Version{"version": "v2"},
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			rcv, found, err := rc.FindVersion(atc.Version{"version": "v1"})
+			rcv, found, err := rc.FindVersion(types.Version{"version": "v1"})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
@@ -1785,9 +1786,9 @@ var _ = Describe("Team", func() {
 			reloaded, err := resource.Reload()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(reloaded).To(BeTrue())
-			Expect(resource.APIPinnedVersion()).To(Equal(atc.Version{"version": "v1"}))
+			Expect(resource.APIPinnedVersion()).To(Equal(types.Version{"version": "v1"}))
 
-			config.Resources[0].Version = atc.Version{
+			config.Resources[0].Version = types.Version{
 				"version": "v2",
 			}
 
@@ -1797,12 +1798,12 @@ var _ = Describe("Team", func() {
 			resource, found, err = savedPipeline.Resource("some-resource")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
-			Expect(resource.ConfigPinnedVersion()).To(Equal(atc.Version{"version": "v2"}))
+			Expect(resource.ConfigPinnedVersion()).To(Equal(types.Version{"version": "v2"}))
 			Expect(resource.APIPinnedVersion()).To(BeNil())
 		})
 
 		It("clears out config pinned version when it is removed", func() {
-			config.Resources[0].Version = atc.Version{
+			config.Resources[0].Version = types.Version{
 				"version": "v1",
 			}
 
@@ -1812,7 +1813,7 @@ var _ = Describe("Team", func() {
 			resource, found, err := pipeline.Resource("some-resource")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
-			Expect(resource.ConfigPinnedVersion()).To(Equal(atc.Version{"version": "v1"}))
+			Expect(resource.ConfigPinnedVersion()).To(Equal(types.Version{"version": "v1"}))
 			Expect(resource.APIPinnedVersion()).To(BeNil())
 
 			config.Resources[0].Version = nil
@@ -1846,16 +1847,16 @@ var _ = Describe("Team", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(setupTx.Commit()).To(Succeed())
 
-			rc, err := resource.SetResourceConfig(atc.Source{"source-config": "some-value"}, atc.VersionedResourceTypes{})
+			rc, err := resource.SetResourceConfig(types.Source{"source-config": "some-value"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = rc.SaveVersions(nil, []atc.Version{
-				atc.Version{"version": "v1"},
-				atc.Version{"version": "v2"},
+			err = rc.SaveVersions(nil, []types.Version{
+				types.Version{"version": "v1"},
+				types.Version{"version": "v2"},
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			rcv, found, err := rc.FindVersion(atc.Version{"version": "v1"})
+			rcv, found, err := rc.FindVersion(types.Version{"version": "v1"})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
@@ -1866,7 +1867,7 @@ var _ = Describe("Team", func() {
 			reloaded, err := resource.Reload()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(reloaded).To(BeTrue())
-			Expect(resource.APIPinnedVersion()).To(Equal(atc.Version{"version": "v1"}))
+			Expect(resource.APIPinnedVersion()).To(Equal(types.Version{"version": "v1"}))
 
 			savedPipeline, _, err := team.SavePipeline(pipelineName, config, pipeline.ConfigVersion(), false)
 			Expect(err).ToNot(HaveOccurred())
@@ -1874,15 +1875,15 @@ var _ = Describe("Team", func() {
 			resource, found, err = savedPipeline.Resource("some-resource")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
-			Expect(resource.APIPinnedVersion()).To(Equal(atc.Version{"version": "v1"}))
+			Expect(resource.APIPinnedVersion()).To(Equal(types.Version{"version": "v1"}))
 		})
 
 		It("marks resource as inactive if it is no longer in config", func() {
 			pipeline, _, err := team.SavePipeline(pipelineName, config, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			config.Resources = []atc.ResourceConfig{}
-			config.Jobs = atc.JobConfigs{
+			config.Resources = []types.ResourceConfig{}
+			config.Jobs = types.JobConfigs{
 				{
 					Name: "some-job",
 
@@ -1891,21 +1892,21 @@ var _ = Describe("Team", func() {
 					Serial:       true,
 					SerialGroups: []string{"serial-group-1", "serial-group-2"},
 
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-task",
 								Privileged: true,
 								ConfigPath: "some/config/path.yml",
-								Config: &atc.TaskConfig{
+								Config: &types.TaskConfig{
 									RootfsURI: "some-image",
 								},
 							},
 						},
 						{
-							Config: &atc.PutStep{
+							Config: &types.PutStep{
 								Name: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 							},
@@ -1919,7 +1920,7 @@ var _ = Describe("Team", func() {
 					Name: "job-2",
 				},
 			}
-			config.Resources = atc.ResourceConfigs{
+			config.Resources = types.ResourceConfigs{
 				{
 					Name: "some-resource",
 					Type: "some-type",
@@ -1942,7 +1943,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(resourceType.Type()).To(Equal("some-type"))
-			Expect(resourceType.Source()).To(Equal(atc.Source{
+			Expect(resourceType.Source()).To(Equal(types.Source{
 				"source-config": "some-value",
 			}))
 		})
@@ -1951,7 +1952,7 @@ var _ = Describe("Team", func() {
 			pipeline, _, err := team.SavePipeline(pipelineName, config, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			config.ResourceTypes[0].Source = atc.Source{
+			config.ResourceTypes[0].Source = types.Source{
 				"source-other-config": "some-other-value",
 			}
 
@@ -1962,7 +1963,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(resourceType.Type()).To(Equal("some-type"))
-			Expect(resourceType.Source()).To(Equal(atc.Source{
+			Expect(resourceType.Source()).To(Equal(types.Source{
 				"source-other-config": "some-other-value",
 			}))
 		})
@@ -1971,7 +1972,7 @@ var _ = Describe("Team", func() {
 			pipeline, _, err := team.SavePipeline(pipelineName, config, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			config.ResourceTypes = []atc.ResourceType{}
+			config.ResourceTypes = []types.ResourceType{}
 
 			savedPipeline, _, err := team.SavePipeline(pipelineName, config, pipeline.ConfigVersion(), false)
 			Expect(err).ToNot(HaveOccurred())
@@ -2010,7 +2011,7 @@ var _ = Describe("Team", func() {
 			pipeline, _, err := team.SavePipeline(pipelineName, config, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
-			config.Jobs = []atc.JobConfig{}
+			config.Jobs = []types.JobConfig{}
 
 			savedPipeline, _, err := team.SavePipeline(pipelineName, config, pipeline.ConfigVersion(), false)
 			Expect(err).ToNot(HaveOccurred())
@@ -2022,7 +2023,7 @@ var _ = Describe("Team", func() {
 
 		Context("update job names but keeps history", func() {
 			BeforeEach(func() {
-				newJobConfig := atc.JobConfig{
+				newJobConfig := types.JobConfig{
 					Name: "new-job",
 
 					Public: true,
@@ -2030,12 +2031,12 @@ var _ = Describe("Team", func() {
 					Serial:       true,
 					SerialGroups: []string{"serial-group-1", "serial-group-2"},
 
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 								Passed:  []string{"job-1", "job-2"},
@@ -2043,24 +2044,24 @@ var _ = Describe("Team", func() {
 							},
 						},
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-task",
 								ConfigPath: "some/config/path.yml",
 							},
 						},
 						{
-							Config: &atc.PutStep{
+							Config: &types.PutStep{
 								Name: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 							},
 						},
 						{
-							Config: &atc.DoStep{
-								Steps: []atc.Step{
+							Config: &types.DoStep{
+								Steps: []types.Step{
 									{
-										Config: &atc.TaskStep{
+										Config: &types.TaskStep{
 											Name:       "some-nested-task",
 											ConfigPath: "some/config/path.yml",
 										},
@@ -2150,10 +2151,10 @@ var _ = Describe("Team", func() {
 
 			BeforeEach(func() {
 
-				config.Resources = append(config.Resources, atc.ResourceConfig{
+				config.Resources = append(config.Resources, types.ResourceConfig{
 					Name: "new-resource",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				})
@@ -2168,12 +2169,12 @@ var _ = Describe("Team", func() {
 				config.Resources[0].Name = "renamed-resource"
 				config.Resources[0].OldName = "some-resource"
 
-				config.Jobs[0].PlanSequence = []atc.Step{
+				config.Jobs[0].PlanSequence = []types.Step{
 					{
-						Config: &atc.GetStep{
+						Config: &types.GetStep{
 							Name:     "some-input",
 							Resource: "renamed-resource",
-							Params: atc.Params{
+							Params: types.Params{
 								"some-param": "some-value",
 							},
 							Passed:  []string{"job-1", "job-2"},
@@ -2202,12 +2203,12 @@ var _ = Describe("Team", func() {
 				config.Resources[1].Name = "new-other-resource"
 				config.Resources[1].OldName = "new-resource"
 
-				config.Jobs[0].PlanSequence = []atc.Step{
+				config.Jobs[0].PlanSequence = []types.Step{
 					{
-						Config: &atc.GetStep{
+						Config: &types.GetStep{
 							Name:     "some-input",
 							Resource: "new-resource",
-							Params: atc.Params{
+							Params: types.Params{
 								"some-param": "some-value",
 							},
 							Passed:  []string{"job-1", "job-2"},
@@ -2282,15 +2283,15 @@ var _ = Describe("Team", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(setupTx.Commit()).To(Succeed())
 
-					resourceScope, err := resource.SetResourceConfig(atc.Source{"some": "other-repository"}, atc.VersionedResourceTypes{})
+					resourceScope, err := resource.SetResourceConfig(types.Source{"some": "other-repository"}, types.VersionedResourceTypes{})
 					Expect(err).NotTo(HaveOccurred())
 
-					err = resourceScope.SaveVersions(nil, []atc.Version{
+					err = resourceScope.SaveVersions(nil, []types.Version{
 						{"disabled": "version"},
 					})
 					Expect(err).ToNot(HaveOccurred())
 
-					rcv, found, err = resourceScope.FindVersion(atc.Version{"disabled": "version"})
+					rcv, found, err = resourceScope.FindVersion(types.Version{"disabled": "version"})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(found).To(BeTrue())
 
@@ -2301,7 +2302,7 @@ var _ = Describe("Team", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(found).To(BeTrue())
 					Expect(versions).To(HaveLen(1))
-					Expect(versions[0].Version).To(Equal(atc.Version{"disabled": "version"}))
+					Expect(versions[0].Version).To(Equal(types.Version{"disabled": "version"}))
 					Expect(versions[0].Enabled).To(BeFalse())
 				})
 
@@ -2309,12 +2310,12 @@ var _ = Describe("Team", func() {
 
 					config.Resources[0].Name = "disabled-resource"
 					config.Resources[0].OldName = "some-resource"
-					config.Jobs[0].PlanSequence = []atc.Step{
+					config.Jobs[0].PlanSequence = []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "disabled-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 								Passed:  []string{"job-1", "job-2"},
@@ -2333,7 +2334,7 @@ var _ = Describe("Team", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(found).To(BeTrue())
 					Expect(versions).To(HaveLen(1))
-					Expect(versions[0].Version).To(Equal(atc.Version{"disabled": "version"}))
+					Expect(versions[0].Version).To(Equal(types.Version{"disabled": "version"}))
 					Expect(versions[0].Enabled).To(BeFalse())
 				})
 			})
@@ -2341,7 +2342,7 @@ var _ = Describe("Team", func() {
 			Context("when new resource exists but the version is pinned", func() {
 				var pipeline db.Pipeline
 				var resource db.Resource
-				var pinnedVersion atc.Version
+				var pinnedVersion types.Version
 				var err error
 
 				BeforeEach(func() {
@@ -2361,17 +2362,17 @@ var _ = Describe("Team", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(setupTx.Commit()).To(Succeed())
 
-					resourceScope, err := resource.SetResourceConfig(atc.Source{"some": "other-repository"}, atc.VersionedResourceTypes{})
+					resourceScope, err := resource.SetResourceConfig(types.Source{"some": "other-repository"}, types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 
-					err = resourceScope.SaveVersions(nil, []atc.Version{
-						atc.Version{"version": "v1"},
-						atc.Version{"version": "v2"},
-						atc.Version{"version": "v3"},
+					err = resourceScope.SaveVersions(nil, []types.Version{
+						types.Version{"version": "v1"},
+						types.Version{"version": "v2"},
+						types.Version{"version": "v3"},
 					})
 					Expect(err).ToNot(HaveOccurred())
 
-					pinnedVersion = atc.Version{"version": "v1"}
+					pinnedVersion = types.Version{"version": "v1"}
 					resConf, found, err := resourceScope.FindVersion(pinnedVersion)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(found).To(BeTrue())
@@ -2385,12 +2386,12 @@ var _ = Describe("Team", func() {
 				It("should not change the pinned version", func() {
 					config.Resources[0].Name = "pinned-resource"
 					config.Resources[0].OldName = "some-resource"
-					config.Jobs[0].PlanSequence = []atc.Step{
+					config.Jobs[0].PlanSequence = []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "pinned-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 								Passed:  []string{"job-1", "job-2"},
@@ -2431,7 +2432,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			config.Jobs = []atc.JobConfig{}
+			config.Jobs = []types.JobConfig{}
 
 			_, _, err = team.SavePipeline(pipelineName, config, pipeline.ConfigVersion(), false)
 			Expect(err).ToNot(HaveOccurred())
@@ -2467,12 +2468,12 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			config.Jobs = []atc.JobConfig{
+			config.Jobs = []types.JobConfig{
 				{
 					Name: "some-job",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-other-task",
 								ConfigPath: "some/config/path.yml",
 							},
@@ -2522,12 +2523,12 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			config.Jobs = []atc.JobConfig{
+			config.Jobs = []types.JobConfig{
 				{
 					Name: "some-job",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-other-task",
 								ConfigPath: "some/config/path.yml",
 							},
@@ -2600,7 +2601,7 @@ var _ = Describe("Team", func() {
 
 			Expect(job.Tags()).To(Equal([]string{"some-group"}))
 
-			otherConfig.Groups = atc.GroupConfigs{
+			otherConfig.Groups = types.GroupConfigs{
 				{
 					Name: "some-other-group",
 					Jobs: []string{"job-1", "job-2", "some-other-job"},
@@ -2631,8 +2632,8 @@ var _ = Describe("Team", func() {
 		})
 
 		It("deletes old job pipes and inserts new ones", func() {
-			config = atc.Config{
-				Groups: atc.GroupConfigs{
+			config = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"job-1", "job-2"},
@@ -2640,32 +2641,32 @@ var _ = Describe("Team", func() {
 					},
 				},
 
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-resource-type",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "job-1",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
@@ -2673,9 +2674,9 @@ var _ = Describe("Team", func() {
 					},
 					{
 						Name: "job-2",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
@@ -2689,12 +2690,12 @@ var _ = Describe("Team", func() {
 						Serial:       true,
 						SerialGroups: []string{"serial-group-1", "serial-group-2"},
 
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.DoStep{
-									Steps: []atc.Step{
+								Config: &types.DoStep{
+									Steps: []types.Step{
 										{
-											Config: &atc.GetStep{
+											Config: &types.GetStep{
 												Name:     "other-input",
 												Resource: "some-resource",
 											},
@@ -2703,10 +2704,10 @@ var _ = Describe("Team", func() {
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input",
 									Resource: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 									Passed:  []string{"job-1", "job-2"},
@@ -2714,19 +2715,19 @@ var _ = Describe("Team", func() {
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									Privileged: true,
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
+									Config: &types.TaskConfig{
 										RootfsURI: "some-image",
 									},
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 								},
@@ -2817,33 +2818,33 @@ var _ = Describe("Team", func() {
 				},
 			))
 
-			config = atc.Config{
-				Resources: atc.ResourceConfigs{
+			config = types.Config{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-resource-type",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "job-2",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
@@ -2857,12 +2858,12 @@ var _ = Describe("Team", func() {
 						Serial:       true,
 						SerialGroups: []string{"serial-group-1", "serial-group-2"},
 
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "some-input",
 									Resource: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 									Passed:  []string{"job-2"},
@@ -2870,19 +2871,19 @@ var _ = Describe("Team", func() {
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									Privileged: true,
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
+									Config: &types.TaskConfig{
 										RootfsURI: "some-image",
 									},
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
-									Params: atc.Params{
+									Params: types.Params{
 										"some-param": "some-value",
 									},
 								},
@@ -3005,7 +3006,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			jobConfigs, err := jobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        pipeline.Groups(),
 				Resources:     resources.Configs(),
 				ResourceTypes: resourceTypes.Configs(),
@@ -3025,7 +3026,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			otherJobConfigs, err := otherJobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        otherPipeline.Groups(),
 				Resources:     otherResources.Configs(),
 				ResourceTypes: otherResourceTypes.Configs(),
@@ -3054,7 +3055,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			jobConfigs, err := jobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        pipeline.Groups(),
 				Resources:     resources.Configs(),
 				ResourceTypes: resourceTypes.Configs(),
@@ -3069,7 +3070,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			otherJobConfigs, err := otherJobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        otherPipeline.Groups(),
 				Resources:     otherResources.Configs(),
 				ResourceTypes: otherResourceTypes.Configs(),
@@ -3085,33 +3086,33 @@ var _ = Describe("Team", func() {
 
 			updatedConfig := config
 
-			updatedConfig.Groups = append(config.Groups, atc.GroupConfig{
+			updatedConfig.Groups = append(config.Groups, types.GroupConfig{
 				Name: "new-group",
 				Jobs: []string{"new-job-1", "new-job-2"},
 			})
 
-			updatedConfig.Resources = append(config.Resources, atc.ResourceConfig{
+			updatedConfig.Resources = append(config.Resources, types.ResourceConfig{
 				Name: "new-resource",
 				Type: "new-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"new-source-config": "new-value",
 				},
 			})
 
-			updatedConfig.Jobs = append(config.Jobs, atc.JobConfig{
+			updatedConfig.Jobs = append(config.Jobs, types.JobConfig{
 				Name: "new-job",
-				PlanSequence: []atc.Step{
+				PlanSequence: []types.Step{
 					{
-						Config: &atc.GetStep{
+						Config: &types.GetStep{
 							Name:     "new-input",
 							Resource: "new-resource",
-							Params: atc.Params{
+							Params: types.Params{
 								"new-param": "new-value",
 							},
 						},
 					},
 					{
-						Config: &atc.TaskStep{
+						Config: &types.TaskStep{
 							Name:       "some-task",
 							ConfigPath: "new/config/path.yml",
 						},
@@ -3147,7 +3148,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			jobConfigs, err = jobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        pipeline.Groups(),
 				Resources:     resources.Configs(),
 				ResourceTypes: resourceTypes.Configs(),
@@ -3162,7 +3163,7 @@ var _ = Describe("Team", func() {
 			Expect(err).ToNot(HaveOccurred())
 			otherJobConfigs, err = jobs.Configs()
 			Expect(err).ToNot(HaveOccurred())
-			expectConfigsEqual(atc.Config{
+			expectConfigsEqual(types.Config{
 				Groups:        otherPipeline.Groups(),
 				Resources:     otherResources.Configs(),
 				ResourceTypes: otherResourceTypes.Configs(),
@@ -3178,18 +3179,18 @@ var _ = Describe("Team", func() {
 		})
 
 		It("should return sorted resources and resource_types", func() {
-			config.ResourceTypes = append(config.ResourceTypes, atc.ResourceType{
+			config.ResourceTypes = append(config.ResourceTypes, types.ResourceType{
 				Name: "new-resource-type",
 				Type: "new-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"new-source-config": "new-value",
 				},
 			})
 
-			config.Resources = append(config.Resources, atc.ResourceConfig{
+			config.Resources = append(config.Resources, types.ResourceConfig{
 				Name: "new-resource",
 				Type: "new-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"new-source-config": "new-value",
 				},
 			})
@@ -3304,12 +3305,12 @@ var _ = Describe("Team", func() {
 						)
 
 						BeforeEach(func() {
-							otherPipeline, _, err = defaultTeam.SavePipeline("other-pipeline", atc.Config{
-								Resources: atc.ResourceConfigs{
+							otherPipeline, _, err = defaultTeam.SavePipeline("other-pipeline", types.Config{
+								Resources: types.ResourceConfigs{
 									{
 										Name: "some-resource",
 										Type: "some-base-resource-type",
-										Source: atc.Source{
+										Source: types.Source{
 											"some": "source",
 										},
 									},
@@ -3324,7 +3325,7 @@ var _ = Describe("Team", func() {
 							resourceConfig, err = resourceConfigFactory.FindOrCreateResourceConfig(
 								otherResource.Type(),
 								otherResource.Source(),
-								atc.VersionedResourceTypes{},
+								types.VersionedResourceTypes{},
 							)
 							Expect(err).ToNot(HaveOccurred())
 
@@ -3391,7 +3392,7 @@ var _ = Describe("Team", func() {
 			BeforeEach(func() {
 				resourceConfigScope, err := defaultResource.SetResourceConfig(
 					defaultResource.Source(),
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 

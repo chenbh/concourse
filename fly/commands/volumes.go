@@ -2,13 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"sort"
 	"strings"
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -69,7 +69,7 @@ func (command *VolumesCommand) Execute([]string) error {
 	return table.Render(os.Stdout, Fly.PrintTableHeaders)
 }
 
-func (command *VolumesCommand) volumeIdentifier(volume atc.Volume) string {
+func (command *VolumesCommand) volumeIdentifier(volume types.Volume) string {
 	switch volume.Type {
 	case "container":
 		if command.Details {
@@ -104,7 +104,7 @@ func presentMap(version interface{}) string {
 	return strings.Replace(strings.Join(lines, ","), " ", "", -1)
 }
 
-func presentResourceType(resourceType *atc.VolumeResourceType) string {
+func presentResourceType(resourceType *types.VolumeResourceType) string {
 	if resourceType.BaseResourceType != nil {
 		return presentMap(resourceType.BaseResourceType)
 	}
@@ -118,7 +118,7 @@ func presentResourceType(resourceType *atc.VolumeResourceType) string {
 	return ""
 }
 
-type volumesByWorkerAndHandle []atc.Volume
+type volumesByWorkerAndHandle []types.Volume
 
 func (cs volumesByWorkerAndHandle) Len() int          { return len(cs) }
 func (cs volumesByWorkerAndHandle) Swap(i int, j int) { cs[i], cs[j] = cs[j], cs[i] }

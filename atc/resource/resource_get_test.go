@@ -3,8 +3,8 @@ package resource_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/resource"
 	"github.com/concourse/concourse/atc/runtime"
 	"github.com/concourse/concourse/atc/runtime/runtimefakes"
@@ -22,9 +22,9 @@ var _ = Describe("Resource Get", func() {
 
 		getVersionResult runtime.VersionResult
 
-		source  atc.Source
-		params  atc.Params
-		version atc.Version
+		source  types.Source
+		params  types.Params
+		version types.Version
 
 		resource resource.Resource
 
@@ -34,9 +34,9 @@ var _ = Describe("Resource Get", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 
-		source = atc.Source{"some": "source"}
-		version = atc.Version{"some": "version"}
-		params = atc.Params{"some": "params"}
+		source = types.Source{"some": "source"}
+		version = types.Version{"some": "version"}
+		params = types.Params{"some": "params"}
 
 		someProcessSpec.Path = "some/fake/path"
 		someProcessSpec.Args = []string{"first-arg", "some-other-arg"}

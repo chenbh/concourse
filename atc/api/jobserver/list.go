@@ -2,9 +2,9 @@ package jobserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -13,7 +13,7 @@ func (s *Server) ListJobs(pipeline db.Pipeline) http.Handler {
 	logger := s.logger.Session("list-jobs")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		jobs := []atc.Job{}
+		jobs := []types.Job{}
 
 		dashboard, err := pipeline.Dashboard()
 

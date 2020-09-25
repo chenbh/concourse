@@ -3,11 +3,11 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 )
 
@@ -26,8 +26,8 @@ type ResourceConfigScope interface {
 	ResourceConfig() ResourceConfig
 	CheckError() error
 
-	SaveVersions(SpanContext, []atc.Version) error
-	FindVersion(atc.Version) (ResourceConfigVersion, bool, error)
+	SaveVersions(SpanContext, []types.Version) error
+	FindVersion(types.Version) (ResourceConfigVersion, bool, error)
 	LatestVersion() (ResourceConfigVersion, bool, error)
 
 	SetCheckError(error) error
@@ -66,11 +66,11 @@ func (r *resourceConfigScope) CheckError() error              { return r.checkEr
 // In the case of a check resource from an older version, the versions
 // that already exist in the DB will be re-ordered using
 // incrementCheckOrder to input the correct check order
-func (r *resourceConfigScope) SaveVersions(spanContext SpanContext, versions []atc.Version) error {
+func (r *resourceConfigScope) SaveVersions(spanContext SpanContext, versions []types.Version) error {
 	return saveVersions(r.conn, r.ID(), versions, spanContext)
 }
 
-func saveVersions(conn Conn, rcsID int, versions []atc.Version, spanContext SpanContext) error {
+func saveVersions(conn Conn, rcsID int, versions []types.Version, spanContext SpanContext) error {
 	tx, err := conn.Begin()
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func saveVersions(conn Conn, rcsID int, versions []atc.Version, spanContext Span
 	return nil
 }
 
-func (r *resourceConfigScope) FindVersion(v atc.Version) (ResourceConfigVersion, bool, error) {
+func (r *resourceConfigScope) FindVersion(v types.Version) (ResourceConfigVersion, bool, error) {
 	rcv := &resourceConfigVersion{
 		resourceConfigScope: r,
 		conn:                r.conn,
@@ -269,7 +269,7 @@ func (r *resourceConfigScope) UpdateLastCheckEndTime() (bool, error) {
 	return true, nil
 }
 
-func saveResourceVersion(tx Tx, rcsID int, version atc.Version, metadata ResourceConfigMetadataFields, spanContext SpanContext) (bool, error) {
+func saveResourceVersion(tx Tx, rcsID int, version types.Version, metadata ResourceConfigMetadataFields, spanContext SpanContext) (bool, error) {
 	versionJSON, err := json.Marshal(version)
 	if err != nil {
 		return false, err

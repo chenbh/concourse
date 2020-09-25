@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -28,11 +28,11 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Team{
+						ghttp.RespondWithJSONEncoded(200, []types.Team{
 							{
 								ID:   1,
 								Name: "main",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"owner": map[string][]string{
 										"groups": []string{},
 										"users":  []string{},
@@ -42,7 +42,7 @@ var _ = Describe("Fly CLI", func() {
 							{
 								ID:   2,
 								Name: "a-team",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"owner": map[string][]string{
 										"groups": []string{"github:github-org"},
 										"users":  []string{},
@@ -52,7 +52,7 @@ var _ = Describe("Fly CLI", func() {
 							{
 								ID:   3,
 								Name: "b-team",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"member": map[string][]string{
 										"groups": []string{},
 										"users":  []string{"github:github-user"},
@@ -62,7 +62,7 @@ var _ = Describe("Fly CLI", func() {
 							{
 								ID:   4,
 								Name: "c-team",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"owner": map[string][]string{
 										"users":  []string{"github:github-user"},
 										"groups": []string{"github:github-org"},

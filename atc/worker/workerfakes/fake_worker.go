@@ -3,11 +3,11 @@ package workerfakes
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/resource"
 	"github.com/concourse/concourse/atc/runtime"
@@ -142,7 +142,7 @@ type FakeWorker struct {
 		result2 bool
 		result3 error
 	}
-	FindOrCreateContainerStub        func(context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, atc.VersionedResourceTypes) (worker.Container, error)
+	FindOrCreateContainerStub        func(context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, types.VersionedResourceTypes) (worker.Container, error)
 	findOrCreateContainerMutex       sync.RWMutex
 	findOrCreateContainerArgsForCall []struct {
 		arg1 context.Context
@@ -151,7 +151,7 @@ type FakeWorker struct {
 		arg4 db.ContainerOwner
 		arg5 db.ContainerMetadata
 		arg6 worker.ContainerSpec
-		arg7 atc.VersionedResourceTypes
+		arg7 types.VersionedResourceTypes
 	}
 	findOrCreateContainerReturns struct {
 		result1 worker.Container
@@ -279,15 +279,15 @@ type FakeWorker struct {
 	nameReturnsOnCall map[int]struct {
 		result1 string
 	}
-	ResourceTypesStub        func() []atc.WorkerResourceType
+	ResourceTypesStub        func() []types.WorkerResourceType
 	resourceTypesMutex       sync.RWMutex
 	resourceTypesArgsForCall []struct {
 	}
 	resourceTypesReturns struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}
 	resourceTypesReturnsOnCall map[int]struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}
 	SatisfiesStub        func(lager.Logger, worker.WorkerSpec) bool
 	satisfiesMutex       sync.RWMutex
@@ -301,15 +301,15 @@ type FakeWorker struct {
 	satisfiesReturnsOnCall map[int]struct {
 		result1 bool
 	}
-	TagsStub        func() atc.Tags
+	TagsStub        func() types.Tags
 	tagsMutex       sync.RWMutex
 	tagsArgsForCall []struct {
 	}
 	tagsReturns struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}
 	tagsReturnsOnCall map[int]struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}
 	UptimeStub        func() time.Duration
 	uptimeMutex       sync.RWMutex
@@ -864,7 +864,7 @@ func (fake *FakeWorker) FindContainerByHandleReturnsOnCall(i int, result1 worker
 	}{result1, result2, result3}
 }
 
-func (fake *FakeWorker) FindOrCreateContainer(arg1 context.Context, arg2 lager.Logger, arg3 worker.ImageFetchingDelegate, arg4 db.ContainerOwner, arg5 db.ContainerMetadata, arg6 worker.ContainerSpec, arg7 atc.VersionedResourceTypes) (worker.Container, error) {
+func (fake *FakeWorker) FindOrCreateContainer(arg1 context.Context, arg2 lager.Logger, arg3 worker.ImageFetchingDelegate, arg4 db.ContainerOwner, arg5 db.ContainerMetadata, arg6 worker.ContainerSpec, arg7 types.VersionedResourceTypes) (worker.Container, error) {
 	fake.findOrCreateContainerMutex.Lock()
 	ret, specificReturn := fake.findOrCreateContainerReturnsOnCall[len(fake.findOrCreateContainerArgsForCall)]
 	fake.findOrCreateContainerArgsForCall = append(fake.findOrCreateContainerArgsForCall, struct {
@@ -874,7 +874,7 @@ func (fake *FakeWorker) FindOrCreateContainer(arg1 context.Context, arg2 lager.L
 		arg4 db.ContainerOwner
 		arg5 db.ContainerMetadata
 		arg6 worker.ContainerSpec
-		arg7 atc.VersionedResourceTypes
+		arg7 types.VersionedResourceTypes
 	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.recordInvocation("FindOrCreateContainer", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.findOrCreateContainerMutex.Unlock()
@@ -894,13 +894,13 @@ func (fake *FakeWorker) FindOrCreateContainerCallCount() int {
 	return len(fake.findOrCreateContainerArgsForCall)
 }
 
-func (fake *FakeWorker) FindOrCreateContainerCalls(stub func(context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, atc.VersionedResourceTypes) (worker.Container, error)) {
+func (fake *FakeWorker) FindOrCreateContainerCalls(stub func(context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, types.VersionedResourceTypes) (worker.Container, error)) {
 	fake.findOrCreateContainerMutex.Lock()
 	defer fake.findOrCreateContainerMutex.Unlock()
 	fake.FindOrCreateContainerStub = stub
 }
 
-func (fake *FakeWorker) FindOrCreateContainerArgsForCall(i int) (context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, atc.VersionedResourceTypes) {
+func (fake *FakeWorker) FindOrCreateContainerArgsForCall(i int) (context.Context, lager.Logger, worker.ImageFetchingDelegate, db.ContainerOwner, db.ContainerMetadata, worker.ContainerSpec, types.VersionedResourceTypes) {
 	fake.findOrCreateContainerMutex.RLock()
 	defer fake.findOrCreateContainerMutex.RUnlock()
 	argsForCall := fake.findOrCreateContainerArgsForCall[i]
@@ -1472,7 +1472,7 @@ func (fake *FakeWorker) NameReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
-func (fake *FakeWorker) ResourceTypes() []atc.WorkerResourceType {
+func (fake *FakeWorker) ResourceTypes() []types.WorkerResourceType {
 	fake.resourceTypesMutex.Lock()
 	ret, specificReturn := fake.resourceTypesReturnsOnCall[len(fake.resourceTypesArgsForCall)]
 	fake.resourceTypesArgsForCall = append(fake.resourceTypesArgsForCall, struct {
@@ -1495,32 +1495,32 @@ func (fake *FakeWorker) ResourceTypesCallCount() int {
 	return len(fake.resourceTypesArgsForCall)
 }
 
-func (fake *FakeWorker) ResourceTypesCalls(stub func() []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesCalls(stub func() []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = stub
 }
 
-func (fake *FakeWorker) ResourceTypesReturns(result1 []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesReturns(result1 []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = nil
 	fake.resourceTypesReturns = struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}{result1}
 }
 
-func (fake *FakeWorker) ResourceTypesReturnsOnCall(i int, result1 []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesReturnsOnCall(i int, result1 []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = nil
 	if fake.resourceTypesReturnsOnCall == nil {
 		fake.resourceTypesReturnsOnCall = make(map[int]struct {
-			result1 []atc.WorkerResourceType
+			result1 []types.WorkerResourceType
 		})
 	}
 	fake.resourceTypesReturnsOnCall[i] = struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}{result1}
 }
 
@@ -1585,7 +1585,7 @@ func (fake *FakeWorker) SatisfiesReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
-func (fake *FakeWorker) Tags() atc.Tags {
+func (fake *FakeWorker) Tags() types.Tags {
 	fake.tagsMutex.Lock()
 	ret, specificReturn := fake.tagsReturnsOnCall[len(fake.tagsArgsForCall)]
 	fake.tagsArgsForCall = append(fake.tagsArgsForCall, struct {
@@ -1608,32 +1608,32 @@ func (fake *FakeWorker) TagsCallCount() int {
 	return len(fake.tagsArgsForCall)
 }
 
-func (fake *FakeWorker) TagsCalls(stub func() atc.Tags) {
+func (fake *FakeWorker) TagsCalls(stub func() types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = stub
 }
 
-func (fake *FakeWorker) TagsReturns(result1 atc.Tags) {
+func (fake *FakeWorker) TagsReturns(result1 types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = nil
 	fake.tagsReturns = struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}{result1}
 }
 
-func (fake *FakeWorker) TagsReturnsOnCall(i int, result1 atc.Tags) {
+func (fake *FakeWorker) TagsReturnsOnCall(i int, result1 types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = nil
 	if fake.tagsReturnsOnCall == nil {
 		fake.tagsReturnsOnCall = make(map[int]struct {
-			result1 atc.Tags
+			result1 types.Tags
 		})
 	}
 	fake.tagsReturnsOnCall[i] = struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}{result1}
 }
 

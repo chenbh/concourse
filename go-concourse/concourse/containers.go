@@ -1,15 +1,15 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/url"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) ListContainers(queryList map[string]string) ([]atc.Container, error) {
-	var containers []atc.Container
+func (team *team) ListContainers(queryList map[string]string) ([]types.Container, error) {
+	var containers []types.Container
 	urlValues := url.Values{}
 
 	params := rata.Params{
@@ -19,7 +19,7 @@ func (team *team) ListContainers(queryList map[string]string) ([]atc.Container, 
 		urlValues[k] = []string{v}
 	}
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListContainers,
+		RequestName: types.ListContainers,
 		Query:       urlValues,
 		Params:      params,
 	}, &internal.Response{
@@ -28,8 +28,8 @@ func (team *team) ListContainers(queryList map[string]string) ([]atc.Container, 
 	return containers, err
 }
 
-func (team *team) GetContainer(handle string) (atc.Container, error) {
-	var container atc.Container
+func (team *team) GetContainer(handle string) (types.Container, error) {
+	var container types.Container
 
 	params := rata.Params{
 		"id":        handle,
@@ -37,7 +37,7 @@ func (team *team) GetContainer(handle string) (atc.Container, error) {
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.GetContainer,
+		RequestName: types.GetContainer,
 		Params:      params,
 	}, &internal.Response{
 		Result: &container,

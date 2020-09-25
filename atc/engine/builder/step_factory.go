@@ -3,6 +3,7 @@ package builder
 import (
 	"crypto/sha1"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"path/filepath"
 
 	"github.com/concourse/concourse/atc"
@@ -21,7 +22,7 @@ type stepFactory struct {
 	buildFactory          db.BuildFactory
 	resourceCacheFactory  db.ResourceCacheFactory
 	resourceConfigFactory db.ResourceConfigFactory
-	defaultLimits         atc.ContainerLimits
+	defaultLimits         types.ContainerLimits
 	strategy              worker.ContainerPlacementStrategy
 	lockFactory           lock.LockFactory
 }
@@ -34,7 +35,7 @@ func NewStepFactory(
 	buildFactory db.BuildFactory,
 	resourceCacheFactory db.ResourceCacheFactory,
 	resourceConfigFactory db.ResourceConfigFactory,
-	defaultLimits atc.ContainerLimits,
+	defaultLimits types.ContainerLimits,
 	strategy worker.ContainerPlacementStrategy,
 	lockFactory lock.LockFactory,
 ) *stepFactory {

@@ -1,6 +1,7 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 	"time"
@@ -14,27 +15,27 @@ import (
 type Client interface {
 	URL() string
 	HTTPClient() *http.Client
-	Builds(Page) ([]atc.Build, Pagination, error)
-	Build(buildID string) (atc.Build, bool, error)
+	Builds(Page) ([]types.Build, Pagination, error)
+	Build(buildID string) (types.Build, bool, error)
 	BuildEvents(buildID string) (Events, error)
-	BuildResources(buildID int) (atc.BuildInputsOutputs, bool, error)
-	ListBuildArtifacts(buildID string) ([]atc.WorkerArtifact, error)
+	BuildResources(buildID int) (types.BuildInputsOutputs, bool, error)
+	ListBuildArtifacts(buildID string) ([]types.WorkerArtifact, error)
 	AbortBuild(buildID string) error
 	BuildPlan(buildID int) (atc.PublicBuildPlan, bool, error)
-	SaveWorker(atc.Worker, *time.Duration) (*atc.Worker, error)
-	ListWorkers() ([]atc.Worker, error)
+	SaveWorker(types.Worker, *time.Duration) (*types.Worker, error)
+	ListWorkers() ([]types.Worker, error)
 	PruneWorker(workerName string) error
 	LandWorker(workerName string) error
-	GetInfo() (atc.Info, error)
+	GetInfo() (types.Info, error)
 	GetCLIReader(arch, platform string) (io.ReadCloser, http.Header, error)
-	ListPipelines() ([]atc.Pipeline, error)
-	ListAllJobs() ([]atc.Job, error)
-	ListTeams() ([]atc.Team, error)
+	ListPipelines() ([]types.Pipeline, error)
+	ListAllJobs() ([]types.Job, error)
+	ListTeams() ([]types.Team, error)
 	FindTeam(teamName string) (Team, error)
 	Team(teamName string) Team
-	UserInfo() (atc.UserInfo, error)
-	ListActiveUsersSince(since time.Time) ([]atc.User, error)
-	Check(checkID string) (atc.Check, bool, error)
+	UserInfo() (types.UserInfo, error)
+	ListActiveUsersSince(since time.Time) ([]types.User, error)
+	Check(checkID string) (types.Check, bool, error)
 }
 
 type client struct {

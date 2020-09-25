@@ -1,6 +1,7 @@
 package eventstream_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 
 	"github.com/onsi/gomega/gbytes"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 	"github.com/concourse/concourse/fly/eventstream"
 	"github.com/concourse/concourse/fly/ui"
@@ -23,7 +23,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		stream  *eventstreamfakes.FakeEventStream
 		options eventstream.RenderOptions
 
-		receivedEvents chan<- atc.Event
+		receivedEvents chan<- types.Event
 
 		exitStatus int
 	)
@@ -34,10 +34,10 @@ var _ = Describe("V1.0 Renderer", func() {
 		stream = new(eventstreamfakes.FakeEventStream)
 		options = eventstream.RenderOptions{}
 
-		events := make(chan atc.Event, 100)
+		events := make(chan types.Event, 100)
 		receivedEvents = events
 
-		stream.NextEventStub = func() (atc.Event, error) {
+		stream.NextEventStub = func() (types.Event, error) {
 			select {
 			case ev := <-events:
 				return ev, nil
@@ -162,7 +162,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		Context("and a Status event is received", func() {
 			BeforeEach(func() {
 				receivedEvents <- event.Status{
-					Status: atc.StatusSucceeded,
+					Status: types.StatusSucceeded,
 				}
 			})
 
@@ -190,7 +190,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		Context("with status 'succeeded'", func() {
 			BeforeEach(func() {
 				receivedEvents <- event.Status{
-					Status: atc.StatusSucceeded,
+					Status: types.StatusSucceeded,
 					Time:   time.Now().Unix(),
 				}
 			})
@@ -217,7 +217,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		Context("with status 'failed'", func() {
 			BeforeEach(func() {
 				receivedEvents <- event.Status{
-					Status: atc.StatusFailed,
+					Status: types.StatusFailed,
 					Time:   time.Now().Unix(),
 				}
 			})
@@ -244,7 +244,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		Context("with status 'errored'", func() {
 			BeforeEach(func() {
 				receivedEvents <- event.Status{
-					Status: atc.StatusErrored,
+					Status: types.StatusErrored,
 					Time:   time.Now().Unix(),
 				}
 			})
@@ -271,7 +271,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		Context("with status 'aborted'", func() {
 			BeforeEach(func() {
 				receivedEvents <- event.Status{
-					Status: atc.StatusAborted,
+					Status: types.StatusAborted,
 					Time:   time.Now().Unix(),
 				}
 			})
@@ -324,7 +324,7 @@ var _ = Describe("V1.0 Renderer", func() {
 		BeforeEach(func() {
 			errors := make(chan error, 100)
 
-			stream.NextEventStub = func() (atc.Event, error) {
+			stream.NextEventStub = func() (types.Event, error) {
 				select {
 				case ev := <-errors:
 					return nil, ev

@@ -2,10 +2,10 @@ package concourse_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
@@ -17,12 +17,12 @@ var _ = Describe("ATC Handler Resource Versions", func() {
 	Describe("ResourceVersions", func() {
 		expectedURL := fmt.Sprint("/api/v1/teams/some-team/pipelines/mypipeline/resources/myresource/versions")
 
-		var expectedVersions []atc.ResourceVersion
+		var expectedVersions []types.ResourceVersion
 
 		var page concourse.Page
-		var filter atc.Version
+		var filter types.Version
 
-		var versions []atc.ResourceVersion
+		var versions []types.ResourceVersion
 		var pagination concourse.Pagination
 		var found bool
 		var clientErr error
@@ -30,12 +30,12 @@ var _ = Describe("ATC Handler Resource Versions", func() {
 		BeforeEach(func() {
 			page = concourse.Page{}
 
-			expectedVersions = []atc.ResourceVersion{
+			expectedVersions = []types.ResourceVersion{
 				{
-					Version: atc.Version{"version": "v1"},
+					Version: types.Version{"version": "v1"},
 				},
 				{
-					Version: atc.Version{"version": "v2"},
+					Version: types.Version{"version": "v2"},
 				},
 			}
 		})
@@ -158,7 +158,7 @@ var _ = Describe("ATC Handler Resource Versions", func() {
 
 		Context("when filter is specified", func() {
 			BeforeEach(func() {
-				filter = atc.Version{"some": "value"}
+				filter = types.Version{"some": "value"}
 
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
@@ -522,7 +522,7 @@ var _ = Describe("ATC Handler Resource Versions", func() {
 	Describe("SetPinComment", func() {
 		var (
 			expectedStatus     int
-			expectedPinComment = atc.SetPinCommentRequestBody{PinComment: "some comment"}
+			expectedPinComment = types.SetPinCommentRequestBody{PinComment: "some comment"}
 			pipelineName       = "banana"
 			resourceName       = "myresource"
 			expectedURL        = fmt.Sprintf("/api/v1/teams/some-team/pipelines/%s/resources/%s/pin_comment", pipelineName, resourceName)

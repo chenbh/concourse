@@ -3,10 +3,10 @@ package worker
 import (
 	"code.cloudfoundry.org/lager"
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -20,13 +20,13 @@ type ImageFactory interface {
 		imageSpec ImageSpec,
 		teamID int,
 		delegate ImageFetchingDelegate,
-		resourceTypes atc.VersionedResourceTypes,
+		resourceTypes types.VersionedResourceTypes,
 	) (Image, error)
 }
 
 type FetchedImage struct {
 	Metadata   ImageMetadata
-	Version    atc.Version
+	Version    types.Version
 	URL        string
 	Privileged bool
 }
@@ -48,7 +48,7 @@ type ImageFetchingDelegate interface {
 	Stderr() io.Writer
 	ImageVersionDetermined(db.UsedResourceCache) error
 
-	RedactImageSource(source atc.Source) (atc.Source, error)
+	RedactImageSource(source types.Source) (types.Source, error)
 }
 
 type ImageMetadata struct {
@@ -61,7 +61,7 @@ type NoopImageFetchingDelegate struct{}
 func (NoopImageFetchingDelegate) Stdout() io.Writer                                 { return ioutil.Discard }
 func (NoopImageFetchingDelegate) Stderr() io.Writer                                 { return ioutil.Discard }
 func (NoopImageFetchingDelegate) ImageVersionDetermined(db.UsedResourceCache) error { return nil }
-func (NoopImageFetchingDelegate) RedactImageSource(source atc.Source) (atc.Source, error) {
+func (NoopImageFetchingDelegate) RedactImageSource(source types.Source) (types.Source, error) {
 	// As this is noop, redaction can just return an empty source.
-	return atc.Source{}, nil
+	return types.Source{}, nil
 }

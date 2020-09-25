@@ -1,11 +1,11 @@
 package exec
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/vars"
 )
@@ -14,7 +14,7 @@ import (
 
 type BuildStepDelegate interface {
 	ImageVersionDetermined(db.UsedResourceCache) error
-	RedactImageSource(source atc.Source) (atc.Source, error)
+	RedactImageSource(source types.Source) (types.Source, error)
 
 	Stdout() io.Writer
 	Stderr() io.Writer

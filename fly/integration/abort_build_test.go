@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
@@ -10,14 +11,12 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
-
-	"github.com/concourse/concourse/atc"
 )
 
 var _ = Describe("AbortBuild", func() {
 	var expectedAbortURL = "/api/v1/builds/23/abort"
 
-	var expectedBuild = atc.Build{
+	var expectedBuild = types.Build{
 		ID:      23,
 		Name:    "42",
 		Status:  "running",

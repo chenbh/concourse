@@ -3,13 +3,13 @@ package image_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"strings"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
 	"github.com/concourse/baggageclaim/baggageclaimfakes"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/compression/compressionfakes"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	"github.com/concourse/concourse/atc/worker"
@@ -38,7 +38,7 @@ var _ = Describe("Image", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("image-tests")
 		fakeWorker = new(workerfakes.FakeWorker)
-		fakeWorker.TagsReturns(atc.Tags{"worker", "tags"})
+		fakeWorker.TagsReturns(types.Tags{"worker", "tags"})
 
 		ctx = context.Background()
 		fakeVolumeClient = new(workerfakes.FakeVolumeClient)
@@ -85,7 +85,7 @@ var _ = Describe("Image", func() {
 				},
 				42,
 				fakeImageFetchingDelegate,
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -151,7 +151,7 @@ var _ = Describe("Image", func() {
 				},
 				42,
 				fakeImageFetchingDelegate,
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -243,7 +243,7 @@ var _ = Describe("Image", func() {
 			fakeImageResourceFetcher.FetchReturns(
 				fakeResourceImageVolume,
 				metadataReader,
-				atc.Version{"some": "version"},
+				types.Version{"some": "version"},
 				nil,
 			)
 		})
@@ -258,13 +258,13 @@ var _ = Describe("Image", func() {
 					worker.ImageSpec{
 						ImageResource: &worker.ImageResource{
 							Type:   "some-image-resource-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 						Privileged: true,
 					},
 					42,
 					fakeImageFetchingDelegate,
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -273,10 +273,10 @@ var _ = Describe("Image", func() {
 				worker, imageResource, version, teamID, resourceTypes, delegate, compression := fakeImageResourceFetcherFactory.NewImageResourceFetcherArgsForCall(0)
 				Expect(worker).To(Equal(fakeWorker))
 				Expect(imageResource.Type).To(Equal("some-image-resource-type"))
-				Expect(imageResource.Source).To(Equal(atc.Source{"some": "source"}))
+				Expect(imageResource.Source).To(Equal(types.Source{"some": "source"}))
 				Expect(version).To(BeNil())
 				Expect(teamID).To(Equal(42))
-				Expect(resourceTypes).To(Equal(atc.VersionedResourceTypes{}))
+				Expect(resourceTypes).To(Equal(types.VersionedResourceTypes{}))
 				Expect(delegate).To(Equal(fakeImageFetchingDelegate))
 				Expect(compression).To(Equal(fakeCompression))
 			})
@@ -306,7 +306,7 @@ var _ = Describe("Image", func() {
 						User: "image-volume-user",
 					},
 					URL:        "raw://some-path/rootfs",
-					Version:    atc.Version{"some": "version"},
+					Version:    types.Version{"some": "version"},
 					Privileged: true,
 				}))
 			})
@@ -324,27 +324,27 @@ var _ = Describe("Image", func() {
 					},
 					42,
 					fakeImageFetchingDelegate,
-					atc.VersionedResourceTypes{
+					types.VersionedResourceTypes{
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-custom-resource-type",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "custom-resource-type-source",
 								},
 							},
-							Version: atc.Version{"some": "custom-resource-type-version"},
+							Version: types.Version{"some": "custom-resource-type-version"},
 						},
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-custom-image-resource-type",
 								Type: "some-base-image-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "custom-image-resource-type-source",
 								},
 								Privileged: true,
 							},
-							Version: atc.Version{"some": "custom-image-resource-type-version"},
+							Version: types.Version{"some": "custom-image-resource-type-version"},
 						},
 					},
 				)
@@ -355,22 +355,22 @@ var _ = Describe("Image", func() {
 				worker, imageResource, version, teamID, resourceTypes, delegate, compression := fakeImageResourceFetcherFactory.NewImageResourceFetcherArgsForCall(0)
 				Expect(worker).To(Equal(fakeWorker))
 				Expect(imageResource.Type).To(Equal("some-base-resource-type"))
-				Expect(imageResource.Source).To(Equal(atc.Source{
+				Expect(imageResource.Source).To(Equal(types.Source{
 					"some": "custom-resource-type-source",
 				}))
-				Expect(version).To(Equal(atc.Version{"some": "custom-resource-type-version"}))
+				Expect(version).To(Equal(types.Version{"some": "custom-resource-type-version"}))
 				Expect(teamID).To(Equal(42))
-				Expect(resourceTypes).To(Equal(atc.VersionedResourceTypes{
+				Expect(resourceTypes).To(Equal(types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name: "some-custom-image-resource-type",
 							Type: "some-base-image-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some": "custom-image-resource-type-source",
 							},
 							Privileged: true,
 						},
-						Version: atc.Version{"some": "custom-image-resource-type-version"},
+						Version: types.Version{"some": "custom-image-resource-type-version"},
 					},
 				}))
 				Expect(delegate).To(Equal(fakeImageFetchingDelegate))
@@ -402,7 +402,7 @@ var _ = Describe("Image", func() {
 						User: "image-volume-user",
 					},
 					URL:        "raw://some-path/rootfs",
-					Version:    atc.Version{"some": "version"},
+					Version:    types.Version{"some": "version"},
 					Privileged: false,
 				}))
 			})
@@ -420,27 +420,27 @@ var _ = Describe("Image", func() {
 					},
 					42,
 					fakeImageFetchingDelegate,
-					atc.VersionedResourceTypes{
+					types.VersionedResourceTypes{
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-custom-resource-type",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "custom-resource-type-source",
 								},
 							},
-							Version: atc.Version{"some": "custom-resource-type-version"},
+							Version: types.Version{"some": "custom-resource-type-version"},
 						},
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-custom-image-resource-type",
 								Type: "some-base-image-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "custom-image-resource-type-source",
 								},
 								Privileged: true,
 							},
-							Version: atc.Version{"some": "custom-image-resource-type-version"},
+							Version: types.Version{"some": "custom-image-resource-type-version"},
 						},
 					},
 				)
@@ -451,21 +451,21 @@ var _ = Describe("Image", func() {
 				worker, imageResource, version, teamID, resourceTypes, delegate, compression := fakeImageResourceFetcherFactory.NewImageResourceFetcherArgsForCall(0)
 				Expect(worker).To(Equal(fakeWorker))
 				Expect(imageResource.Type).To(Equal("some-base-image-resource-type"))
-				Expect(imageResource.Source).To(Equal(atc.Source{
+				Expect(imageResource.Source).To(Equal(types.Source{
 					"some": "custom-image-resource-type-source",
 				}))
-				Expect(version).To(Equal(atc.Version{"some": "custom-image-resource-type-version"}))
+				Expect(version).To(Equal(types.Version{"some": "custom-image-resource-type-version"}))
 				Expect(teamID).To(Equal(42))
-				Expect(resourceTypes).To(Equal(atc.VersionedResourceTypes{
+				Expect(resourceTypes).To(Equal(types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name: "some-custom-resource-type",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some": "custom-resource-type-source",
 							},
 						},
-						Version: atc.Version{"some": "custom-resource-type-version"},
+						Version: types.Version{"some": "custom-resource-type-version"},
 					},
 				}))
 				Expect(delegate).To(Equal(fakeImageFetchingDelegate))
@@ -497,7 +497,7 @@ var _ = Describe("Image", func() {
 						User: "image-volume-user",
 					},
 					URL:        "raw://some-path/rootfs",
-					Version:    atc.Version{"some": "version"},
+					Version:    types.Version{"some": "version"},
 					Privileged: true,
 				}))
 			})
@@ -506,7 +506,7 @@ var _ = Describe("Image", func() {
 
 	Describe("imageFromBaseResourceType", func() {
 		var cowStrategy baggageclaim.COWStrategy
-		var workerResourceType atc.WorkerResourceType
+		var workerResourceType types.WorkerResourceType
 		var fakeContainerRootfsVolume *workerfakes.FakeVolume
 		var fakeImportVolume *workerfakes.FakeVolume
 
@@ -522,14 +522,14 @@ var _ = Describe("Image", func() {
 			fakeImportVolume.COWStrategyReturns(cowStrategy)
 			fakeVolumeClient.FindOrCreateVolumeForBaseResourceTypeReturns(fakeImportVolume, nil)
 
-			workerResourceType = atc.WorkerResourceType{
+			workerResourceType = types.WorkerResourceType{
 				Type:       "some-base-resource-type",
 				Image:      "some-base-image-path",
 				Version:    "some-base-version",
 				Privileged: false,
 			}
 
-			fakeWorker.ResourceTypesReturns([]atc.WorkerResourceType{workerResourceType})
+			fakeWorker.ResourceTypesReturns([]types.WorkerResourceType{workerResourceType})
 
 			fakeWorker.NameReturns("some-worker-name")
 
@@ -543,7 +543,7 @@ var _ = Describe("Image", func() {
 				},
 				42,
 				fakeImageFetchingDelegate,
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -585,7 +585,7 @@ var _ = Describe("Image", func() {
 			Expect(fetchedImage).To(Equal(worker.FetchedImage{
 				Metadata:   worker.ImageMetadata{},
 				URL:        "raw://some-path",
-				Version:    atc.Version{"some-base-resource-type": "some-base-version"},
+				Version:    types.Version{"some-base-resource-type": "some-base-version"},
 				Privileged: false,
 			}))
 		})
@@ -593,7 +593,7 @@ var _ = Describe("Image", func() {
 		Context("when the worker base resource type is privileged", func() {
 			BeforeEach(func() {
 				workerResourceType.Privileged = true
-				fakeWorker.ResourceTypesReturns([]atc.WorkerResourceType{workerResourceType})
+				fakeWorker.ResourceTypesReturns([]types.WorkerResourceType{workerResourceType})
 			})
 
 			It("finds or creates privileged import volume", func() {
@@ -633,7 +633,7 @@ var _ = Describe("Image", func() {
 				Expect(fetchedImage).To(Equal(worker.FetchedImage{
 					Metadata:   worker.ImageMetadata{},
 					URL:        "raw://some-path",
-					Version:    atc.Version{"some-base-resource-type": "some-base-version"},
+					Version:    types.Version{"some-base-resource-type": "some-base-version"},
 					Privileged: true,
 				}))
 			})
@@ -652,7 +652,7 @@ var _ = Describe("Image", func() {
 				},
 				42,
 				fakeImageFetchingDelegate,
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).NotTo(HaveOccurred())
 		})

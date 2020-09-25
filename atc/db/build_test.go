@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
@@ -32,13 +33,13 @@ var _ = Describe("Build", func() {
 
 		var err error
 		var found bool
-		team, err = teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+		team, err = teamFactory.CreateTeam(types.Team{Name: "some-team"})
 		Expect(err).ToNot(HaveOccurred())
 
 		versionsDB = db.NewVersionsDB(dbConn, 100, gocache.New(10*time.Second, 10*time.Second))
 
-		pipelineConfig := atc.Config{
-			Jobs: atc.JobConfigs{
+		pipelineConfig := types.Config{
+			Jobs: types.JobConfigs{
 				{Name: "some-job"},
 			},
 		}
@@ -106,20 +107,20 @@ var _ = Describe("Build", func() {
 					Type:     "some-type",
 					Name:     "some-name",
 					Resource: "some-resource",
-					Source:   atc.Source{"some": "source"},
-					Params:   atc.Params{"some": "params"},
-					Version:  &atc.Version{"some": "version"},
-					Tags:     atc.Tags{"some-tags"},
-					VersionedResourceTypes: atc.VersionedResourceTypes{
+					Source:   types.Source{"some": "source"},
+					Params:   types.Params{"some": "params"},
+					Version:  &types.Version{"some": "version"},
+					Tags:     types.Tags{"some-tags"},
+					VersionedResourceTypes: types.VersionedResourceTypes{
 						{
-							ResourceType: atc.ResourceType{
+							ResourceType: types.ResourceType{
 								Name:       "some-name",
-								Source:     atc.Source{"some": "source"},
+								Source:     types.Source{"some": "source"},
 								Type:       "some-type",
 								Privileged: true,
-								Tags:       atc.Tags{"some-tags"},
+								Tags:       types.Tags{"some-tags"},
 							},
-							Version: atc.Version{"some-resource-type": "version"},
+							Version: types.Version{"some-resource-type": "version"},
 						},
 					},
 				},
@@ -166,7 +167,7 @@ var _ = Describe("Build", func() {
 				defer db.Close(events)
 
 				Expect(events.Next()).To(Equal(envelope(event.Status{
-					Status: atc.StatusStarted,
+					Status: types.StatusStarted,
 					Time:   build.StartTime().Unix(),
 				})))
 			})
@@ -206,13 +207,13 @@ var _ = Describe("Build", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(setupTx.Commit()).To(Succeed())
 
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
@@ -220,9 +221,9 @@ var _ = Describe("Build", func() {
 					},
 					{
 						Name: "downstream-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:   "some-resource",
 									Passed: []string{"some-job"},
 								},
@@ -231,9 +232,9 @@ var _ = Describe("Build", func() {
 					},
 					{
 						Name: "no-request-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:   "some-resource",
 									Passed: []string{"downstream-job"},
 								},
@@ -241,16 +242,16 @@ var _ = Describe("Build", func() {
 						},
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name:   "some-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
 					{
 						Name:   "some-other-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "other-source"},
+						Source: types.Source{"some": "other-source"},
 					},
 				},
 			}
@@ -267,10 +268,10 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope1, err := resource1.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+			resourceConfigScope1, err := resource1.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = resourceConfigScope1.SaveVersions(nil, []atc.Version{
+			err = resourceConfigScope1.SaveVersions(nil, []types.Version{
 				{"ver": "1"},
 				{"ver": "2"},
 			})
@@ -280,10 +281,10 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope2, err := resource2.SetResourceConfig(atc.Source{"some": "other-source"}, atc.VersionedResourceTypes{})
+			resourceConfigScope2, err := resource2.SetResourceConfig(types.Source{"some": "other-source"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = resourceConfigScope2.SaveVersions(nil, []atc.Version{
+			err = resourceConfigScope2.SaveVersions(nil, []types.Version{
 				{"ver": "1"},
 				{"ver": "2"},
 				{"ver": "3"},
@@ -297,7 +298,7 @@ var _ = Describe("Build", func() {
 				"input-1": db.InputResult{
 					Input: &db.AlgorithmInput{
 						AlgorithmVersion: db.AlgorithmVersion{
-							Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "1"})),
+							Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "1"})),
 							ResourceID: resource1.ID(),
 						},
 						FirstOccurrence: true,
@@ -307,7 +308,7 @@ var _ = Describe("Build", func() {
 				"input-2": db.InputResult{
 					Input: &db.AlgorithmInput{
 						AlgorithmVersion: db.AlgorithmVersion{
-							Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "3"})),
+							Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "3"})),
 							ResourceID: resource2.ID(),
 						},
 						FirstOccurrence: true,
@@ -317,7 +318,7 @@ var _ = Describe("Build", func() {
 				"input-3": db.InputResult{
 					Input: &db.AlgorithmInput{
 						AlgorithmVersion: db.AlgorithmVersion{
-							Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "2"})),
+							Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "2"})),
 							ResourceID: resource1.ID(),
 						},
 						FirstOccurrence: true,
@@ -327,7 +328,7 @@ var _ = Describe("Build", func() {
 				"input-4": db.InputResult{
 					Input: &db.AlgorithmInput{
 						AlgorithmVersion: db.AlgorithmVersion{
-							Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "2"})),
+							Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "2"})),
 							ResourceID: resource1.ID(),
 						},
 						FirstOccurrence: true,
@@ -342,11 +343,11 @@ var _ = Describe("Build", func() {
 			Expect(found).To(BeTrue())
 
 			// save explicit output from 'put'
-			err = build.SaveOutput("some-type", atc.Source{"some": "source"}, atc.VersionedResourceTypes{}, atc.Version{"ver": "2"}, nil, "output-1", "some-resource")
+			err = build.SaveOutput("some-type", types.Source{"some": "source"}, types.VersionedResourceTypes{}, types.Version{"ver": "2"}, nil, "output-1", "some-resource")
 			Expect(err).NotTo(HaveOccurred())
 
 			// save explicit output from 'put'
-			err = build.SaveOutput("some-type", atc.Source{"some": "source"}, atc.VersionedResourceTypes{}, atc.Version{"ver": "3"}, nil, "output-2", "some-resource")
+			err = build.SaveOutput("some-type", types.Source{"some": "source"}, types.VersionedResourceTypes{}, types.Version{"ver": "3"}, nil, "output-2", "some-resource")
 			Expect(err).NotTo(HaveOccurred())
 
 			err = build.Finish(db.BuildStatusSucceeded)
@@ -354,19 +355,19 @@ var _ = Describe("Build", func() {
 
 			expectedOutputs = []db.AlgorithmVersion{
 				{
-					Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "1"})),
+					Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "1"})),
 					ResourceID: resource1.ID(),
 				},
 				{
-					Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "3"})),
+					Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "3"})),
 					ResourceID: resource2.ID(),
 				},
 				{
-					Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "2"})),
+					Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "2"})),
 					ResourceID: resource1.ID(),
 				},
 				{
-					Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "3"})),
+					Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "3"})),
 					ResourceID: resource1.ID(),
 				},
 			}
@@ -384,7 +385,7 @@ var _ = Describe("Build", func() {
 			defer db.Close(events)
 
 			Expect(events.Next()).To(Equal(envelope(event.Status{
-				Status: atc.StatusSucceeded,
+				Status: types.StatusSucceeded,
 				Time:   build.EndTime().Unix(),
 			})))
 		})
@@ -731,7 +732,7 @@ var _ = Describe("Build", func() {
 			Expect(found).To(BeTrue())
 
 			Expect(events.Next()).To(Equal(envelope(event.Status{
-				Status: atc.StatusStarted,
+				Status: types.StatusStarted,
 				Time:   build.StartTime().Unix(),
 			})))
 
@@ -744,7 +745,7 @@ var _ = Describe("Build", func() {
 			Expect(found).To(BeTrue())
 
 			Expect(events.Next()).To(Equal(envelope(event.Status{
-				Status: atc.StatusSucceeded,
+				Status: types.StatusSucceeded,
 				Time:   build.EndTime().Unix(),
 			})))
 
@@ -838,13 +839,13 @@ var _ = Describe("Build", func() {
 		BeforeEach(func() {
 			atc.EnableGlobalResources = true
 
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-implicit-resource",
 						Type: "some-type",
@@ -852,7 +853,7 @@ var _ = Describe("Build", func() {
 					{
 						Name:   "some-explicit-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "explicit-source"},
+						Source: types.Source{"some": "explicit-source"},
 					},
 				},
 			}
@@ -881,7 +882,7 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{})
+			resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -890,7 +891,7 @@ var _ = Describe("Build", func() {
 				build, err := job.CreateBuild()
 				Expect(err).ToNot(HaveOccurred())
 
-				err = build.SaveOutput("some-type", atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{}, atc.Version{"some": "version"}, []db.ResourceConfigMetadataField{
+				err = build.SaveOutput("some-type", types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{}, types.Version{"some": "version"}, []db.ResourceConfigMetadataField{
 					{
 						Name:  "meta1",
 						Value: "data1",
@@ -902,7 +903,7 @@ var _ = Describe("Build", func() {
 				}, "output-name", "some-explicit-resource")
 				Expect(err).ToNot(HaveOccurred())
 
-				rcv, found, err := resourceConfigScope.FindVersion(atc.Version{"some": "version"})
+				rcv, found, err := resourceConfigScope.FindVersion(types.Version{"some": "version"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
@@ -910,7 +911,7 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(buildOutputs)).To(Equal(1))
 				Expect(buildOutputs[0].Name).To(Equal("output-name"))
-				Expect(buildOutputs[0].Version).To(Equal(atc.Version(rcv.Version())))
+				Expect(buildOutputs[0].Version).To(Equal(types.Version(rcv.Version())))
 			})
 
 			It("requests schedule on all jobs using the resource config", func() {
@@ -919,13 +920,13 @@ var _ = Describe("Build", func() {
 				build, err := job.CreateBuild()
 				Expect(err).ToNot(HaveOccurred())
 
-				pipelineConfig := atc.Config{
-					Jobs: atc.JobConfigs{
+				pipelineConfig := types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name: "some-explicit-resource",
 									},
 								},
@@ -935,11 +936,11 @@ var _ = Describe("Build", func() {
 							Name: "other-job",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name:   "some-explicit-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "explicit-source"},
+							Source: types.Source{"some": "explicit-source"},
 						},
 					},
 				}
@@ -951,7 +952,7 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
 				requestedJob, found, err := otherPipeline.Job("some-job")
@@ -965,7 +966,7 @@ var _ = Describe("Build", func() {
 				requestedSchedule1 := requestedJob.ScheduleRequestedTime()
 				requestedSchedule2 := otherJob.ScheduleRequestedTime()
 
-				err = build.SaveOutput("some-type", atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{}, atc.Version{"some": "version"}, []db.ResourceConfigMetadataField{}, "output-name", "some-explicit-resource")
+				err = build.SaveOutput("some-type", types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{}, types.Version{"some": "version"}, []db.ResourceConfigMetadataField{}, "output-name", "some-explicit-resource")
 				Expect(err).ToNot(HaveOccurred())
 
 				found, err = requestedJob.Reload()
@@ -985,11 +986,11 @@ var _ = Describe("Build", func() {
 			var rcv db.ResourceConfigVersion
 
 			BeforeEach(func() {
-				err := resourceConfigScope.SaveVersions(nil, []atc.Version{{"some": "version"}})
+				err := resourceConfigScope.SaveVersions(nil, []types.Version{{"some": "version"}})
 				Expect(err).ToNot(HaveOccurred())
 
 				var found bool
-				rcv, found, err = resourceConfigScope.FindVersion(atc.Version{"some": "version"})
+				rcv, found, err = resourceConfigScope.FindVersion(types.Version{"some": "version"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 			})
@@ -998,7 +999,7 @@ var _ = Describe("Build", func() {
 				build, err := job.CreateBuild()
 				Expect(err).ToNot(HaveOccurred())
 
-				err = build.SaveOutput("some-type", atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{}, atc.Version{"some": "version"}, []db.ResourceConfigMetadataField{
+				err = build.SaveOutput("some-type", types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{}, types.Version{"some": "version"}, []db.ResourceConfigMetadataField{
 					{
 						Name:  "meta1",
 						Value: "data1",
@@ -1010,7 +1011,7 @@ var _ = Describe("Build", func() {
 				}, "output-name", "some-explicit-resource")
 				Expect(err).ToNot(HaveOccurred())
 
-				newRCV, found, err := resourceConfigScope.FindVersion(atc.Version{"some": "version"})
+				newRCV, found, err := resourceConfigScope.FindVersion(types.Version{"some": "version"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
@@ -1021,13 +1022,13 @@ var _ = Describe("Build", func() {
 				build, err := job.CreateBuild()
 				Expect(err).ToNot(HaveOccurred())
 
-				pipelineConfig := atc.Config{
-					Jobs: atc.JobConfigs{
+				pipelineConfig := types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name: "some-explicit-resource",
 									},
 								},
@@ -1037,11 +1038,11 @@ var _ = Describe("Build", func() {
 							Name: "other-job",
 						},
 					},
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name:   "some-explicit-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "explicit-source"},
+							Source: types.Source{"some": "explicit-source"},
 						},
 					},
 				}
@@ -1053,7 +1054,7 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
 				requestedJob, found, err := otherPipeline.Job("some-job")
@@ -1062,7 +1063,7 @@ var _ = Describe("Build", func() {
 
 				requestedSchedule1 := requestedJob.ScheduleRequestedTime()
 
-				err = build.SaveOutput("some-type", atc.Source{"some": "explicit-source"}, atc.VersionedResourceTypes{}, atc.Version{"some": "version"}, []db.ResourceConfigMetadataField{}, "output-name", "some-explicit-resource")
+				err = build.SaveOutput("some-type", types.Source{"some": "explicit-source"}, types.VersionedResourceTypes{}, types.Version{"some": "version"}, []db.ResourceConfigMetadataField{}, "output-name", "some-explicit-resource")
 				Expect(err).ToNot(HaveOccurred())
 
 				found, err = requestedJob.Reload()
@@ -1086,18 +1087,18 @@ var _ = Describe("Build", func() {
 				})
 
 				Context("the resource types contain the given type", func() {
-					var resourceTypes atc.VersionedResourceTypes
+					var resourceTypes types.VersionedResourceTypes
 
 					BeforeEach(func() {
-						resourceTypes = atc.VersionedResourceTypes{
+						resourceTypes = types.VersionedResourceTypes{
 							{
-								ResourceType: atc.ResourceType{
+								ResourceType: types.ResourceType{
 									Name:                 "given-type",
-									Source:               atc.Source{"some": "source"},
+									Source:               types.Source{"some": "source"},
 									Type:                 "some-type",
 									UniqueVersionHistory: true,
 								},
-								Version: atc.Version{"some-resource-type": "version"},
+								Version: types.Version{"some-resource-type": "version"},
 							},
 						}
 					})
@@ -1115,9 +1116,9 @@ var _ = Describe("Build", func() {
 
 							err = build.SaveOutput(
 								givenType,
-								atc.Source{"some": "explicit-source"},
+								types.Source{"some": "explicit-source"},
 								resourceTypes,
-								atc.Version{"some": "new-version"},
+								types.Version{"some": "new-version"},
 								[]db.ResourceConfigMetadataField{},
 								"output-name",
 								resourceName,
@@ -1151,27 +1152,27 @@ var _ = Describe("Build", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(setupTx.Commit()).To(Succeed())
 
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name:   "some-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
 					{
 						Name:   "some-other-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source-2"},
+						Source: types.Source{"some": "source-2"},
 					},
 					{
 						Name:   "some-unused-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source-3"},
+						Source: types.Source{"some": "source-3"},
 					},
 				},
 			}
@@ -1191,20 +1192,20 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope1, err = resource1.SetResourceConfig(atc.Source{"some": "source-1"}, atc.VersionedResourceTypes{})
+			resourceConfigScope1, err = resource1.SetResourceConfig(types.Source{"some": "source-1"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = resource2.SetResourceConfig(atc.Source{"some": "source-2"}, atc.VersionedResourceTypes{})
+			_, err = resource2.SetResourceConfig(types.Source{"some": "source-2"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = resourceConfigScope1.SaveVersions(nil, []atc.Version{
+			err = resourceConfigScope1.SaveVersions(nil, []types.Version{
 				{"ver": "1"},
 				{"ver": "2"},
 			})
 			Expect(err).ToNot(HaveOccurred())
 
 			// This version should not be returned by the Resources method because it has a check order of 0
-			created, err := resource1.SaveUncheckedVersion(atc.Version{"ver": "not-returned"}, nil, resourceConfigScope1.ResourceConfig(), atc.VersionedResourceTypes{})
+			created, err := resource1.SaveUncheckedVersion(types.Version{"ver": "not-returned"}, nil, resourceConfigScope1.ResourceConfig(), types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(created).To(BeTrue())
 		})
@@ -1218,7 +1219,7 @@ var _ = Describe("Build", func() {
 				"some-input": db.InputResult{
 					Input: &db.AlgorithmInput{
 						AlgorithmVersion: db.AlgorithmVersion{
-							Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "1"})),
+							Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "1"})),
 							ResourceID: resource1.ID(),
 						},
 						FirstOccurrence: true,
@@ -1233,20 +1234,20 @@ var _ = Describe("Build", func() {
 			Expect(found).To(BeTrue())
 
 			// save explicit output from 'put'
-			err = build.SaveOutput("some-type", atc.Source{"some": "source-2"}, atc.VersionedResourceTypes{}, atc.Version{"ver": "2"}, nil, "some-output-name", "some-other-resource")
+			err = build.SaveOutput("some-type", types.Source{"some": "source-2"}, types.VersionedResourceTypes{}, types.Version{"ver": "2"}, nil, "some-output-name", "some-other-resource")
 			Expect(err).NotTo(HaveOccurred())
 
 			inputs, outputs, err := build.Resources()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(inputs).To(ConsistOf([]db.BuildInput{
-				{Name: "some-input", Version: atc.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: true},
+				{Name: "some-input", Version: types.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: true},
 			}))
 
 			Expect(outputs).To(ConsistOf([]db.BuildOutput{
 				{
 					Name:    "some-output-name",
-					Version: atc.Version{"ver": "2"},
+					Version: types.Version{"ver": "2"},
 				},
 			}))
 		})
@@ -1264,7 +1265,7 @@ var _ = Describe("Build", func() {
 					"some-input": db.InputResult{
 						Input: &db.AlgorithmInput{
 							AlgorithmVersion: db.AlgorithmVersion{
-								Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "1"})),
+								Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "1"})),
 								ResourceID: resource1.ID(),
 							},
 							FirstOccurrence: true,
@@ -1274,7 +1275,7 @@ var _ = Describe("Build", func() {
 					"some-other-input": db.InputResult{
 						Input: &db.AlgorithmInput{
 							AlgorithmVersion: db.AlgorithmVersion{
-								Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "2"})),
+								Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "2"})),
 								ResourceID: resource1.ID(),
 							},
 							FirstOccurrence: true,
@@ -1293,7 +1294,7 @@ var _ = Describe("Build", func() {
 					Where(sq.Eq{
 						"build_id":    build.ID(),
 						"resource_id": resource1.ID(),
-						"version_md5": convertToMD5(atc.Version{"ver": "1"}),
+						"version_md5": convertToMD5(types.Version{"ver": "1"}),
 					}).
 					RunWith(dbConn).
 					Exec()
@@ -1305,8 +1306,8 @@ var _ = Describe("Build", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(outputs).To(BeEmpty())
 				Expect(inputs).To(ConsistOf([]db.BuildInput{
-					{Name: "some-input", Version: atc.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: true},
-					{Name: "some-other-input", Version: atc.Version{"ver": "2"}, ResourceID: resource1.ID(), FirstOccurrence: true},
+					{Name: "some-input", Version: types.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: true},
+					{Name: "some-other-input", Version: types.Version{"ver": "2"}, ResourceID: resource1.ID(), FirstOccurrence: true},
 				}))
 			})
 
@@ -1323,7 +1324,7 @@ var _ = Describe("Build", func() {
 						"some-input": db.InputResult{
 							Input: &db.AlgorithmInput{
 								AlgorithmVersion: db.AlgorithmVersion{
-									Version:    db.ResourceVersion(convertToMD5(atc.Version{"ver": "1"})),
+									Version:    db.ResourceVersion(convertToMD5(types.Version{"ver": "1"})),
 									ResourceID: resource1.ID(),
 								},
 								FirstOccurrence: false,
@@ -1342,7 +1343,7 @@ var _ = Describe("Build", func() {
 						Where(sq.Eq{
 							"build_id":    newBuild.ID(),
 							"resource_id": resource1.ID(),
-							"version_md5": convertToMD5(atc.Version{"ver": "1"}),
+							"version_md5": convertToMD5(types.Version{"ver": "1"}),
 						}).
 						RunWith(dbConn).
 						Exec()
@@ -1354,7 +1355,7 @@ var _ = Describe("Build", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(outputs).To(BeEmpty())
 					Expect(inputs).To(ConsistOf([]db.BuildInput{
-						{Name: "some-input", Version: atc.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: false},
+						{Name: "some-input", Version: types.Version{"ver": "1"}, ResourceID: resource1.ID(), FirstOccurrence: false},
 					}))
 				})
 			})
@@ -1378,8 +1379,8 @@ var _ = Describe("Build", func() {
 		Context("when a job build", func() {
 			BeforeEach(func() {
 				var err error
-				createdPipeline, _, err = team.SavePipeline("some-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				createdPipeline, _, err = team.SavePipeline("some-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 						},
@@ -1428,22 +1429,22 @@ var _ = Describe("Build", func() {
 			BeforeEach(func() {
 				var err error
 
-				pipeline, _, err = team.SavePipeline("some-pipeline", atc.Config{
-					Resources: atc.ResourceConfigs{
+				pipeline, _, err = team.SavePipeline("some-pipeline", types.Config{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"source-config": "some-value",
 							},
 						},
 					},
-					Jobs: atc.JobConfigs{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
-							PlanSequence: []atc.Step{
+							PlanSequence: []types.Step{
 								{
-									Config: &atc.GetStep{
+									Config: &types.GetStep{
 										Name:     "some-input",
 										Resource: "some-resource",
 									},
@@ -1494,13 +1495,13 @@ var _ = Describe("Build", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
-					resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+					resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 					Expect(err).NotTo(HaveOccurred())
 
-					err = resourceConfigScope.SaveVersions(nil, []atc.Version{{"version": "v5"}})
+					err = resourceConfigScope.SaveVersions(nil, []types.Version{{"version": "v5"}})
 					Expect(err).NotTo(HaveOccurred())
 
-					rcv, found, err = resourceConfigScope.FindVersion(atc.Version{"version": "v5"})
+					rcv, found, err = resourceConfigScope.FindVersion(types.Version{"version": "v5"})
 					Expect(found).To(BeTrue())
 					Expect(err).NotTo(HaveOccurred())
 
@@ -1508,7 +1509,7 @@ var _ = Describe("Build", func() {
 						"some-input": db.InputResult{
 							Input: &db.AlgorithmInput{
 								AlgorithmVersion: db.AlgorithmVersion{
-									Version:    db.ResourceVersion(convertToMD5(atc.Version(rcv.Version()))),
+									Version:    db.ResourceVersion(convertToMD5(types.Version(rcv.Version()))),
 									ResourceID: resource.ID(),
 								},
 								FirstOccurrence: true,
@@ -1540,7 +1541,7 @@ var _ = Describe("Build", func() {
 							"some-input": db.InputResult{
 								Input: &db.AlgorithmInput{
 									AlgorithmVersion: db.AlgorithmVersion{
-										Version:    db.ResourceVersion(convertToMD5(atc.Version(rcv.Version()))),
+										Version:    db.ResourceVersion(convertToMD5(types.Version(rcv.Version()))),
 										ResourceID: resource.ID(),
 									},
 									FirstOccurrence: true,
@@ -1625,23 +1626,23 @@ var _ = Describe("Build", func() {
 							Expect(err).ToNot(HaveOccurred())
 							Expect(scheduled).To(BeTrue())
 
-							pipeline, _, err = team.SavePipeline("some-pipeline", atc.Config{
-								Resources: atc.ResourceConfigs{
+							pipeline, _, err = team.SavePipeline("some-pipeline", types.Config{
+								Resources: types.ResourceConfigs{
 									{
 										Name: "some-resource",
 										Type: "some-type",
-										Source: atc.Source{
+										Source: types.Source{
 											"source-config": "some-value",
 										},
 									},
 								},
-								Jobs: atc.JobConfigs{
+								Jobs: types.JobConfigs{
 									{
 										Name:           "some-job",
 										RawMaxInFlight: 1,
-										PlanSequence: []atc.Step{
+										PlanSequence: []types.Step{
 											{
-												Config: &atc.GetStep{
+												Config: &types.GetStep{
 													Name:     "some-input",
 													Resource: "some-resource",
 												},
@@ -1660,7 +1661,7 @@ var _ = Describe("Build", func() {
 								"some-input": db.InputResult{
 									Input: &db.AlgorithmInput{
 										AlgorithmVersion: db.AlgorithmVersion{
-											Version:    db.ResourceVersion(convertToMD5(atc.Version(rcv.Version()))),
+											Version:    db.ResourceVersion(convertToMD5(types.Version(rcv.Version()))),
 											ResourceID: resource.ID(),
 										},
 										FirstOccurrence: true,
@@ -1688,23 +1689,23 @@ var _ = Describe("Build", func() {
 					Context("when max running builds is de-reached", func() {
 						BeforeEach(func() {
 							var err error
-							pipeline, _, err = team.SavePipeline("some-pipeline", atc.Config{
-								Resources: atc.ResourceConfigs{
+							pipeline, _, err = team.SavePipeline("some-pipeline", types.Config{
+								Resources: types.ResourceConfigs{
 									{
 										Name: "some-resource",
 										Type: "some-type",
-										Source: atc.Source{
+										Source: types.Source{
 											"source-config": "some-value",
 										},
 									},
 								},
-								Jobs: atc.JobConfigs{
+								Jobs: types.JobConfigs{
 									{
 										Name:           "some-job",
 										RawMaxInFlight: 1,
-										PlanSequence: []atc.Step{
+										PlanSequence: []types.Step{
 											{
-												Config: &atc.GetStep{
+												Config: &types.GetStep{
 													Name:     "some-input",
 													Resource: "some-resource",
 												},
@@ -1750,7 +1751,7 @@ var _ = Describe("Build", func() {
 							"some-input": db.InputResult{
 								Input: &db.AlgorithmInput{
 									AlgorithmVersion: db.AlgorithmVersion{
-										Version:    db.ResourceVersion(convertToMD5(atc.Version(rcv.Version()))),
+										Version:    db.ResourceVersion(convertToMD5(types.Version(rcv.Version()))),
 										ResourceID: resource.ID(),
 									},
 									FirstOccurrence: true,
@@ -1795,30 +1796,30 @@ var _ = Describe("Build", func() {
 
 			Context("when some inputs are errored", func() {
 				BeforeEach(func() {
-					pipelineConfig := atc.Config{
-						Jobs: atc.JobConfigs{
+					pipelineConfig := types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name:    "input1",
-											Version: &atc.VersionConfig{Pinned: atc.Version{"version": "v1"}},
+											Version: &types.VersionConfig{Pinned: types.Version{"version": "v1"}},
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "input2",
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name:   "input3",
 											Passed: []string{"some-upstream-job"},
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "input4",
 										},
 									},
@@ -1828,11 +1829,11 @@ var _ = Describe("Build", func() {
 								Name: "some-upstream-job",
 							},
 						},
-						Resources: atc.ResourceConfigs{
-							{Name: "input1", Type: "some-type", Source: atc.Source{"some": "source-1"}},
-							{Name: "input2", Type: "some-type", Source: atc.Source{"some": "source-2"}},
-							{Name: "input3", Type: "some-type", Source: atc.Source{"some": "source-3"}},
-							{Name: "input4", Type: "some-type", Source: atc.Source{"some": "source-4"}},
+						Resources: types.ResourceConfigs{
+							{Name: "input1", Type: "some-type", Source: types.Source{"some": "source-1"}},
+							{Name: "input2", Type: "some-type", Source: types.Source{"some": "source-2"}},
+							{Name: "input3", Type: "some-type", Source: types.Source{"some": "source-3"}},
+							{Name: "input4", Type: "some-type", Source: types.Source{"some": "source-4"}},
 						},
 					}
 
@@ -1865,27 +1866,27 @@ var _ = Describe("Build", func() {
 
 			Context("when some inputs are missing", func() {
 				BeforeEach(func() {
-					pipelineConfig := atc.Config{
-						Jobs: atc.JobConfigs{
+					pipelineConfig := types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "input1",
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "input2",
 										},
 									},
 								},
 							},
 						},
-						Resources: atc.ResourceConfigs{
-							{Name: "input1", Type: "some-type", Source: atc.Source{"some": "source-1"}},
-							{Name: "input2", Type: "some-type", Source: atc.Source{"some": "source-2"}},
+						Resources: types.ResourceConfigs{
+							{Name: "input1", Type: "some-type", Source: types.Source{"some": "source-1"}},
+							{Name: "input2", Type: "some-type", Source: types.Source{"some": "source-2"}},
 						},
 					}
 
@@ -1911,13 +1912,13 @@ var _ = Describe("Build", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
-					resourceConfig1, err := resource1.SetResourceConfig(atc.Source{"some": "source-1"}, atc.VersionedResourceTypes{})
+					resourceConfig1, err := resource1.SetResourceConfig(types.Source{"some": "source-1"}, types.VersionedResourceTypes{})
 					Expect(err).NotTo(HaveOccurred())
 
-					err = resourceConfig1.SaveVersions(nil, []atc.Version{{"version": "v1"}})
+					err = resourceConfig1.SaveVersions(nil, []types.Version{{"version": "v1"}})
 					Expect(err).NotTo(HaveOccurred())
 
-					version, found, err := resourceConfig1.FindVersion(atc.Version{"version": "v1"})
+					version, found, err := resourceConfig1.FindVersion(types.Version{"version": "v1"})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
@@ -1936,7 +1937,7 @@ var _ = Describe("Build", func() {
 						"input1": db.InputResult{
 							Input: &db.AlgorithmInput{
 								AlgorithmVersion: db.AlgorithmVersion{
-									Version:    db.ResourceVersion(convertToMD5(atc.Version(version.Version()))),
+									Version:    db.ResourceVersion(convertToMD5(types.Version(version.Version()))),
 									ResourceID: resource1.ID(),
 								},
 								FirstOccurrence: true,
@@ -1975,8 +1976,8 @@ var _ = Describe("Build", func() {
 		var err error
 
 		BeforeEach(func() {
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -1984,16 +1985,16 @@ var _ = Describe("Build", func() {
 						Name: "some-other-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name:   "some-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
 					{
 						Name:   "some-other-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "other-source"},
+						Source: types.Source{"some": "other-source"},
 					},
 				},
 			}
@@ -2032,7 +2033,7 @@ var _ = Describe("Build", func() {
 		Context("when inputs are determined", func() {
 			var (
 				resource, otherResource                       db.Resource
-				versions, otherVersions                       []atc.ResourceVersion
+				versions, otherVersions                       []types.ResourceVersion
 				resourceConfigScope, otherResourceConfigScope db.ResourceConfigScope
 			)
 
@@ -2053,10 +2054,10 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = resourceConfigScope.SaveVersions(nil, []atc.Version{
+				err = resourceConfigScope.SaveVersions(nil, []types.Version{
 					{"version": "v1"},
 					{"version": "v2"},
 					{"version": "v3"},
@@ -2067,10 +2068,10 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				otherResourceConfigScope, err = otherResource.SetResourceConfig(atc.Source{"some": "other-source"}, atc.VersionedResourceTypes{})
+				otherResourceConfigScope, err = otherResource.SetResourceConfig(types.Source{"some": "other-source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = otherResourceConfigScope.SaveVersions(nil, []atc.Version{{"version": "v1"}})
+				err = otherResourceConfigScope.SaveVersions(nil, []types.Version{{"version": "v1"}})
 				Expect(err).ToNot(HaveOccurred())
 
 				versions, _, found, err = resource.Versions(db.Page{Limit: 3}, nil)
@@ -2100,7 +2101,7 @@ var _ = Describe("Build", func() {
 
 			Context("when version history is reset", func() {
 				BeforeEach(func() {
-					_, err = resource.SetResourceConfig(atc.Source{"some": "some-other-source"}, atc.VersionedResourceTypes{})
+					_, err = resource.SetResourceConfig(types.Source{"some": "some-other-source"}, types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -2238,8 +2239,8 @@ var _ = Describe("Build", func() {
 		var err error
 
 		BeforeEach(func() {
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -2247,16 +2248,16 @@ var _ = Describe("Build", func() {
 						Name: "some-other-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name:   "some-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
 					{
 						Name:   "some-other-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "other-source"},
+						Source: types.Source{"some": "other-source"},
 					},
 				},
 			}
@@ -2295,7 +2296,7 @@ var _ = Describe("Build", func() {
 		Context("when the build to retrigger of has inputs and pipes", func() {
 			var (
 				resource, otherResource                       db.Resource
-				versions, otherVersions                       []atc.ResourceVersion
+				versions, otherVersions                       []types.ResourceVersion
 				resourceConfigScope, otherResourceConfigScope db.ResourceConfigScope
 			)
 
@@ -2316,10 +2317,10 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				resourceConfigScope, err = resource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err = resource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = resourceConfigScope.SaveVersions(nil, []atc.Version{
+				err = resourceConfigScope.SaveVersions(nil, []types.Version{
 					{"version": "v1"},
 					{"version": "v2"},
 					{"version": "v3"},
@@ -2330,10 +2331,10 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				otherResourceConfigScope, err = otherResource.SetResourceConfig(atc.Source{"some": "other-source"}, atc.VersionedResourceTypes{})
+				otherResourceConfigScope, err = otherResource.SetResourceConfig(types.Source{"some": "other-source"}, types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = otherResourceConfigScope.SaveVersions(nil, []atc.Version{{"version": "v1"}})
+				err = otherResourceConfigScope.SaveVersions(nil, []types.Version{{"version": "v1"}})
 				Expect(err).ToNot(HaveOccurred())
 
 				versions, _, found, err = resource.Versions(db.Page{Limit: 3}, nil)
@@ -2434,7 +2435,7 @@ var _ = Describe("Build", func() {
 
 			Context("when version history is reset", func() {
 				BeforeEach(func() {
-					_, err = otherResource.SetResourceConfig(atc.Source{"some": "some-other-source"}, atc.VersionedResourceTypes{})
+					_, err = otherResource.SetResourceConfig(types.Source{"some": "some-other-source"}, types.VersionedResourceTypes{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -2501,34 +2502,34 @@ var _ = Describe("Build", func() {
 		var resource2 db.Resource
 
 		BeforeEach(func() {
-			pipelineConfig := atc.Config{
-				Jobs: atc.JobConfigs{
+			pipelineConfig := types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-other-resource",
 								},
 							},
 						},
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name:   "some-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
 					{
 						Name:   "some-other-resource",
 						Type:   "some-type",
-						Source: atc.Source{"some": "other-source"},
+						Source: types.Source{"some": "other-source"},
 					},
 				},
 			}
@@ -2557,14 +2558,14 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope1, err = resource1.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+			resourceConfigScope1, err = resource1.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
 			resource2, found, err = pipeline.Resource("some-other-resource")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(found).To(BeTrue())
 
-			resourceConfigScope2, err = resource2.SetResourceConfig(atc.Source{"some": "other-source"}, atc.VersionedResourceTypes{})
+			resourceConfigScope2, err = resource2.SetResourceConfig(types.Source{"some": "other-source"}, types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
 			build, err = job.CreateBuild()
@@ -2605,12 +2606,12 @@ var _ = Describe("Build", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(updated).To(BeTrue())
 
-				err = resourceConfigScope2.SaveVersions(nil, []atc.Version{
+				err = resourceConfigScope2.SaveVersions(nil, []types.Version{
 					{"ver": "1"},
 				})
 				Expect(err).ToNot(HaveOccurred())
 
-				rcv, found, err := resourceConfigScope2.FindVersion(atc.Version{"ver": "1"})
+				rcv, found, err := resourceConfigScope2.FindVersion(types.Version{"ver": "1"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
@@ -2632,26 +2633,26 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("saving a pipeline with the build")
-			pipeline, _, err := build.SavePipeline("other-pipeline", build.TeamID(), atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err := build.SavePipeline("other-pipeline", build.TeamID(), types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some": "source",
 						},
 					},
 				},
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-type",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some-type": "source",
 						},
 					},
@@ -2670,26 +2671,26 @@ var _ = Describe("Build", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("saving a pipeline with the second build")
-			pipeline, _, err := buildTwo.SavePipeline("other-pipeline", buildTwo.TeamID(), atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err := buildTwo.SavePipeline("other-pipeline", buildTwo.TeamID(), types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some": "source",
 						},
 					},
 				},
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-type",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some-type": "source",
 						},
 					},
@@ -2700,26 +2701,26 @@ var _ = Describe("Build", func() {
 			Expect(pipeline.ParentBuildID()).To(Equal(buildTwo.ID()))
 
 			By("saving a pipeline with the first build")
-			pipeline, _, err = buildOne.SavePipeline("other-pipeline", buildOne.TeamID(), atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err = buildOne.SavePipeline("other-pipeline", buildOne.TeamID(), types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some": "source",
 						},
 					},
 				},
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-type",
 						Type: "some-base-resource-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some-type": "source",
 						},
 					},
@@ -2744,7 +2745,7 @@ var _ = Describe("Build", func() {
 	})
 })
 
-func envelope(ev atc.Event) event.Envelope {
+func envelope(ev types.Event) event.Envelope {
 	payload, err := json.Marshal(ev)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -2757,7 +2758,7 @@ func envelope(ev atc.Event) event.Envelope {
 	}
 }
 
-func convertToMD5(version atc.Version) string {
+func convertToMD5(version types.Version) string {
 	versionJSON, err := json.Marshal(version)
 	Expect(err).ToNot(HaveOccurred())
 

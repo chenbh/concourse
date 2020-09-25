@@ -3,16 +3,16 @@ package executehelpers
 import (
 	"bufio"
 	"bytes"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 	"github.com/concourse/go-archive/tgzfs"
 	"github.com/vbauerster/mpb/v4"
 )
 
-func Upload(bar *mpb.Bar, team concourse.Team, path string, includeIgnored bool, platform string, tags []string) (atc.WorkerArtifact, error) {
+func Upload(bar *mpb.Bar, team concourse.Team, path string, includeIgnored bool, platform string, tags []string) (types.WorkerArtifact, error) {
 	files := getFiles(path, includeIgnored)
 
 	archiveStream, archiveWriter := io.Pipe()

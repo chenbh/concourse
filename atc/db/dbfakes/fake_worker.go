@@ -2,10 +2,10 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -247,15 +247,15 @@ type FakeWorker struct {
 		result2 bool
 		result3 error
 	}
-	ResourceTypesStub        func() []atc.WorkerResourceType
+	ResourceTypesStub        func() []types.WorkerResourceType
 	resourceTypesMutex       sync.RWMutex
 	resourceTypesArgsForCall []struct {
 	}
 	resourceTypesReturns struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}
 	resourceTypesReturnsOnCall map[int]struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}
 	RetireStub        func() error
 	retireMutex       sync.RWMutex
@@ -1513,7 +1513,7 @@ func (fake *FakeWorker) ResourceCertsReturnsOnCall(i int, result1 *db.UsedWorker
 	}{result1, result2, result3}
 }
 
-func (fake *FakeWorker) ResourceTypes() []atc.WorkerResourceType {
+func (fake *FakeWorker) ResourceTypes() []types.WorkerResourceType {
 	fake.resourceTypesMutex.Lock()
 	ret, specificReturn := fake.resourceTypesReturnsOnCall[len(fake.resourceTypesArgsForCall)]
 	fake.resourceTypesArgsForCall = append(fake.resourceTypesArgsForCall, struct {
@@ -1536,32 +1536,32 @@ func (fake *FakeWorker) ResourceTypesCallCount() int {
 	return len(fake.resourceTypesArgsForCall)
 }
 
-func (fake *FakeWorker) ResourceTypesCalls(stub func() []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesCalls(stub func() []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = stub
 }
 
-func (fake *FakeWorker) ResourceTypesReturns(result1 []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesReturns(result1 []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = nil
 	fake.resourceTypesReturns = struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}{result1}
 }
 
-func (fake *FakeWorker) ResourceTypesReturnsOnCall(i int, result1 []atc.WorkerResourceType) {
+func (fake *FakeWorker) ResourceTypesReturnsOnCall(i int, result1 []types.WorkerResourceType) {
 	fake.resourceTypesMutex.Lock()
 	defer fake.resourceTypesMutex.Unlock()
 	fake.ResourceTypesStub = nil
 	if fake.resourceTypesReturnsOnCall == nil {
 		fake.resourceTypesReturnsOnCall = make(map[int]struct {
-			result1 []atc.WorkerResourceType
+			result1 []types.WorkerResourceType
 		})
 	}
 	fake.resourceTypesReturnsOnCall[i] = struct {
-		result1 []atc.WorkerResourceType
+		result1 []types.WorkerResourceType
 	}{result1}
 }
 

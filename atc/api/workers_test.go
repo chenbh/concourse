@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/testhelpers"
@@ -79,11 +79,11 @@ var _ = Describe("Workers API", func() {
 
 					Expect(dbWorkerFactory.WorkersCallCount()).To(Equal(1))
 
-					var returnedWorkers []atc.Worker
+					var returnedWorkers []types.Worker
 					err := json.NewDecoder(response.Body).Decode(&returnedWorkers)
 					Expect(err).NotTo(HaveOccurred())
 
-					Expect(returnedWorkers).To(Equal([]atc.Worker{
+					Expect(returnedWorkers).To(Equal([]types.Worker{
 						{
 							GardenAddr:      "1.2.3.4:7777",
 							BaggageclaimURL: "1.2.3.4:8888",
@@ -116,13 +116,13 @@ var _ = Describe("Workers API", func() {
 				})
 
 				It("returns the workers", func() {
-					var returnedWorkers []atc.Worker
+					var returnedWorkers []types.Worker
 					err := json.NewDecoder(response.Body).Decode(&returnedWorkers)
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(dbWorkerFactory.VisibleWorkersCallCount()).To(Equal(1))
 
-					Expect(returnedWorkers).To(Equal([]atc.Worker{
+					Expect(returnedWorkers).To(Equal([]types.Worker{
 						{
 							GardenAddr:      "1.2.3.4:7777",
 							BaggageclaimURL: "1.2.3.4:8888",
@@ -160,7 +160,7 @@ var _ = Describe("Workers API", func() {
 
 	Describe("POST /api/v1/workers", func() {
 		var (
-			worker    atc.Worker
+			worker    types.Worker
 			ttl       string
 			certsPath string
 
@@ -169,7 +169,7 @@ var _ = Describe("Workers API", func() {
 
 		BeforeEach(func() {
 			certsPath = "/some/certs/path"
-			worker = atc.Worker{
+			worker = types.Worker{
 				Name:             "worker-name",
 				GardenAddr:       "1.2.3.4:7777",
 				BaggageclaimURL:  "5.6.7.8:7788",
@@ -180,7 +180,7 @@ var _ = Describe("Workers API", func() {
 				ActiveContainers: 2,
 				ActiveVolumes:    10,
 				ActiveTasks:      42,
-				ResourceTypes: []atc.WorkerResourceType{
+				ResourceTypes: []types.WorkerResourceType{
 					{Type: "some-resource", Image: "some-resource-image"},
 				},
 				Platform: "haiku",
@@ -212,7 +212,7 @@ var _ = Describe("Workers API", func() {
 			It("tries to save the worker", func() {
 				Expect(dbWorkerFactory.SaveWorkerCallCount()).To(Equal(1))
 				savedWorker, savedTTL := dbWorkerFactory.SaveWorkerArgsForCall(0)
-				Expect(savedWorker).To(Equal(atc.Worker{
+				Expect(savedWorker).To(Equal(types.Worker{
 					GardenAddr:       "1.2.3.4:7777",
 					Name:             "worker-name",
 					BaggageclaimURL:  "5.6.7.8:7788",
@@ -223,7 +223,7 @@ var _ = Describe("Workers API", func() {
 					ActiveContainers: 2,
 					ActiveVolumes:    10,
 					ActiveTasks:      42,
-					ResourceTypes: []atc.WorkerResourceType{
+					ResourceTypes: []types.WorkerResourceType{
 						{Type: "some-resource", Image: "some-resource-image"},
 					},
 					Platform: "haiku",
@@ -304,7 +304,7 @@ var _ = Describe("Workers API", func() {
 					Expect(dbWorkerFactory.SaveWorkerCallCount()).To(Equal(1))
 
 					savedInfo, savedTTL := dbWorkerFactory.SaveWorkerArgsForCall(0)
-					Expect(savedInfo).To(Equal(atc.Worker{
+					Expect(savedInfo).To(Equal(types.Worker{
 						GardenAddr:       "1.2.3.4:7777",
 						Name:             "1.2.3.4:7777",
 						BaggageclaimURL:  "5.6.7.8:7788",
@@ -315,7 +315,7 @@ var _ = Describe("Workers API", func() {
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
 						ActiveTasks:      42,
-						ResourceTypes: []atc.WorkerResourceType{
+						ResourceTypes: []types.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
 						Platform: "haiku",
@@ -336,7 +336,7 @@ var _ = Describe("Workers API", func() {
 					Expect(dbWorkerFactory.SaveWorkerCallCount()).To(Equal(1))
 
 					savedInfo, savedTTL := dbWorkerFactory.SaveWorkerArgsForCall(0)
-					Expect(savedInfo).To(Equal(atc.Worker{
+					Expect(savedInfo).To(Equal(types.Worker{
 						GardenAddr:       "1.2.3.4:7777",
 						Name:             "worker-name",
 						BaggageclaimURL:  "5.6.7.8:7788",
@@ -347,7 +347,7 @@ var _ = Describe("Workers API", func() {
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
 						ActiveTasks:      42,
-						ResourceTypes: []atc.WorkerResourceType{
+						ResourceTypes: []types.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
 						Platform: "haiku",
@@ -369,7 +369,7 @@ var _ = Describe("Workers API", func() {
 					Expect(dbWorkerFactory.SaveWorkerCallCount()).To(Equal(1))
 
 					savedInfo, savedTTL := dbWorkerFactory.SaveWorkerArgsForCall(0)
-					Expect(savedInfo).To(Equal(atc.Worker{
+					Expect(savedInfo).To(Equal(types.Worker{
 						GardenAddr:       "1.2.3.4:7777",
 						Name:             "worker-name",
 						BaggageclaimURL:  "5.6.7.8:7788",
@@ -380,7 +380,7 @@ var _ = Describe("Workers API", func() {
 						ActiveContainers: 2,
 						ActiveVolumes:    10,
 						ActiveTasks:      42,
-						ResourceTypes: []atc.WorkerResourceType{
+						ResourceTypes: []types.WorkerResourceType{
 							{Type: "some-resource", Image: "some-resource-image"},
 						},
 						Platform: "haiku",
@@ -779,7 +779,7 @@ var _ = Describe("Workers API", func() {
 			ttl        time.Duration
 			err        error
 
-			worker     atc.Worker
+			worker     types.Worker
 			fakeWorker *dbfakes.FakeWorker
 		)
 
@@ -800,7 +800,7 @@ var _ = Describe("Workers API", func() {
 			ttl, err = time.ParseDuration(ttlStr)
 			Expect(err).NotTo(HaveOccurred())
 
-			worker = atc.Worker{
+			worker = types.Worker{
 				Name:             workerName,
 				ActiveContainers: 2,
 			}

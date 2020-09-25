@@ -2,9 +2,9 @@ package workerserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
@@ -32,7 +32,7 @@ func (s *Server) ListWorkers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	atcWorkers := make([]atc.Worker, len(workers))
+	atcWorkers := make([]types.Worker, len(workers))
 	for i, savedWorker := range workers {
 		atcWorkers[i] = present.Worker(savedWorker)
 	}

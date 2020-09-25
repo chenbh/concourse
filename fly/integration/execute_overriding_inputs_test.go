@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -26,11 +27,11 @@ var _ = Describe("Fly CLI", func() {
 	var otherInputDir string
 
 	var streaming chan struct{}
-	var events chan atc.Event
+	var events chan types.Event
 	var uploading chan struct{}
 
 	var expectedPlan atc.Plan
-	var workerArtifact = atc.WorkerArtifact{
+	var workerArtifact = types.WorkerArtifact{
 		ID:   125,
 		Name: "some-dir",
 	}
@@ -79,7 +80,7 @@ run:
 		Expect(err).NotTo(HaveOccurred())
 
 		streaming = make(chan struct{})
-		events = make(chan atc.Event)
+		events = make(chan types.Event)
 
 		planFactory := atc.NewPlanFactory(0)
 
@@ -92,23 +93,23 @@ run:
 				planFactory.NewPlan(atc.GetPlan{
 					Name:    "some-other-input",
 					Type:    "git",
-					Source:  atc.Source{"uri": "https://example.com"},
-					Params:  atc.Params{"some": "other-params"},
-					Version: &atc.Version{"some": "other-version"},
-					Tags:    atc.Tags{"tag-1", "tag-2"},
+					Source:  types.Source{"uri": "https://example.com"},
+					Params:  types.Params{"some": "other-params"},
+					Version: &types.Version{"some": "other-version"},
+					Tags:    types.Tags{"tag-1", "tag-2"},
 				}),
 			}),
 			planFactory.NewPlan(atc.TaskPlan{
 				Name: "one-off",
-				Config: &atc.TaskConfig{
+				Config: &types.TaskConfig{
 					Platform: "some-platform",
-					ImageResource: &atc.ImageResource{
+					ImageResource: &types.ImageResource{
 						Type: "registry-image",
-						Source: atc.Source{
+						Source: types.Source{
 							"repository": "ubuntu",
 						},
 					},
-					Inputs: []atc.TaskInputConfig{
+					Inputs: []types.TaskInputConfig{
 						{Name: "some-input"},
 						{Name: "some-other-input"},
 					},
@@ -117,7 +118,7 @@ run:
 						"BAZ": "buzz",
 						"X":   "1",
 					},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "find",
 						Args: []string{"."},
 					},
@@ -131,24 +132,24 @@ run:
 		atcServer.RouteToHandler("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/inputs",
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/inputs"),
-				ghttp.RespondWithJSONEncoded(http.StatusOK, []atc.BuildInput{
+				ghttp.RespondWithJSONEncoded(http.StatusOK, []types.BuildInput{
 					{
 						Name:     "some-input",
 						Type:     "git",
 						Resource: "some-resource",
-						Source:   atc.Source{"uri": "https://internet.com"},
-						Params:   atc.Params{"some": "params"},
-						Version:  atc.Version{"some": "version"},
-						Tags:     atc.Tags{"tag-1", "tag-2"},
+						Source:   types.Source{"uri": "https://internet.com"},
+						Params:   types.Params{"some": "params"},
+						Version:  types.Version{"some": "version"},
+						Tags:     types.Tags{"tag-1", "tag-2"},
 					},
 					{
 						Name:     "some-other-input",
 						Type:     "git",
 						Resource: "some-other-resource",
-						Source:   atc.Source{"uri": "https://example.com"},
-						Params:   atc.Params{"some": "other-params"},
-						Version:  atc.Version{"some": "other-version"},
-						Tags:     atc.Tags{"tag-1", "tag-2"},
+						Source:   types.Source{"uri": "https://example.com"},
+						Params:   types.Params{"some": "other-params"},
+						Version:  types.Version{"some": "other-version"},
+						Tags:     types.Tags{"tag-1", "tag-2"},
 					},
 				}),
 			),
@@ -243,7 +244,7 @@ run:
 			),
 		)
 		atcServer.RouteToHandler("GET", "/api/v1/builds/128/artifacts",
-			ghttp.RespondWithJSONEncoded(200, []atc.WorkerArtifact{workerArtifact}),
+			ghttp.RespondWithJSONEncoded(200, []types.WorkerArtifact{workerArtifact}),
 		)
 
 	})

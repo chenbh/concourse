@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -11,12 +11,12 @@ import (
 
 var _ = Describe("ATC Handler Resource", func() {
 	Describe("team.ListResources", func() {
-		var expectedResources []atc.Resource
+		var expectedResources []types.Resource
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/teams/some-team/pipelines/some-pipeline/resources"
 
-			expectedResources = []atc.Resource{
+			expectedResources = []types.Resource{
 				{
 					Name: "resource-1",
 					Type: "type-1",
@@ -43,14 +43,14 @@ var _ = Describe("ATC Handler Resource", func() {
 	})
 
 	Describe("Resource", func() {
-		var expectedResource atc.Resource
+		var expectedResource types.Resource
 
-		var resource atc.Resource
+		var resource types.Resource
 		var found bool
 		var clientErr error
 
 		BeforeEach(func() {
-			expectedResource = atc.Resource{
+			expectedResource = types.Resource{
 				Name: "some-name",
 			}
 		})

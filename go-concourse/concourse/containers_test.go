@@ -1,9 +1,8 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
-
-	"github.com/concourse/concourse/atc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,12 +12,12 @@ import (
 var _ = Describe("ATC Handler Containers", func() {
 	Describe("ListContainers", func() {
 		Context("when passed an empty specification list", func() {
-			var expectedContainers []atc.Container
+			var expectedContainers []types.Container
 
 			BeforeEach(func() {
 				expectedURL := "/api/v1/teams/some-team/containers"
 
-				expectedContainers = []atc.Container{
+				expectedContainers = []types.Container{
 					{
 						ID:               "myid-1",
 						PipelineName:     "mypipeline-1",
@@ -48,7 +47,7 @@ var _ = Describe("ATC Handler Containers", func() {
 
 		Context("when passed a nonempty specification list", func() {
 			var (
-				expectedContainers []atc.Container
+				expectedContainers []types.Container
 				expectedQueryList  map[string]string
 			)
 
@@ -58,7 +57,7 @@ var _ = Describe("ATC Handler Containers", func() {
 					"query1": "value1",
 				}
 
-				expectedContainers = []atc.Container{
+				expectedContainers = []types.Container{
 					{
 						ID:               "myid-1",
 						PipelineName:     "mypipeline-1",
@@ -84,11 +83,11 @@ var _ = Describe("ATC Handler Containers", func() {
 
 	Describe("GetContainer", func() {
 		Context("when passed a container handle", func() {
-			var expectedContainer atc.Container
+			var expectedContainer types.Container
 			BeforeEach(func() {
 				expectedURL := "/api/v1/teams/some-team/containers/myid-1"
 
-				expectedContainer = atc.Container{
+				expectedContainer = types.Container{
 					ID:               "myid-1",
 					PipelineName:     "mypipeline-1",
 					WorkingDirectory: "/tmp/build/some-guid",

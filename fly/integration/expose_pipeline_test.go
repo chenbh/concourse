@@ -1,13 +1,13 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -22,7 +22,7 @@ var _ = Describe("Fly CLI", func() {
 				err  error
 			)
 			BeforeEach(func() {
-				path, err = atc.Routes.CreatePathForRoute(atc.ExposePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+				path, err = types.Routes.CreatePathForRoute(types.ExposePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 				Expect(err).NotTo(HaveOccurred())
 			})
 

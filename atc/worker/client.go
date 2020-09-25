@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"path"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/compression"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
@@ -126,7 +126,7 @@ type TaskResult struct {
 }
 
 type CheckResult struct {
-	Versions []atc.Version
+	Versions []types.Version
 }
 
 type PutResult struct {
@@ -141,7 +141,7 @@ type GetResult struct {
 }
 
 type ImageFetcherSpec struct {
-	ResourceTypes atc.VersionedResourceTypes
+	ResourceTypes types.VersionedResourceTypes
 	Delegate      ImageFetchingDelegate
 }
 

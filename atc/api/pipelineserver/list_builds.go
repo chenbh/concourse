@@ -3,6 +3,7 @@ package pipelineserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 
@@ -75,7 +76,7 @@ func (s *Server) ListPipelineBuilds(pipeline db.Pipeline) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		atc := make([]atc.Build, len(builds))
+		atc := make([]types.Build, len(builds))
 		for i := 0; i < len(builds); i++ {
 			build := builds[i]
 			atc[i] = present.Build(build)

@@ -2,9 +2,9 @@ package resourceserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
@@ -24,7 +24,7 @@ func (s *Server) ListResources(pipeline db.Pipeline) http.Handler {
 		showCheckErr := acc.IsAuthenticated()
 		teamName := r.FormValue(":team_name")
 
-		var presentedResources []atc.Resource
+		var presentedResources []types.Resource
 		for _, resource := range resources {
 			presentedResources = append(
 				presentedResources,

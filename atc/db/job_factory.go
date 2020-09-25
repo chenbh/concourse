@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 
 	sq "github.com/Masterminds/squirrel"
@@ -40,7 +41,7 @@ type SchedulerJobs []SchedulerJob
 type SchedulerJob struct {
 	Job
 	Resources     SchedulerResources
-	ResourceTypes atc.VersionedResourceTypes
+	ResourceTypes types.VersionedResourceTypes
 }
 
 type SchedulerResources []SchedulerResource
@@ -48,7 +49,7 @@ type SchedulerResources []SchedulerResource
 type SchedulerResource struct {
 	Name   string
 	Type   string
-	Source atc.Source
+	Source types.Source
 }
 
 func (resources SchedulerResources) Lookup(name string) (SchedulerResource, bool) {
@@ -127,7 +128,7 @@ func (j *jobFactory) JobsToSchedule() (SchedulerJobs, error) {
 				return nil, err
 			}
 
-			var config atc.ResourceConfig
+			var config types.ResourceConfig
 			err = json.Unmarshal(decryptedConfig, &config)
 			if err != nil {
 				return nil, err
@@ -407,7 +408,7 @@ func (d dashboardFactory) fetchJobInputs() (map[int][]atc.DashboardJobInput, err
 	return jobInputs, nil
 }
 
-func (d dashboardFactory) fetchJobOutputs() (map[int][]atc.JobOutput, error) {
+func (d dashboardFactory) fetchJobOutputs() (map[int][]types.JobOutput, error) {
 	rows, err := psql.Select("o.name", "r.name", "o.job_id").
 		From("job_outputs o").
 		Join("jobs j ON j.id = o.job_id").
@@ -425,9 +426,9 @@ func (d dashboardFactory) fetchJobOutputs() (map[int][]atc.JobOutput, error) {
 		return nil, err
 	}
 
-	jobOutputs := make(map[int][]atc.JobOutput)
+	jobOutputs := make(map[int][]types.JobOutput)
 	for rows.Next() {
-		var output atc.JobOutput
+		var output types.JobOutput
 		var jobID int
 
 		err = rows.Scan(&output.Name, &output.Resource, &jobID)
@@ -441,7 +442,7 @@ func (d dashboardFactory) fetchJobOutputs() (map[int][]atc.JobOutput, error) {
 	return jobOutputs, err
 }
 
-func (d dashboardFactory) combineJobInputsAndOutputsWithDashboardJobs(dashboard atc.Dashboard, jobInputs map[int][]atc.DashboardJobInput, jobOutputs map[int][]atc.JobOutput) atc.Dashboard {
+func (d dashboardFactory) combineJobInputsAndOutputsWithDashboardJobs(dashboard atc.Dashboard, jobInputs map[int][]atc.DashboardJobInput, jobOutputs map[int][]types.JobOutput) atc.Dashboard {
 	var finalDashboard atc.Dashboard
 	for _, job := range dashboard {
 		for _, input := range jobInputs[job.ID] {

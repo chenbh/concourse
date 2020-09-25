@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	concourseCmd "github.com/concourse/concourse/cmd"
 	"github.com/concourse/flag"
 	"github.com/jessevdk/go-flags"
@@ -64,15 +64,15 @@ func (cmd WorkerCommand) LessenRequirements(prefix string, command *flags.Comman
 // The runtime is represented as a Ifrit runner that must include a Garden Server process. The Garden server exposes API
 // endpoints that allow the ATC to make container related requests to the worker.
 // The runner may also include additional processes such as the runtime's daemon or a DNS proxy server.
-func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (atc.Worker, ifrit.Runner, error) {
+func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (types.Worker, ifrit.Runner, error) {
 	err := cmd.checkRoot()
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	err = cmd.verifyRuntimeFlags()
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	worker := cmd.Worker.Worker()
@@ -84,12 +84,12 @@ func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (atc.Worker, i
 
 	worker.ResourceTypes, err = cmd.loadResources(logger.Session("load-resources"))
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	worker.Name, err = cmd.workerName()
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	trySetConcourseDirInPATH()
@@ -108,7 +108,7 @@ func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (atc.Worker, i
 	}
 
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	return worker, runner, nil
@@ -171,8 +171,8 @@ func (cmd *WorkerCommand) dnsProxyRunner(logger lager.Logger) (ifrit.Runner, err
 	}), nil
 }
 
-func (cmd *WorkerCommand) loadResources(logger lager.Logger) ([]atc.WorkerResourceType, error) {
-	var types []atc.WorkerResourceType
+func (cmd *WorkerCommand) loadResources(logger lager.Logger) ([]types.WorkerResourceType, error) {
+	var types []types.WorkerResourceType
 
 	if cmd.ResourceTypes != "" {
 		basePath := cmd.ResourceTypes.Path()
@@ -190,7 +190,7 @@ func (cmd *WorkerCommand) loadResources(logger lager.Logger) ([]atc.WorkerResour
 				return nil, err
 			}
 
-			var t atc.WorkerResourceType
+			var t types.WorkerResourceType
 			err = json.Unmarshal(meta, &t)
 			if err != nil {
 				logger.Error("failed-to-unmarshal-resource-type-metadata", err)

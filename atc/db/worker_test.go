@@ -3,6 +3,7 @@ package db_test
 import (
 	"database/sql"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -16,12 +17,12 @@ import (
 
 var _ = Describe("Worker", func() {
 	var (
-		atcWorker atc.Worker
+		atcWorker types.Worker
 		worker    Worker
 	)
 
 	BeforeEach(func() {
-		atcWorker = atc.Worker{
+		atcWorker = types.Worker{
 			GardenAddr:       "some-garden-addr",
 			BaggageclaimURL:  "some-bc-url",
 			HTTPProxyURL:     "some-http-proxy-url",
@@ -29,7 +30,7 @@ var _ = Describe("Worker", func() {
 			NoProxy:          "some-no-proxy",
 			Ephemeral:        true,
 			ActiveContainers: 140,
-			ResourceTypes: []atc.WorkerResourceType{
+			ResourceTypes: []types.WorkerResourceType{
 				{
 					Type:    "some-resource-type",
 					Image:   "some-image",
@@ -42,7 +43,7 @@ var _ = Describe("Worker", func() {
 				},
 			},
 			Platform:  "some-platform",
-			Tags:      atc.Tags{"some", "tags"},
+			Tags:      types.Tags{"some", "tags"},
 			Name:      "some-name",
 			StartTime: 55912945,
 		}
@@ -152,7 +153,7 @@ var _ = Describe("Worker", func() {
 		Context("when worker exists", func() {
 			DescribeTable("worker in state",
 				func(workerState string, errMatch GomegaMatcher) {
-					worker, err := workerFactory.SaveWorker(atc.Worker{
+					worker, err := workerFactory.SaveWorker(types.Worker{
 						Name:       "worker-to-prune",
 						GardenAddr: "1.2.3.4",
 						State:      workerState,
@@ -171,7 +172,7 @@ var _ = Describe("Worker", func() {
 			Context("when worker is stalled", func() {
 				var pruneErr error
 				BeforeEach(func() {
-					worker, err := workerFactory.SaveWorker(atc.Worker{
+					worker, err := workerFactory.SaveWorker(types.Worker{
 						Name:       "worker-to-prune",
 						GardenAddr: "1.2.3.4",
 						State:      "running",
@@ -237,8 +238,8 @@ var _ = Describe("Worker", func() {
 
 			resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
 				"some-resource-type",
-				atc.Source{"some": "source"},
-				atc.VersionedResourceTypes{},
+				types.Source{"some": "source"},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).ToNot(HaveOccurred())
 

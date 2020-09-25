@@ -2,10 +2,10 @@
 package workerfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/worker"
 )
@@ -22,17 +22,17 @@ type FakeImageFetchingDelegate struct {
 	imageVersionDeterminedReturnsOnCall map[int]struct {
 		result1 error
 	}
-	RedactImageSourceStub        func(atc.Source) (atc.Source, error)
+	RedactImageSourceStub        func(types.Source) (types.Source, error)
 	redactImageSourceMutex       sync.RWMutex
 	redactImageSourceArgsForCall []struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}
 	redactImageSourceReturns struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	redactImageSourceReturnsOnCall map[int]struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	StderrStub        func() io.Writer
@@ -119,11 +119,11 @@ func (fake *FakeImageFetchingDelegate) ImageVersionDeterminedReturnsOnCall(i int
 	}{result1}
 }
 
-func (fake *FakeImageFetchingDelegate) RedactImageSource(arg1 atc.Source) (atc.Source, error) {
+func (fake *FakeImageFetchingDelegate) RedactImageSource(arg1 types.Source) (types.Source, error) {
 	fake.redactImageSourceMutex.Lock()
 	ret, specificReturn := fake.redactImageSourceReturnsOnCall[len(fake.redactImageSourceArgsForCall)]
 	fake.redactImageSourceArgsForCall = append(fake.redactImageSourceArgsForCall, struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}{arg1})
 	fake.recordInvocation("RedactImageSource", []interface{}{arg1})
 	fake.redactImageSourceMutex.Unlock()
@@ -143,41 +143,41 @@ func (fake *FakeImageFetchingDelegate) RedactImageSourceCallCount() int {
 	return len(fake.redactImageSourceArgsForCall)
 }
 
-func (fake *FakeImageFetchingDelegate) RedactImageSourceCalls(stub func(atc.Source) (atc.Source, error)) {
+func (fake *FakeImageFetchingDelegate) RedactImageSourceCalls(stub func(types.Source) (types.Source, error)) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = stub
 }
 
-func (fake *FakeImageFetchingDelegate) RedactImageSourceArgsForCall(i int) atc.Source {
+func (fake *FakeImageFetchingDelegate) RedactImageSourceArgsForCall(i int) types.Source {
 	fake.redactImageSourceMutex.RLock()
 	defer fake.redactImageSourceMutex.RUnlock()
 	argsForCall := fake.redactImageSourceArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeImageFetchingDelegate) RedactImageSourceReturns(result1 atc.Source, result2 error) {
+func (fake *FakeImageFetchingDelegate) RedactImageSourceReturns(result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	fake.redactImageSourceReturns = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImageFetchingDelegate) RedactImageSourceReturnsOnCall(i int, result1 atc.Source, result2 error) {
+func (fake *FakeImageFetchingDelegate) RedactImageSourceReturnsOnCall(i int, result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	if fake.redactImageSourceReturnsOnCall == nil {
 		fake.redactImageSourceReturnsOnCall = make(map[int]struct {
-			result1 atc.Source
+			result1 types.Source
 			result2 error
 		})
 	}
 	fake.redactImageSourceReturnsOnCall[i] = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }

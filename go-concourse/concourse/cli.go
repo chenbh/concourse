@@ -2,11 +2,11 @@ package concourse
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 	"net/url"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 )
 
@@ -15,7 +15,7 @@ func (client *client) GetCLIReader(arch, platform string) (io.ReadCloser, http.H
 	response := internal.Response{Headers: &responseHeaders}
 
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.DownloadCLI,
+		RequestName: types.DownloadCLI,
 		Query: url.Values{
 			"arch":     {arch},
 			"platform": {platform},

@@ -3,10 +3,10 @@ package concourse_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 	"github.com/concourse/concourse/go-concourse/concourse"
 	. "github.com/onsi/ginkgo"
@@ -20,14 +20,14 @@ var _ = Describe("ATC Handler Events", func() {
 		buildID := "3"
 
 		var streaming chan struct{}
-		var eventsChan chan atc.Event
+		var eventsChan chan types.Event
 
 		BeforeEach(func() {
 			streaming = make(chan struct{})
 
-			eventsChan = make(chan atc.Event, 2)
-			eventsChan <- event.Status{Status: atc.StatusStarted}
-			eventsChan <- event.Status{Status: atc.StatusSucceeded}
+			eventsChan = make(chan types.Event, 2)
+			eventsChan <- event.Status{Status: types.StatusStarted}
+			eventsChan <- event.Status{Status: types.StatusSucceeded}
 			close(eventsChan)
 		})
 
@@ -89,13 +89,13 @@ var _ = Describe("ATC Handler Events", func() {
 				next, err := stream.NextEvent()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(next).To(Equal(event.Status{
-					Status: atc.StatusStarted,
+					Status: types.StatusStarted,
 				}))
 
 				next, err = stream.NextEvent()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(next).To(Equal(event.Status{
-					Status: atc.StatusSucceeded,
+					Status: types.StatusSucceeded,
 				}))
 
 				_, err = stream.NextEvent()

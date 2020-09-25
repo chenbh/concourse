@@ -1,10 +1,10 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -17,13 +17,13 @@ import (
 
 var _ = Describe("Fly CLI", func() {
 	Describe("get-team", func() {
-		var team atc.Team
+		var team types.Team
 
 		BeforeEach(func() {
-			team = atc.Team{
+			team = types.Team{
 				ID:   1,
 				Name: "myTeam",
-				Auth: atc.TeamAuth{
+				Auth: types.TeamAuth{
 					"owner": map[string][]string{
 						"groups": {}, "users": {"local:username"},
 					},
@@ -48,7 +48,7 @@ var _ = Describe("Fly CLI", func() {
 			var path string
 			BeforeEach(func() {
 				var err error
-				path, err = atc.Routes.CreatePathForRoute(atc.GetTeam, rata.Params{"team_name": "myTeam"})
+				path, err = types.Routes.CreatePathForRoute(types.GetTeam, rata.Params{"team_name": "myTeam"})
 				Expect(err).NotTo(HaveOccurred())
 			})
 

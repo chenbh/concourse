@@ -3,11 +3,11 @@ package api_test
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/testhelpers"
@@ -80,14 +80,14 @@ var _ = Describe("Versions API", func() {
 					fakePipeline.PublicReturns(true)
 					fakePipeline.ResourceReturns(fakeResource, true, nil)
 
-					returnedVersions := []atc.ResourceVersion{
+					returnedVersions := []types.ResourceVersion{
 						{
 							ID:      4,
 							Enabled: true,
-							Version: atc.Version{
+							Version: types.Version{
 								"some": "version",
 							},
-							Metadata: []atc.MetadataField{
+							Metadata: []types.MetadataField{
 								{
 									Name:  "some",
 									Value: "metadata",
@@ -97,10 +97,10 @@ var _ = Describe("Versions API", func() {
 						{
 							ID:      2,
 							Enabled: false,
-							Version: atc.Version{
+							Version: types.Version{
 								"some": "version",
 							},
-							Metadata: []atc.MetadataField{
+							Metadata: []types.MetadataField{
 								{
 									Name:  "some",
 									Value: "metadata",
@@ -231,7 +231,7 @@ var _ = Describe("Versions API", func() {
 						Expect(page).To(Equal(db.Page{
 							Limit: 100,
 						}))
-						Expect(versionFilter).To(Equal(atc.Version{}))
+						Expect(versionFilter).To(Equal(types.Version{}))
 					})
 				})
 
@@ -249,7 +249,7 @@ var _ = Describe("Versions API", func() {
 							To:    db.NewIntPtr(7),
 							Limit: 8,
 						}))
-						Expect(versionFilter).To(Equal(atc.Version{
+						Expect(versionFilter).To(Equal(types.Version{
 							"ref":      "foo",
 							"some-ref": "blah",
 						}))
@@ -266,7 +266,7 @@ var _ = Describe("Versions API", func() {
 							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
 
 							_, versionFilter := fakeResource.VersionsArgsForCall(0)
-							Expect(versionFilter).To(Equal(atc.Version{
+							Expect(versionFilter).To(Equal(types.Version{
 								"some ref": "some value",
 							}))
 						})
@@ -281,7 +281,7 @@ var _ = Describe("Versions API", func() {
 							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
 
 							_, versionFilter := fakeResource.VersionsArgsForCall(0)
-							Expect(versionFilter).To(Equal(atc.Version{
+							Expect(versionFilter).To(Equal(types.Version{
 								"ref": "some%value",
 							}))
 						})
@@ -296,7 +296,7 @@ var _ = Describe("Versions API", func() {
 							Expect(fakeResource.VersionsCallCount()).To(Equal(1))
 
 							_, versionFilter := fakeResource.VersionsArgsForCall(0)
-							Expect(versionFilter).To(Equal(atc.Version{
+							Expect(versionFilter).To(Equal(types.Version{
 								"key": "with:colon:abcdef",
 							}))
 						})
@@ -317,19 +317,19 @@ var _ = Describe("Versions API", func() {
 				})
 
 				Context("when getting the versions succeeds", func() {
-					var returnedVersions []atc.ResourceVersion
+					var returnedVersions []types.ResourceVersion
 
 					BeforeEach(func() {
 						queryParams = "?since=5&limit=2"
-						returnedVersions = []atc.ResourceVersion{
+						returnedVersions = []types.ResourceVersion{
 							{
 								ID:      4,
 								Enabled: true,
-								Version: atc.Version{
+								Version: types.Version{
 									"some": "version",
 									"ref":  "foo",
 								},
-								Metadata: []atc.MetadataField{
+								Metadata: []types.MetadataField{
 									{
 										Name:  "some",
 										Value: "metadata",
@@ -339,11 +339,11 @@ var _ = Describe("Versions API", func() {
 							{
 								ID:      2,
 								Enabled: false,
-								Version: atc.Version{
+								Version: types.Version{
 									"some": "version",
 									"ref":  "blah",
 								},
-								Metadata: []atc.MetadataField{
+								Metadata: []types.MetadataField{
 									{
 										Name:  "some",
 										Value: "metadata",

@@ -3,10 +3,10 @@ package workerserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/metric"
@@ -14,7 +14,7 @@ import (
 
 func (s *Server) HeartbeatWorker(w http.ResponseWriter, r *http.Request) {
 	var (
-		registration atc.Worker
+		registration types.Worker
 		ttl          time.Duration
 		err          error
 	)

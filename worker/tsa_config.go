@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/tsa"
 	"github.com/concourse/flag"
 )
@@ -12,7 +12,7 @@ type TSAConfig struct {
 	WorkerPrivateKey *flag.PrivateKey    `long:"worker-private-key" required:"true" description:"File containing the private key to use when authenticating to the TSA."`
 }
 
-func (config TSAConfig) Client(worker atc.Worker) *tsa.Client {
+func (config TSAConfig) Client(worker types.Worker) *tsa.Client {
 	return &tsa.Client{
 		Hosts:      config.Hosts,
 		HostKeys:   config.PublicKey.Keys,

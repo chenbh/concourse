@@ -3,10 +3,10 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 )
 
 const (
@@ -21,18 +21,18 @@ type StartingEventDelegate interface {
 }
 
 type VersionResult struct {
-	Version  atc.Version         `json:"version"`
-	Metadata []atc.MetadataField `json:"metadata,omitempty"`
+	Version  types.Version         `json:"version"`
+	Metadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
 type PutRequest struct {
-	Source atc.Source `json:"source"`
-	Params atc.Params `json:"params,omitempty"`
+	Source types.Source `json:"source"`
+	Params types.Params `json:"params,omitempty"`
 }
 
 type GetRequest struct {
-	Source atc.Source `json:"source"`
-	Params atc.Params `json:"params,omitempty"`
+	Source types.Source `json:"source"`
+	Params types.Params `json:"params,omitempty"`
 }
 
 //go:generate counterfeiter . Artifact

@@ -4,33 +4,33 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
 type PruneWorkerError struct {
-	atc.PruneWorkerResponseBody
+	types.PruneWorkerResponseBody
 }
 
 func (e PruneWorkerError) Error() string {
 	return e.Stderr
 }
 
-func (client *client) ListWorkers() ([]atc.Worker, error) {
-	var workers []atc.Worker
+func (client *client) ListWorkers() ([]types.Worker, error) {
+	var workers []types.Worker
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListWorkers,
+		RequestName: types.ListWorkers,
 	}, &internal.Response{
 		Result: &workers,
 	})
 	return workers, err
 }
 
-func (client *client) SaveWorker(worker atc.Worker, ttl *time.Duration) (*atc.Worker, error) {
+func (client *client) SaveWorker(worker types.Worker, ttl *time.Duration) (*types.Worker, error) {
 	buffer := &bytes.Buffer{}
 	err := json.NewEncoder(buffer).Encode(worker)
 	if err != nil {
@@ -42,9 +42,9 @@ func (client *client) SaveWorker(worker atc.Worker, ttl *time.Duration) (*atc.Wo
 		params["ttl"] = ttl.String()
 	}
 
-	var savedWorker *atc.Worker
+	var savedWorker *types.Worker
 	err = client.connection.Send(internal.Request{
-		RequestName: atc.RegisterWorker,
+		RequestName: types.RegisterWorker,
 		Body:        buffer,
 		Params:      params,
 	}, &internal.Response{
@@ -57,7 +57,7 @@ func (client *client) SaveWorker(worker atc.Worker, ttl *time.Duration) (*atc.Wo
 func (client *client) PruneWorker(workerName string) error {
 	params := rata.Params{"worker_name": workerName}
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.PruneWorker,
+		RequestName: types.PruneWorker,
 		Params:      params,
 		Header: http.Header{
 			"Content-Type": {"application/json"},
@@ -83,7 +83,7 @@ func (client *client) PruneWorker(workerName string) error {
 func (client *client) LandWorker(workerName string) error {
 	params := rata.Params{"worker_name": workerName}
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.LandWorker,
+		RequestName: types.LandWorker,
 		Params:      params,
 		Header: http.Header{
 			"Content-Type": {"application/json"},

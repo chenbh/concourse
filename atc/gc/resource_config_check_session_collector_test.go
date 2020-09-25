@@ -2,10 +2,10 @@ package gc_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -45,19 +45,19 @@ var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 			Expect(found).To(BeTrue())
 
 			resourceConfigScope, err = resource.SetResourceConfig(
-				atc.Source{
+				types.Source{
 					"some": "source",
 				},
-				atc.VersionedResourceTypes{})
+				types.VersionedResourceTypes{})
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceConfig := resourceConfigScope.ResourceConfig()
 			owner = db.NewResourceConfigCheckSessionContainerOwner(resourceConfig.ID(), resourceConfig.OriginBaseResourceType().ID, ownerExpiries)
 
 			workerFactory := db.NewWorkerFactory(dbConn)
-			defaultWorkerPayload := atc.Worker{
-				ResourceTypes: []atc.WorkerResourceType{
-					atc.WorkerResourceType{
+			defaultWorkerPayload := types.Worker{
+				ResourceTypes: []types.WorkerResourceType{
+					types.WorkerResourceType{
 						Type:    "some-base-type",
 						Image:   "/path/to/image",
 						Version: "some-brt-version",
@@ -115,8 +115,8 @@ var _ = Describe("ResourceConfigCheckSessionCollector", func() {
 
 		Context("when the resource is unactive", func() {
 			BeforeEach(func() {
-				atcConfig := atc.Config{
-					Jobs: atc.JobConfigs{
+				atcConfig := types.Config{
+					Jobs: types.JobConfigs{
 						{
 							Name: "some-job",
 						},

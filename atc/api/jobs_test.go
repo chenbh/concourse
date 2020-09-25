@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -19,7 +20,7 @@ import (
 
 var _ = Describe("Jobs API", func() {
 	var fakeJob *dbfakes.FakeJob
-	var versionedResourceTypes atc.VersionedResourceTypes
+	var versionedResourceTypes types.VersionedResourceTypes
 	var fakePipeline *dbfakes.FakePipeline
 
 	BeforeEach(func() {
@@ -28,30 +29,30 @@ var _ = Describe("Jobs API", func() {
 		dbTeamFactory.FindTeamReturns(dbTeam, true, nil)
 		dbTeam.PipelineReturns(fakePipeline, true, nil)
 
-		versionedResourceTypes = atc.VersionedResourceTypes{
-			atc.VersionedResourceType{
-				ResourceType: atc.ResourceType{
+		versionedResourceTypes = types.VersionedResourceTypes{
+			types.VersionedResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "some-resource-1",
 					Type:   "some-base-type-1",
-					Source: atc.Source{"some": "source-1"},
+					Source: types.Source{"some": "source-1"},
 				},
-				Version: atc.Version{"some": "version-1"},
+				Version: types.Version{"some": "version-1"},
 			},
-			atc.VersionedResourceType{
-				ResourceType: atc.ResourceType{
+			types.VersionedResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "some-resource-2",
 					Type:   "some-base-type-2",
-					Source: atc.Source{"some": "source-2"},
+					Source: types.Source{"some": "source-2"},
 				},
-				Version: atc.Version{"some": "version-2"},
+				Version: types.Version{"some": "version-2"},
 			},
-			atc.VersionedResourceType{
-				ResourceType: atc.ResourceType{
+			types.VersionedResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "some-resource-3",
 					Type:   "some-base-type-3",
-					Source: atc.Source{"some": "source-3"},
+					Source: types.Source{"some": "source-3"},
 				},
-				Version: atc.Version{"some": "version-3"},
+				Version: types.Version{"some": "version-3"},
 			},
 		}
 
@@ -373,7 +374,7 @@ var _ = Describe("Jobs API", func() {
 
 					Context("when getting the inputs succeeds", func() {
 						BeforeEach(func() {
-							fakeJob.InputsReturns([]atc.JobInput{
+							fakeJob.InputsReturns([]types.JobInput{
 								{
 									Name:     "some-input",
 									Resource: "some-input",
@@ -403,7 +404,7 @@ var _ = Describe("Jobs API", func() {
 
 						Context("when getting the outputs succeeds", func() {
 							BeforeEach(func() {
-								fakeJob.OutputsReturns([]atc.JobOutput{
+								fakeJob.OutputsReturns([]types.JobOutput{
 									{
 										Name:     "some-output",
 										Resource: "some-output",
@@ -495,7 +496,7 @@ var _ = Describe("Jobs API", func() {
 								})
 
 								It("returns null as their entries", func() {
-									var job atc.Job
+									var job types.Job
 									err := json.NewDecoder(response.Body).Decode(&job)
 									Expect(err).NotTo(HaveOccurred())
 
@@ -1522,7 +1523,7 @@ var _ = Describe("Jobs API", func() {
 							BeforeEach(func() {
 								fakeResource = new(dbfakes.FakeResource)
 								fakeResource.NameReturns("some-input")
-								fakeResource.CurrentPinnedVersionReturns(atc.Version{"some": "version"})
+								fakeResource.CurrentPinnedVersionReturns(types.Version{"some": "version"})
 
 								fakePipeline.ResourcesReturns([]db.Resource{fakeResource}, nil)
 							})
@@ -1563,7 +1564,7 @@ var _ = Describe("Jobs API", func() {
 
 								Context("when the job inputs are successfully fetched", func() {
 									BeforeEach(func() {
-										fakeJob.InputsReturns([]atc.JobInput{
+										fakeJob.InputsReturns([]types.JobInput{
 											{
 												Name:     "some-input",
 												Resource: "some-input",
@@ -1588,7 +1589,7 @@ var _ = Describe("Jobs API", func() {
 
 									It("runs the check from the current pinned version", func() {
 										_, _, _, fromVersion, _ := dbCheckFactory.TryCreateCheckArgsForCall(0)
-										Expect(fromVersion).To(Equal(atc.Version{"some": "version"}))
+										Expect(fromVersion).To(Equal(types.Version{"some": "version"}))
 									})
 
 									It("notifies the checker to run", func() {
@@ -1701,13 +1702,13 @@ var _ = Describe("Jobs API", func() {
 							resource1.IDReturns(1)
 							resource1.NameReturns("some-resource")
 							resource1.TypeReturns("some-type")
-							resource1.SourceReturns(atc.Source{"some": "source"})
+							resource1.SourceReturns(types.Source{"some": "source"})
 
 							resource2 := new(dbfakes.FakeResource)
 							resource1.IDReturns(2)
 							resource2.NameReturns("some-other-resource")
 							resource2.TypeReturns("some-other-type")
-							resource2.SourceReturns(atc.Source{"some": "other-source"})
+							resource2.SourceReturns(types.Source{"some": "other-source"})
 
 							fakePipeline.ResourcesReturns([]db.Resource{resource1, resource2}, nil)
 						})
@@ -1737,12 +1738,12 @@ var _ = Describe("Jobs API", func() {
 								inputs := []db.BuildInput{
 									{
 										Name:       "some-input",
-										Version:    atc.Version{"some": "version"},
+										Version:    types.Version{"some": "version"},
 										ResourceID: 1,
 									},
 									{
 										Name:       "some-other-input",
-										Version:    atc.Version{"some": "other-version"},
+										Version:    types.Version{"some": "other-version"},
 										ResourceID: 2,
 									},
 								}
@@ -1756,7 +1757,7 @@ var _ = Describe("Jobs API", func() {
 
 							Context("when it fails to fetch the job config", func() {
 								BeforeEach(func() {
-									fakeJob.ConfigReturns(atc.JobConfig{}, errors.New("nope"))
+									fakeJob.ConfigReturns(types.JobConfig{}, errors.New("nope"))
 								})
 
 								It("returns a 500", func() {
@@ -1766,23 +1767,23 @@ var _ = Describe("Jobs API", func() {
 
 							Context("when the job inputs are successfully fetched", func() {
 								BeforeEach(func() {
-									fakeJob.ConfigReturns(atc.JobConfig{
+									fakeJob.ConfigReturns(types.JobConfig{
 										Name: "some-job",
-										PlanSequence: []atc.Step{
+										PlanSequence: []types.Step{
 											{
-												Config: &atc.GetStep{
+												Config: &types.GetStep{
 													Name:     "some-input",
 													Resource: "some-resource",
 													Passed:   []string{"job-a", "job-b"},
-													Params:   atc.Params{"some": "params"},
+													Params:   types.Params{"some": "params"},
 												},
 											},
 											{
-												Config: &atc.GetStep{
+												Config: &types.GetStep{
 													Name:     "some-other-input",
 													Resource: "some-other-resource",
 													Passed:   []string{"job-c", "job-d"},
-													Params:   atc.Params{"some": "other-params"},
+													Params:   types.Params{"some": "other-params"},
 													Tags:     []string{"some-tag"},
 												},
 											},
@@ -2397,7 +2398,7 @@ var _ = Describe("Jobs API", func() {
 				Context("when a cachePath is passed", func() {
 					BeforeEach(func() {
 						query := request.URL.Query()
-						query.Add(atc.ClearTaskCacheQueryPath, "cache-path")
+						query.Add(types.ClearTaskCacheQueryPath, "cache-path")
 						request.URL.RawQuery = query.Encode()
 					})
 
@@ -2565,7 +2566,7 @@ var _ = Describe("Jobs API", func() {
 	})
 })
 
-func fakeDBResourceType(t atc.VersionedResourceType) *dbfakes.FakeResourceType {
+func fakeDBResourceType(t types.VersionedResourceType) *dbfakes.FakeResourceType {
 	fake := new(dbfakes.FakeResourceType)
 	fake.NameReturns(t.Name)
 	fake.TypeReturns(t.Type)

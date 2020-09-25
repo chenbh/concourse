@@ -2,13 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -167,14 +167,14 @@ func (command *WorkersCommand) tableFor(workers []worker) ui.Table {
 	return table
 }
 
-type byWorkerName []atc.Worker
+type byWorkerName []types.Worker
 
 func (ws byWorkerName) Len() int               { return len(ws) }
 func (ws byWorkerName) Swap(i int, j int)      { ws[i], ws[j] = ws[j], ws[i] }
 func (ws byWorkerName) Less(i int, j int) bool { return ws[i].Name < ws[j].Name }
 
 type worker struct {
-	atc.Worker
+	types.Worker
 
 	outdated bool
 }

@@ -2,19 +2,19 @@
 package resourcefakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/resource"
 )
 
 type FakeResourceFactory struct {
-	NewResourceStub        func(atc.Source, atc.Params, atc.Version) resource.Resource
+	NewResourceStub        func(types.Source, types.Params, types.Version) resource.Resource
 	newResourceMutex       sync.RWMutex
 	newResourceArgsForCall []struct {
-		arg1 atc.Source
-		arg2 atc.Params
-		arg3 atc.Version
+		arg1 types.Source
+		arg2 types.Params
+		arg3 types.Version
 	}
 	newResourceReturns struct {
 		result1 resource.Resource
@@ -26,13 +26,13 @@ type FakeResourceFactory struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeResourceFactory) NewResource(arg1 atc.Source, arg2 atc.Params, arg3 atc.Version) resource.Resource {
+func (fake *FakeResourceFactory) NewResource(arg1 types.Source, arg2 types.Params, arg3 types.Version) resource.Resource {
 	fake.newResourceMutex.Lock()
 	ret, specificReturn := fake.newResourceReturnsOnCall[len(fake.newResourceArgsForCall)]
 	fake.newResourceArgsForCall = append(fake.newResourceArgsForCall, struct {
-		arg1 atc.Source
-		arg2 atc.Params
-		arg3 atc.Version
+		arg1 types.Source
+		arg2 types.Params
+		arg3 types.Version
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("NewResource", []interface{}{arg1, arg2, arg3})
 	fake.newResourceMutex.Unlock()
@@ -52,13 +52,13 @@ func (fake *FakeResourceFactory) NewResourceCallCount() int {
 	return len(fake.newResourceArgsForCall)
 }
 
-func (fake *FakeResourceFactory) NewResourceCalls(stub func(atc.Source, atc.Params, atc.Version) resource.Resource) {
+func (fake *FakeResourceFactory) NewResourceCalls(stub func(types.Source, types.Params, types.Version) resource.Resource) {
 	fake.newResourceMutex.Lock()
 	defer fake.newResourceMutex.Unlock()
 	fake.NewResourceStub = stub
 }
 
-func (fake *FakeResourceFactory) NewResourceArgsForCall(i int) (atc.Source, atc.Params, atc.Version) {
+func (fake *FakeResourceFactory) NewResourceArgsForCall(i int) (types.Source, types.Params, types.Version) {
 	fake.newResourceMutex.RLock()
 	defer fake.newResourceMutex.RUnlock()
 	argsForCall := fake.newResourceArgsForCall[i]

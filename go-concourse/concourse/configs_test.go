@@ -1,12 +1,12 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
@@ -20,13 +20,13 @@ var _ = Describe("ATC Handler Configs", func() {
 
 		Context("ATC returns the correct response when it exists", func() {
 			var (
-				expectedConfig  atc.Config
+				expectedConfig  types.Config
 				expectedVersion string
 			)
 
 			BeforeEach(func() {
-				expectedConfig = atc.Config{
-					Groups: atc.GroupConfigs{
+				expectedConfig = types.Config{
+					Groups: types.GroupConfigs{
 						{
 							Name:      "some-group",
 							Jobs:      []string{"job-1", "job-2"},
@@ -39,25 +39,25 @@ var _ = Describe("ATC Handler Configs", func() {
 						},
 					},
 
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"source-config": "some-value",
 							},
 						},
 						{
 							Name: "some-other-resource",
 							Type: "some-other-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"source-config": "some-value",
 								"FOO":           "((BAR))",
 							},
 						},
 					},
 
-					Jobs: atc.JobConfigs{
+					Jobs: types.JobConfigs{
 						{
 							Name:   "some-job",
 							Public: true,
@@ -71,14 +71,14 @@ var _ = Describe("ATC Handler Configs", func() {
 
 				expectedVersion = "42"
 
-				configResponse := atc.ConfigResponse{
+				configResponse := types.ConfigResponse{
 					Config: expectedConfig,
 				}
 
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", expectedURL),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, configResponse, http.Header{atc.ConfigVersionHeader: {expectedVersion}}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, configResponse, http.Header{types.ConfigVersionHeader: {expectedVersion}}),
 					),
 				)
 			})
@@ -130,7 +130,7 @@ var _ = Describe("ATC Handler Configs", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", expectedURL),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ConfigResponse{Config: atc.Config{}}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.ConfigResponse{Config: types.Config{}}),
 					),
 				)
 			})
@@ -165,7 +165,7 @@ var _ = Describe("ATC Handler Configs", func() {
 
 			atcServer.RouteToHandler("PUT", expectedPath,
 				ghttp.CombineHandlers(
-					ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+					ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 					func(w http.ResponseWriter, r *http.Request) {
 						defer r.Body.Close()
 						bodyConfig, err := ioutil.ReadAll(r.Body)

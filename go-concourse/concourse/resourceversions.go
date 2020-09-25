@@ -4,22 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) ResourceVersions(pipelineName string, resourceName string, page Page, filter atc.Version) ([]atc.ResourceVersion, Pagination, bool, error) {
+func (team *team) ResourceVersions(pipelineName string, resourceName string, page Page, filter types.Version) ([]types.ResourceVersion, Pagination, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"resource_name": resourceName,
 		"team_name":     team.name,
 	}
 
-	var resourceVersions []atc.ResourceVersion
+	var resourceVersions []types.ResourceVersion
 	headers := http.Header{}
 
 	queryParams := page.QueryParams()
@@ -28,7 +28,7 @@ func (team *team) ResourceVersions(pipelineName string, resourceName string, pag
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListResourceVersions,
+		RequestName: types.ListResourceVersions,
 		Params:      params,
 		Query:       queryParams,
 	}, &internal.Response{
@@ -51,15 +51,15 @@ func (team *team) ResourceVersions(pipelineName string, resourceName string, pag
 }
 
 func (team *team) DisableResourceVersion(pipelineName string, resourceName string, resourceVersionID int) (bool, error) {
-	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, atc.DisableResourceVersion)
+	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, types.DisableResourceVersion)
 }
 
 func (team *team) EnableResourceVersion(pipelineName string, resourceName string, resourceVersionID int) (bool, error) {
-	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, atc.EnableResourceVersion)
+	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, types.EnableResourceVersion)
 }
 
 func (team *team) PinResourceVersion(pipelineName string, resourceName string, resourceVersionID int) (bool, error) {
-	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, atc.PinResourceVersion)
+	return team.sendResourceVersion(pipelineName, resourceName, resourceVersionID, types.PinResourceVersion)
 }
 
 func (team *team) UnpinResource(pipelineName string, resourceName string) (bool, error) {
@@ -70,7 +70,7 @@ func (team *team) UnpinResource(pipelineName string, resourceName string) (bool,
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.UnpinResource,
+		RequestName: types.UnpinResource,
 		Params:      params,
 	}, nil)
 
@@ -91,7 +91,7 @@ func (team *team) SetPinComment(pipelineName string, resourceName string, commen
 		"team_name":     team.name,
 	}
 
-	pinComment := atc.SetPinCommentRequestBody{
+	pinComment := types.SetPinCommentRequestBody{
 		PinComment: comment,
 	}
 
@@ -102,7 +102,7 @@ func (team *team) SetPinComment(pipelineName string, resourceName string, commen
 	}
 
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.SetPinCommentOnResource,
+		RequestName: types.SetPinCommentOnResource,
 		Header: http.Header{
 			"Content-Type": {"application/json"},
 		},

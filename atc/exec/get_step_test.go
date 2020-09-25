@@ -3,6 +3,7 @@ package exec_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
@@ -45,7 +46,7 @@ var _ = Describe("GetStep", func() {
 
 		getPlan *atc.GetPlan
 
-		interpolatedResourceTypes atc.VersionedResourceTypes
+		interpolatedResourceTypes types.VersionedResourceTypes
 
 		artifactRepository *build.Repository
 		fakeState          *execfakes.FakeRunState
@@ -102,35 +103,35 @@ var _ = Describe("GetStep", func() {
 		fakeDelegate.StdoutReturns(stdoutBuf)
 		fakeDelegate.StderrReturns(stderrBuf)
 
-		uninterpolatedResourceTypes := atc.VersionedResourceTypes{
+		uninterpolatedResourceTypes := types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "((source-param))"},
+					Source: types.Source{"some-custom": "((source-param))"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
-		interpolatedResourceTypes = atc.VersionedResourceTypes{
+		interpolatedResourceTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "super-secret-source"},
+					Source: types.Source{"some-custom": "super-secret-source"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
 		getPlan = &atc.GetPlan{
 			Name:                   "some-name",
 			Type:                   "some-resource-type",
-			Source:                 atc.Source{"some": "((source-param))"},
-			Params:                 atc.Params{"some-param": "some-value"},
+			Source:                 types.Source{"some": "((source-param))"},
+			Params:                 types.Params{"some-param": "some-value"},
 			Tags:                   []string{"some", "tags"},
-			Version:                &atc.Version{"some-version": "some-value"},
+			Version:                &types.Version{"some-version": "some-value"},
 			VersionedResourceTypes: uninterpolatedResourceTypes,
 		}
 	})
@@ -195,7 +196,7 @@ var _ = Describe("GetStep", func() {
 		Expect(actualWorkerSpec).To(Equal(
 			worker.WorkerSpec{
 				ResourceType:  "some-resource-type",
-				Tags:          atc.Tags{"some", "tags"},
+				Tags:          types.Tags{"some", "tags"},
 				TeamID:        stepMetadata.TeamID,
 				ResourceTypes: interpolatedResourceTypes,
 			},
@@ -301,8 +302,8 @@ var _ = Describe("GetStep", func() {
 				worker.GetResult{
 					ExitStatus: 0,
 					VersionResult: runtime.VersionResult{
-						Version:  atc.Version{"some": "version"},
-						Metadata: []atc.MetadataField{{Name: "some", Value: "metadata"}},
+						Version:  types.Version{"some": "version"},
+						Metadata: []types.MetadataField{{Name: "some", Value: "metadata"}},
 					},
 					GetArtifact: runtime.GetArtifact{VolumeHandle: "some-volume-handle"},
 				}, nil)
@@ -322,8 +323,8 @@ var _ = Describe("GetStep", func() {
 			Expect(fakeDelegate.FinishedCallCount()).To(Equal(1))
 			_, status, info := fakeDelegate.FinishedArgsForCall(0)
 			Expect(status).To(Equal(exec.ExitStatus(0)))
-			Expect(info.Version).To(Equal(atc.Version{"some": "version"}))
-			Expect(info.Metadata).To(Equal([]atc.MetadataField{{Name: "some", Value: "metadata"}}))
+			Expect(info.Version).To(Equal(types.Version{"some": "version"}))
+			Expect(info.Metadata).To(Equal([]types.MetadataField{{Name: "some", Value: "metadata"}}))
 		})
 
 		Context("when the plan has a resource", func() {
@@ -335,8 +336,8 @@ var _ = Describe("GetStep", func() {
 				Expect(fakeDelegate.UpdateVersionCallCount()).To(Equal(1))
 				_, actualPlan, actualVersionResult := fakeDelegate.UpdateVersionArgsForCall(0)
 				Expect(actualPlan.Resource).To(Equal("some-pipeline-resource"))
-				Expect(actualVersionResult.Version).To(Equal(atc.Version{"some": "version"}))
-				Expect(actualVersionResult.Metadata).To(Equal([]atc.MetadataField{{Name: "some", Value: "metadata"}}))
+				Expect(actualVersionResult.Version).To(Equal(types.Version{"some": "version"}))
+				Expect(actualVersionResult.Metadata).To(Equal([]types.MetadataField{{Name: "some", Value: "metadata"}}))
 			})
 		})
 

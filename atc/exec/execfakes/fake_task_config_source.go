@@ -3,16 +3,16 @@ package execfakes
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/exec"
 	"github.com/concourse/concourse/atc/exec/build"
 )
 
 type FakeTaskConfigSource struct {
-	FetchConfigStub        func(context.Context, lager.Logger, *build.Repository) (atc.TaskConfig, error)
+	FetchConfigStub        func(context.Context, lager.Logger, *build.Repository) (types.TaskConfig, error)
 	fetchConfigMutex       sync.RWMutex
 	fetchConfigArgsForCall []struct {
 		arg1 context.Context
@@ -20,11 +20,11 @@ type FakeTaskConfigSource struct {
 		arg3 *build.Repository
 	}
 	fetchConfigReturns struct {
-		result1 atc.TaskConfig
+		result1 types.TaskConfig
 		result2 error
 	}
 	fetchConfigReturnsOnCall map[int]struct {
-		result1 atc.TaskConfig
+		result1 types.TaskConfig
 		result2 error
 	}
 	WarningsStub        func() []string
@@ -41,7 +41,7 @@ type FakeTaskConfigSource struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskConfigSource) FetchConfig(arg1 context.Context, arg2 lager.Logger, arg3 *build.Repository) (atc.TaskConfig, error) {
+func (fake *FakeTaskConfigSource) FetchConfig(arg1 context.Context, arg2 lager.Logger, arg3 *build.Repository) (types.TaskConfig, error) {
 	fake.fetchConfigMutex.Lock()
 	ret, specificReturn := fake.fetchConfigReturnsOnCall[len(fake.fetchConfigArgsForCall)]
 	fake.fetchConfigArgsForCall = append(fake.fetchConfigArgsForCall, struct {
@@ -67,7 +67,7 @@ func (fake *FakeTaskConfigSource) FetchConfigCallCount() int {
 	return len(fake.fetchConfigArgsForCall)
 }
 
-func (fake *FakeTaskConfigSource) FetchConfigCalls(stub func(context.Context, lager.Logger, *build.Repository) (atc.TaskConfig, error)) {
+func (fake *FakeTaskConfigSource) FetchConfigCalls(stub func(context.Context, lager.Logger, *build.Repository) (types.TaskConfig, error)) {
 	fake.fetchConfigMutex.Lock()
 	defer fake.fetchConfigMutex.Unlock()
 	fake.FetchConfigStub = stub
@@ -80,28 +80,28 @@ func (fake *FakeTaskConfigSource) FetchConfigArgsForCall(i int) (context.Context
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeTaskConfigSource) FetchConfigReturns(result1 atc.TaskConfig, result2 error) {
+func (fake *FakeTaskConfigSource) FetchConfigReturns(result1 types.TaskConfig, result2 error) {
 	fake.fetchConfigMutex.Lock()
 	defer fake.fetchConfigMutex.Unlock()
 	fake.FetchConfigStub = nil
 	fake.fetchConfigReturns = struct {
-		result1 atc.TaskConfig
+		result1 types.TaskConfig
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskConfigSource) FetchConfigReturnsOnCall(i int, result1 atc.TaskConfig, result2 error) {
+func (fake *FakeTaskConfigSource) FetchConfigReturnsOnCall(i int, result1 types.TaskConfig, result2 error) {
 	fake.fetchConfigMutex.Lock()
 	defer fake.fetchConfigMutex.Unlock()
 	fake.FetchConfigStub = nil
 	if fake.fetchConfigReturnsOnCall == nil {
 		fake.fetchConfigReturnsOnCall = make(map[int]struct {
-			result1 atc.TaskConfig
+			result1 types.TaskConfig
 			result2 error
 		})
 	}
 	fake.fetchConfigReturnsOnCall[i] = struct {
-		result1 atc.TaskConfig
+		result1 types.TaskConfig
 		result2 error
 	}{result1, result2}
 }

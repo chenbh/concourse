@@ -2,10 +2,10 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -30,15 +30,15 @@ type FakeCheckable struct {
 	checkTimeoutReturnsOnCall map[int]struct {
 		result1 string
 	}
-	CurrentPinnedVersionStub        func() atc.Version
+	CurrentPinnedVersionStub        func() types.Version
 	currentPinnedVersionMutex       sync.RWMutex
 	currentPinnedVersionArgsForCall []struct {
 	}
 	currentPinnedVersionReturns struct {
-		result1 atc.Version
+		result1 types.Version
 	}
 	currentPinnedVersionReturnsOnCall map[int]struct {
-		result1 atc.Version
+		result1 types.Version
 	}
 	HasWebhookStub        func() bool
 	hasWebhookMutex       sync.RWMutex
@@ -125,11 +125,11 @@ type FakeCheckable struct {
 	setCheckSetupErrorReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SetResourceConfigStub        func(atc.Source, atc.VersionedResourceTypes) (db.ResourceConfigScope, error)
+	SetResourceConfigStub        func(types.Source, types.VersionedResourceTypes) (db.ResourceConfigScope, error)
 	setResourceConfigMutex       sync.RWMutex
 	setResourceConfigArgsForCall []struct {
-		arg1 atc.Source
-		arg2 atc.VersionedResourceTypes
+		arg1 types.Source
+		arg2 types.VersionedResourceTypes
 	}
 	setResourceConfigReturns struct {
 		result1 db.ResourceConfigScope
@@ -139,25 +139,25 @@ type FakeCheckable struct {
 		result1 db.ResourceConfigScope
 		result2 error
 	}
-	SourceStub        func() atc.Source
+	SourceStub        func() types.Source
 	sourceMutex       sync.RWMutex
 	sourceArgsForCall []struct {
 	}
 	sourceReturns struct {
-		result1 atc.Source
+		result1 types.Source
 	}
 	sourceReturnsOnCall map[int]struct {
-		result1 atc.Source
+		result1 types.Source
 	}
-	TagsStub        func() atc.Tags
+	TagsStub        func() types.Tags
 	tagsMutex       sync.RWMutex
 	tagsArgsForCall []struct {
 	}
 	tagsReturns struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}
 	tagsReturnsOnCall map[int]struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}
 	TeamIDStub        func() int
 	teamIDMutex       sync.RWMutex
@@ -297,7 +297,7 @@ func (fake *FakeCheckable) CheckTimeoutReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
-func (fake *FakeCheckable) CurrentPinnedVersion() atc.Version {
+func (fake *FakeCheckable) CurrentPinnedVersion() types.Version {
 	fake.currentPinnedVersionMutex.Lock()
 	ret, specificReturn := fake.currentPinnedVersionReturnsOnCall[len(fake.currentPinnedVersionArgsForCall)]
 	fake.currentPinnedVersionArgsForCall = append(fake.currentPinnedVersionArgsForCall, struct {
@@ -320,32 +320,32 @@ func (fake *FakeCheckable) CurrentPinnedVersionCallCount() int {
 	return len(fake.currentPinnedVersionArgsForCall)
 }
 
-func (fake *FakeCheckable) CurrentPinnedVersionCalls(stub func() atc.Version) {
+func (fake *FakeCheckable) CurrentPinnedVersionCalls(stub func() types.Version) {
 	fake.currentPinnedVersionMutex.Lock()
 	defer fake.currentPinnedVersionMutex.Unlock()
 	fake.CurrentPinnedVersionStub = stub
 }
 
-func (fake *FakeCheckable) CurrentPinnedVersionReturns(result1 atc.Version) {
+func (fake *FakeCheckable) CurrentPinnedVersionReturns(result1 types.Version) {
 	fake.currentPinnedVersionMutex.Lock()
 	defer fake.currentPinnedVersionMutex.Unlock()
 	fake.CurrentPinnedVersionStub = nil
 	fake.currentPinnedVersionReturns = struct {
-		result1 atc.Version
+		result1 types.Version
 	}{result1}
 }
 
-func (fake *FakeCheckable) CurrentPinnedVersionReturnsOnCall(i int, result1 atc.Version) {
+func (fake *FakeCheckable) CurrentPinnedVersionReturnsOnCall(i int, result1 types.Version) {
 	fake.currentPinnedVersionMutex.Lock()
 	defer fake.currentPinnedVersionMutex.Unlock()
 	fake.CurrentPinnedVersionStub = nil
 	if fake.currentPinnedVersionReturnsOnCall == nil {
 		fake.currentPinnedVersionReturnsOnCall = make(map[int]struct {
-			result1 atc.Version
+			result1 types.Version
 		})
 	}
 	fake.currentPinnedVersionReturnsOnCall[i] = struct {
-		result1 atc.Version
+		result1 types.Version
 	}{result1}
 }
 
@@ -779,12 +779,12 @@ func (fake *FakeCheckable) SetCheckSetupErrorReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeCheckable) SetResourceConfig(arg1 atc.Source, arg2 atc.VersionedResourceTypes) (db.ResourceConfigScope, error) {
+func (fake *FakeCheckable) SetResourceConfig(arg1 types.Source, arg2 types.VersionedResourceTypes) (db.ResourceConfigScope, error) {
 	fake.setResourceConfigMutex.Lock()
 	ret, specificReturn := fake.setResourceConfigReturnsOnCall[len(fake.setResourceConfigArgsForCall)]
 	fake.setResourceConfigArgsForCall = append(fake.setResourceConfigArgsForCall, struct {
-		arg1 atc.Source
-		arg2 atc.VersionedResourceTypes
+		arg1 types.Source
+		arg2 types.VersionedResourceTypes
 	}{arg1, arg2})
 	fake.recordInvocation("SetResourceConfig", []interface{}{arg1, arg2})
 	fake.setResourceConfigMutex.Unlock()
@@ -804,13 +804,13 @@ func (fake *FakeCheckable) SetResourceConfigCallCount() int {
 	return len(fake.setResourceConfigArgsForCall)
 }
 
-func (fake *FakeCheckable) SetResourceConfigCalls(stub func(atc.Source, atc.VersionedResourceTypes) (db.ResourceConfigScope, error)) {
+func (fake *FakeCheckable) SetResourceConfigCalls(stub func(types.Source, types.VersionedResourceTypes) (db.ResourceConfigScope, error)) {
 	fake.setResourceConfigMutex.Lock()
 	defer fake.setResourceConfigMutex.Unlock()
 	fake.SetResourceConfigStub = stub
 }
 
-func (fake *FakeCheckable) SetResourceConfigArgsForCall(i int) (atc.Source, atc.VersionedResourceTypes) {
+func (fake *FakeCheckable) SetResourceConfigArgsForCall(i int) (types.Source, types.VersionedResourceTypes) {
 	fake.setResourceConfigMutex.RLock()
 	defer fake.setResourceConfigMutex.RUnlock()
 	argsForCall := fake.setResourceConfigArgsForCall[i]
@@ -843,7 +843,7 @@ func (fake *FakeCheckable) SetResourceConfigReturnsOnCall(i int, result1 db.Reso
 	}{result1, result2}
 }
 
-func (fake *FakeCheckable) Source() atc.Source {
+func (fake *FakeCheckable) Source() types.Source {
 	fake.sourceMutex.Lock()
 	ret, specificReturn := fake.sourceReturnsOnCall[len(fake.sourceArgsForCall)]
 	fake.sourceArgsForCall = append(fake.sourceArgsForCall, struct {
@@ -866,36 +866,36 @@ func (fake *FakeCheckable) SourceCallCount() int {
 	return len(fake.sourceArgsForCall)
 }
 
-func (fake *FakeCheckable) SourceCalls(stub func() atc.Source) {
+func (fake *FakeCheckable) SourceCalls(stub func() types.Source) {
 	fake.sourceMutex.Lock()
 	defer fake.sourceMutex.Unlock()
 	fake.SourceStub = stub
 }
 
-func (fake *FakeCheckable) SourceReturns(result1 atc.Source) {
+func (fake *FakeCheckable) SourceReturns(result1 types.Source) {
 	fake.sourceMutex.Lock()
 	defer fake.sourceMutex.Unlock()
 	fake.SourceStub = nil
 	fake.sourceReturns = struct {
-		result1 atc.Source
+		result1 types.Source
 	}{result1}
 }
 
-func (fake *FakeCheckable) SourceReturnsOnCall(i int, result1 atc.Source) {
+func (fake *FakeCheckable) SourceReturnsOnCall(i int, result1 types.Source) {
 	fake.sourceMutex.Lock()
 	defer fake.sourceMutex.Unlock()
 	fake.SourceStub = nil
 	if fake.sourceReturnsOnCall == nil {
 		fake.sourceReturnsOnCall = make(map[int]struct {
-			result1 atc.Source
+			result1 types.Source
 		})
 	}
 	fake.sourceReturnsOnCall[i] = struct {
-		result1 atc.Source
+		result1 types.Source
 	}{result1}
 }
 
-func (fake *FakeCheckable) Tags() atc.Tags {
+func (fake *FakeCheckable) Tags() types.Tags {
 	fake.tagsMutex.Lock()
 	ret, specificReturn := fake.tagsReturnsOnCall[len(fake.tagsArgsForCall)]
 	fake.tagsArgsForCall = append(fake.tagsArgsForCall, struct {
@@ -918,32 +918,32 @@ func (fake *FakeCheckable) TagsCallCount() int {
 	return len(fake.tagsArgsForCall)
 }
 
-func (fake *FakeCheckable) TagsCalls(stub func() atc.Tags) {
+func (fake *FakeCheckable) TagsCalls(stub func() types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = stub
 }
 
-func (fake *FakeCheckable) TagsReturns(result1 atc.Tags) {
+func (fake *FakeCheckable) TagsReturns(result1 types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = nil
 	fake.tagsReturns = struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}{result1}
 }
 
-func (fake *FakeCheckable) TagsReturnsOnCall(i int, result1 atc.Tags) {
+func (fake *FakeCheckable) TagsReturnsOnCall(i int, result1 types.Tags) {
 	fake.tagsMutex.Lock()
 	defer fake.tagsMutex.Unlock()
 	fake.TagsStub = nil
 	if fake.tagsReturnsOnCall == nil {
 		fake.tagsReturnsOnCall = make(map[int]struct {
-			result1 atc.Tags
+			result1 types.Tags
 		})
 	}
 	fake.tagsReturnsOnCall[i] = struct {
-		result1 atc.Tags
+		result1 types.Tags
 	}{result1}
 }
 

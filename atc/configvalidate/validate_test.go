@@ -2,6 +2,7 @@ package configvalidate_test
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
 	"github.com/concourse/concourse/atc"
@@ -16,14 +17,14 @@ import (
 
 var _ = Describe("ValidateConfig", func() {
 	var (
-		config        atc.Config
-		warnings      []atc.ConfigWarning
+		config        types.Config
+		warnings      []types.ConfigWarning
 		errorMessages []string
 	)
 
 	BeforeEach(func() {
-		config = atc.Config{
-			Groups: atc.GroupConfigs{
+		config = types.Config{
+			Groups: types.GroupConfigs{
 				{
 					Name:      "some-group",
 					Jobs:      []string{"some-job"},
@@ -35,66 +36,66 @@ var _ = Describe("ValidateConfig", func() {
 				},
 			},
 
-			VarSources: atc.VarSourceConfigs{},
+			VarSources: types.VarSourceConfigs{},
 
-			Resources: atc.ResourceConfigs{
+			Resources: types.ResourceConfigs{
 				{
 					Name: "some-resource",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				},
 			},
 
-			ResourceTypes: atc.ResourceTypes{
+			ResourceTypes: types.ResourceTypes{
 				{
 					Name: "some-resource-type",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				},
 			},
 
-			Jobs: atc.JobConfigs{
+			Jobs: types.JobConfigs{
 				{
 					Name:   "some-job",
 					Public: true,
 					Serial: true,
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 							},
 						},
 						{
-							Config: &atc.LoadVarStep{
+							Config: &types.LoadVarStep{
 								Name: "some-var",
 								File: "some-input/some-file.json",
 							},
 						},
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-task",
 								Privileged: true,
 								ConfigPath: "some/config/path.yml",
 							},
 						},
 						{
-							Config: &atc.PutStep{
+							Config: &types.PutStep{
 								Name: "some-resource",
-								Params: atc.Params{
+								Params: types.Params{
 									"some-param": "some-value",
 								},
 							},
 						},
 						{
-							Config: &atc.SetPipelineStep{
+							Config: &types.SetPipelineStep{
 								Name: "some-pipeline",
 								File: "some-file",
 							},
@@ -124,7 +125,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a group has an invalid identifier", func() {
 			BeforeEach(func() {
-				config.Groups = append(config.Groups, atc.GroupConfig{
+				config.Groups = append(config.Groups, types.GroupConfig{
 					Name: "_some-group",
 					Jobs: []string{"some-job"},
 				})
@@ -138,10 +139,10 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource has an invalid identifier", func() {
 			BeforeEach(func() {
-				config.Resources = append(config.Resources, atc.ResourceConfig{
+				config.Resources = append(config.Resources, types.ResourceConfig{
 					Name: "some_resource",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				})
@@ -155,10 +156,10 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource type has an invalid identifier", func() {
 			BeforeEach(func() {
-				config.ResourceTypes = append(config.ResourceTypes, atc.ResourceType{
+				config.ResourceTypes = append(config.ResourceTypes, types.ResourceType{
 					Name: "_some-resource-type",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				})
@@ -172,7 +173,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a var source has an invalid identifier", func() {
 			BeforeEach(func() {
-				config.VarSources = append(config.VarSources, atc.VarSourceConfig{
+				config.VarSources = append(config.VarSources, types.VarSourceConfig{
 					Name:   "_some-var-source",
 					Type:   "dummy",
 					Config: "",
@@ -187,7 +188,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job has an invalid identifier", func() {
 			BeforeEach(func() {
-				config.Jobs = append(config.Jobs, atc.JobConfig{
+				config.Jobs = append(config.Jobs, types.JobConfig{
 					Name: "_some-job",
 				})
 			})
@@ -199,31 +200,31 @@ var _ = Describe("ValidateConfig", func() {
 		})
 
 		Context("when a step has an invalid identifier", func() {
-			var job atc.JobConfig
+			var job types.JobConfig
 
 			BeforeEach(func() {
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name: "_get-step",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.TaskStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.TaskStep{
 						Name: "_task-step",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.PutStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.PutStep{
 						Name: "_put-step",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.SetPipelineStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.SetPipelineStep{
 						Name: "_set-pipeline-step",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.LoadVarStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.LoadVarStep{
 						Name: "_load-var-step",
 					},
 				})
@@ -245,7 +246,7 @@ var _ = Describe("ValidateConfig", func() {
 	Describe("invalid groups", func() {
 		Context("when the groups reference a bogus resource", func() {
 			BeforeEach(func() {
-				config.Groups = append(config.Groups, atc.GroupConfig{
+				config.Groups = append(config.Groups, types.GroupConfig{
 					Name:      "bogus",
 					Resources: []string{"bogus-resource"},
 				})
@@ -260,7 +261,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the groups reference a bogus job", func() {
 			BeforeEach(func() {
-				config.Groups = append(config.Groups, atc.GroupConfig{
+				config.Groups = append(config.Groups, types.GroupConfig{
 					Name: "bogus",
 					Jobs: []string{"bogus-job"},
 				})
@@ -275,10 +276,10 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when there are jobs excluded from groups", func() {
 			BeforeEach(func() {
-				config.Jobs = append(config.Jobs, atc.JobConfig{
+				config.Jobs = append(config.Jobs, types.JobConfig{
 					Name: "stand-alone-job",
 				})
-				config.Jobs = append(config.Jobs, atc.JobConfig{
+				config.Jobs = append(config.Jobs, types.JobConfig{
 					Name: "other-stand-alone-job",
 				})
 			})
@@ -294,7 +295,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the groups have two duplicate names", func() {
 			BeforeEach(func() {
-				config.Groups = append(config.Groups, atc.GroupConfig{
+				config.Groups = append(config.Groups, types.GroupConfig{
 					Name: "some-group",
 				})
 			})
@@ -308,11 +309,11 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the groups have four duplicate names", func() {
 			BeforeEach(func() {
-				config.Groups = append(config.Groups, atc.GroupConfig{
+				config.Groups = append(config.Groups, types.GroupConfig{
 					Name: "some-group",
-				}, atc.GroupConfig{
+				}, types.GroupConfig{
 					Name: "some-group",
-				}, atc.GroupConfig{
+				}, types.GroupConfig{
 					Name: "some-group",
 				})
 			})
@@ -331,7 +332,7 @@ var _ = Describe("ValidateConfig", func() {
 	Describe("invalid var sources", func() {
 		Context("when a var source type is invalid", func() {
 			BeforeEach(func() {
-				config.VarSources = append(config.VarSources, atc.VarSourceConfig{
+				config.VarSources = append(config.VarSources, types.VarSourceConfig{
 					Name:   "some",
 					Type:   "some",
 					Config: "",
@@ -346,7 +347,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when config is invalid", func() {
 			BeforeEach(func() {
-				config.VarSources = append(config.VarSources, atc.VarSourceConfig{
+				config.VarSources = append(config.VarSources, types.VarSourceConfig{
 					Name:   "some",
 					Type:   "dummy",
 					Config: "",
@@ -362,14 +363,14 @@ var _ = Describe("ValidateConfig", func() {
 		Context("when duplicate var source names", func() {
 			BeforeEach(func() {
 				config.VarSources = append(config.VarSources,
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "some",
 						Type: "dummy",
 						Config: map[string]interface{}{
 							"vars": map[string]interface{}{"k2": "v2"},
 						},
 					},
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "some",
 						Type: "dummy",
 						Config: map[string]interface{}{
@@ -388,21 +389,21 @@ var _ = Describe("ValidateConfig", func() {
 		Context("when var source's dependency cannot be resolved", func() {
 			BeforeEach(func() {
 				config.VarSources = append(config.VarSources,
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s1",
 						Type: "dummy",
 						Config: map[string]interface{}{
 							"vars": map[string]interface{}{"k": "v"},
 						},
 					},
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s2",
 						Type: "dummy",
 						Config: map[string]interface{}{
 							"vars": map[string]interface{}{"k": "((s1:k))"},
 						},
 					},
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s3",
 						Type: "dummy",
 						Config: map[string]interface{}{
@@ -421,21 +422,21 @@ var _ = Describe("ValidateConfig", func() {
 		Context("when var source names are circular", func() {
 			BeforeEach(func() {
 				config.VarSources = append(config.VarSources,
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s1",
 						Type: "dummy",
 						Config: map[string]interface{}{
 							"vars": map[string]interface{}{"k": "((s3:v))"},
 						},
 					},
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s2",
 						Type: "dummy",
 						Config: map[string]interface{}{
 							"vars": map[string]interface{}{"k": "((s1:k))"},
 						},
 					},
-					atc.VarSourceConfig{
+					types.VarSourceConfig{
 						Name: "s3",
 						Type: "dummy",
 						Config: map[string]interface{}{
@@ -455,7 +456,7 @@ var _ = Describe("ValidateConfig", func() {
 	Describe("invalid resources", func() {
 		Context("when a resource has no name", func() {
 			BeforeEach(func() {
-				config.Resources = append(config.Resources, atc.ResourceConfig{
+				config.Resources = append(config.Resources, types.ResourceConfig{
 					Name: "",
 				})
 			})
@@ -469,7 +470,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource has no type", func() {
 			BeforeEach(func() {
-				config.Resources = append(config.Resources, atc.ResourceConfig{
+				config.Resources = append(config.Resources, types.ResourceConfig{
 					Name: "bogus-resource",
 					Type: "",
 				})
@@ -484,7 +485,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource has no name or type", func() {
 			BeforeEach(func() {
-				config.Resources = append(config.Resources, atc.ResourceConfig{
+				config.Resources = append(config.Resources, types.ResourceConfig{
 					Name: "",
 					Type: "",
 				})
@@ -515,8 +516,8 @@ var _ = Describe("ValidateConfig", func() {
 
 	Describe("unused resources", func() {
 		BeforeEach(func() {
-			config = atc.Config{
-				Resources: atc.ResourceConfigs{
+			config = types.Config{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "unused-resource",
 						Type: "some-type",
@@ -583,37 +584,37 @@ var _ = Describe("ValidateConfig", func() {
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "get",
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "get-alias",
 									Resource: "resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "put",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name:     "put-alias",
 									Resource: "resource",
 								},
 							},
 							{
-								Config: &atc.DoStep{
-									Steps: []atc.Step{
+								Config: &types.DoStep{
+									Steps: []types.Step{
 										{
-											Config: &atc.GetStep{
+											Config: &types.GetStep{
 												Name: "do",
 											},
 										},
@@ -621,10 +622,10 @@ var _ = Describe("ValidateConfig", func() {
 								},
 							},
 							{
-								Config: &atc.AggregateStep{
-									Steps: []atc.Step{
+								Config: &types.AggregateStep{
+									Steps: []types.Step{
 										{
-											Config: &atc.GetStep{
+											Config: &types.GetStep{
 												Name: "aggregate",
 											},
 										},
@@ -632,11 +633,11 @@ var _ = Describe("ValidateConfig", func() {
 								},
 							},
 							{
-								Config: &atc.InParallelStep{
-									Config: atc.InParallelConfig{
-										Steps: []atc.Step{
+								Config: &types.InParallelStep{
+									Config: types.InParallelConfig{
+										Steps: []types.Step{
 											{
-												Config: &atc.GetStep{
+												Config: &types.GetStep{
 													Name: "parallel",
 												},
 											},
@@ -647,81 +648,81 @@ var _ = Describe("ValidateConfig", func() {
 								},
 							},
 							{
-								Config: &atc.OnAbortStep{
-									Step: &atc.TaskStep{
+								Config: &types.OnAbortStep{
+									Step: &types.TaskStep{
 										Name:       "some-task",
 										ConfigPath: "some/config/path.yml",
 									},
-									Hook: atc.Step{
-										Config: &atc.GetStep{
+									Hook: types.Step{
+										Config: &types.GetStep{
 											Name: "abort",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.OnErrorStep{
-									Step: &atc.TaskStep{
+								Config: &types.OnErrorStep{
+									Step: &types.TaskStep{
 										Name:       "some-task",
 										ConfigPath: "some/config/path.yml",
 									},
-									Hook: atc.Step{
-										Config: &atc.GetStep{
+									Hook: types.Step{
+										Config: &types.GetStep{
 											Name: "error",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.OnFailureStep{
-									Step: &atc.TaskStep{
+								Config: &types.OnFailureStep{
+									Step: &types.TaskStep{
 										Name:       "some-task",
 										ConfigPath: "some/config/path.yml",
 									},
-									Hook: atc.Step{
-										Config: &atc.GetStep{
+									Hook: types.Step{
+										Config: &types.GetStep{
 											Name: "failure",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.OnSuccessStep{
-									Step: &atc.TaskStep{
+								Config: &types.OnSuccessStep{
+									Step: &types.TaskStep{
 										Name:       "some-task",
 										ConfigPath: "some/config/path.yml",
 									},
-									Hook: atc.Step{
-										Config: &atc.GetStep{
+									Hook: types.Step{
+										Config: &types.GetStep{
 											Name: "success",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.EnsureStep{
-									Step: &atc.TaskStep{
+								Config: &types.EnsureStep{
+									Step: &types.TaskStep{
 										Name:       "some-task",
 										ConfigPath: "some/config/path.yml",
 									},
-									Hook: atc.Step{
-										Config: &atc.GetStep{
+									Hook: types.Step{
+										Config: &types.GetStep{
 											Name: "ensure",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.TryStep{
-									Step: atc.Step{
-										Config: &atc.GetStep{
+								Config: &types.TryStep{
+									Step: types.Step{
+										Config: &types.GetStep{
 											Name: "try",
 										},
 									},
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									ConfigPath: "some/config/path.yml",
 								},
@@ -730,14 +731,14 @@ var _ = Describe("ValidateConfig", func() {
 					},
 					{
 						Name: "another-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "another-job",
 								},
 							},
 							{
-								Config: &atc.TaskStep{
+								Config: &types.TaskStep{
 									Name:       "some-task",
 									ConfigPath: "some/config/path.yml",
 								},
@@ -761,7 +762,7 @@ var _ = Describe("ValidateConfig", func() {
 	Describe("invalid resource types", func() {
 		Context("when a resource type has no name", func() {
 			BeforeEach(func() {
-				config.ResourceTypes = append(config.ResourceTypes, atc.ResourceType{
+				config.ResourceTypes = append(config.ResourceTypes, types.ResourceType{
 					Name: "",
 				})
 			})
@@ -775,7 +776,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource has no type", func() {
 			BeforeEach(func() {
-				config.ResourceTypes = append(config.ResourceTypes, atc.ResourceType{
+				config.ResourceTypes = append(config.ResourceTypes, types.ResourceType{
 					Name: "bogus-resource-type",
 					Type: "",
 				})
@@ -790,7 +791,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a resource has no name or type", func() {
 			BeforeEach(func() {
-				config.ResourceTypes = append(config.ResourceTypes, atc.ResourceType{
+				config.ResourceTypes = append(config.ResourceTypes, types.ResourceType{
 					Name: "",
 					Type: "",
 				})
@@ -818,13 +819,13 @@ var _ = Describe("ValidateConfig", func() {
 	})
 
 	Describe("validating a job", func() {
-		var job atc.JobConfig
+		var job types.JobConfig
 
 		BeforeEach(func() {
-			job = atc.JobConfig{
+			job = types.JobConfig{
 				Name: "some-other-job",
 			}
-			config.Groups = []atc.GroupConfig{}
+			config.Groups = []types.GroupConfig{}
 		})
 
 		Context("when a job has no name", func() {
@@ -855,18 +856,18 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job has duplicate inputs", func() {
 			BeforeEach(func() {
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name: "some-resource",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name: "some-resource",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name: "some-resource",
 					},
 				})
@@ -884,20 +885,20 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job has duplicate inputs with different resources", func() {
 			BeforeEach(func() {
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name:     "some-resource",
 						Resource: "a",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name:     "some-resource",
 						Resource: "b",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name:     "some-resource",
 						Resource: "c",
 					},
@@ -916,14 +917,14 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job gets the same resource multiple times but with different names", func() {
 			BeforeEach(func() {
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name:     "a",
 						Resource: "some-resource",
 					},
 				})
-				job.PlanSequence = append(job.PlanSequence, atc.Step{
-					Config: &atc.GetStep{
+				job.PlanSequence = append(job.PlanSequence, types.Step{
+					Config: &types.GetStep{
 						Name:     "b",
 						Resource: "some-resource",
 					},
@@ -940,8 +941,8 @@ var _ = Describe("ValidateConfig", func() {
 		Describe("plans", func() {
 			Context("when a task plan has neither a config or a path set", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TaskStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TaskStep{
 							Name: "lol",
 						},
 					})
@@ -958,12 +959,12 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a task plan has config path and config specified", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TaskStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TaskStep{
 							Name:       "lol",
 							ConfigPath: "task.yml",
-							Config: &atc.TaskConfig{
-								Params: atc.TaskEnv{
+							Config: &types.TaskConfig{
+								Params: types.TaskEnv{
 									"param1": "value1",
 								},
 							},
@@ -982,11 +983,11 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a task plan is invalid", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TaskStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TaskStep{
 							Name: "some-resource",
-							Config: &atc.TaskConfig{
-								Params: atc.TaskEnv{
+							Config: &types.TaskConfig{
+								Params: types.TaskEnv{
 									"param1": "value1",
 								},
 							},
@@ -1006,8 +1007,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a put plan has refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.PutStep{
 							Name: "some-resource",
 						},
 					})
@@ -1022,8 +1023,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan has refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					})
@@ -1040,8 +1041,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a put plan has refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.PutStep{
 							Name: "some-nonexistent-resource",
 						},
 					})
@@ -1058,8 +1059,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan has a custom name but refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:     "custom-name",
 							Resource: "some-resource",
 						},
@@ -1075,8 +1076,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan has a custom name but refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:     "custom-name",
 							Resource: "some-missing-resource",
 						},
@@ -1094,8 +1095,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a put plan has a custom name but refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.PutStep{
 							Name:     "custom-name",
 							Resource: "some-resource",
 						},
@@ -1111,8 +1112,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a put plan has a custom name but refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.PutStep{
 							Name:     "custom-name",
 							Resource: "some-missing-resource",
 						},
@@ -1129,8 +1130,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job success hook refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.OnSuccess = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnSuccess = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-resource",
 						},
 					}
@@ -1145,8 +1146,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job success hook refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.OnSuccess = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnSuccess = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					}
@@ -1163,8 +1164,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job failure hook refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.OnFailure = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnFailure = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-resource",
 						},
 					}
@@ -1179,8 +1180,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job failure hook refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.OnFailure = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnFailure = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					}
@@ -1197,8 +1198,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job error hook refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.OnError = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnError = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-resource",
 						},
 					}
@@ -1213,8 +1214,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job ensure hook refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.OnError = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnError = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					}
@@ -1231,8 +1232,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job abort hook refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.OnAbort = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnAbort = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-resource",
 						},
 					}
@@ -1247,8 +1248,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job abort hook refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.OnAbort = &atc.Step{
-						Config: &atc.GetStep{
+					job.OnAbort = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					}
@@ -1265,8 +1266,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job ensure hook refers to a resource that does exist", func() {
 				BeforeEach(func() {
-					job.Ensure = &atc.Step{
-						Config: &atc.GetStep{
+					job.Ensure = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-resource",
 						},
 					}
@@ -1281,8 +1282,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job ensure hook refers to a resource that does not exist", func() {
 				BeforeEach(func() {
-					job.Ensure = &atc.Step{
-						Config: &atc.GetStep{
+					job.Ensure = &types.Step{
+						Config: &types.GetStep{
 							Name: "some-nonexistent-resource",
 						},
 					}
@@ -1299,33 +1300,33 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan refers to a 'put' resource that exists in another job's hook", func() {
 				var (
-					job1 atc.JobConfig
-					job2 atc.JobConfig
+					job1 types.JobConfig
+					job2 types.JobConfig
 				)
 				BeforeEach(func() {
-					job1 = atc.JobConfig{
+					job1 = types.JobConfig{
 						Name: "job-one",
 					}
-					job2 = atc.JobConfig{
+					job2 = types.JobConfig{
 						Name: "job-two",
 					}
 
-					job1.PlanSequence = append(job1.PlanSequence, atc.Step{
-						Config: &atc.OnSuccessStep{
-							Step: &atc.TaskStep{
+					job1.PlanSequence = append(job1.PlanSequence, types.Step{
+						Config: &types.OnSuccessStep{
+							Step: &types.TaskStep{
 								Name:       "job-one",
 								ConfigPath: "job-one-config-path",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
 						},
 					})
 
-					job2.PlanSequence = append(job2.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job2.PlanSequence = append(job2.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"job-one"},
 						},
@@ -1340,33 +1341,33 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan refers to a 'get' resource that exists in another job's hook", func() {
 				var (
-					job1 atc.JobConfig
-					job2 atc.JobConfig
+					job1 types.JobConfig
+					job2 types.JobConfig
 				)
 				BeforeEach(func() {
-					job1 = atc.JobConfig{
+					job1 = types.JobConfig{
 						Name: "job-one",
 					}
-					job2 = atc.JobConfig{
+					job2 = types.JobConfig{
 						Name: "job-two",
 					}
 
-					job1.PlanSequence = append(job1.PlanSequence, atc.Step{
-						Config: &atc.OnSuccessStep{
-							Step: &atc.TaskStep{
+					job1.PlanSequence = append(job1.PlanSequence, types.Step{
+						Config: &types.OnSuccessStep{
+							Step: &types.TaskStep{
 								Name:       "job-one",
 								ConfigPath: "job-one-config-path",
 							},
-							Hook: atc.Step{
-								Config: &atc.GetStep{
+							Hook: types.Step{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 						},
 					})
 
-					job2.PlanSequence = append(job2.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job2.PlanSequence = append(job2.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"job-one"},
 						},
@@ -1381,29 +1382,29 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan refers to a 'put' resource that exists in another job's try-step", func() {
 				var (
-					job1 atc.JobConfig
-					job2 atc.JobConfig
+					job1 types.JobConfig
+					job2 types.JobConfig
 				)
 				BeforeEach(func() {
-					job1 = atc.JobConfig{
+					job1 = types.JobConfig{
 						Name: "job-one",
 					}
-					job2 = atc.JobConfig{
+					job2 = types.JobConfig{
 						Name: "job-two",
 					}
 
-					job1.PlanSequence = append(job1.PlanSequence, atc.Step{
-						Config: &atc.TryStep{
-							Step: atc.Step{
-								Config: &atc.PutStep{
+					job1.PlanSequence = append(job1.PlanSequence, types.Step{
+						Config: &types.TryStep{
+							Step: types.Step{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
 						},
 					})
 
-					job2.PlanSequence = append(job2.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job2.PlanSequence = append(job2.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"job-one"},
 						},
@@ -1419,29 +1420,29 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a get plan refers to a 'get' resource that exists in another job's try-step", func() {
 				var (
-					job1 atc.JobConfig
-					job2 atc.JobConfig
+					job1 types.JobConfig
+					job2 types.JobConfig
 				)
 				BeforeEach(func() {
-					job1 = atc.JobConfig{
+					job1 = types.JobConfig{
 						Name: "job-one",
 					}
-					job2 = atc.JobConfig{
+					job2 = types.JobConfig{
 						Name: "job-two",
 					}
 
-					job1.PlanSequence = append(job1.PlanSequence, atc.Step{
-						Config: &atc.TryStep{
-							Step: atc.Step{
-								Config: &atc.GetStep{
+					job1.PlanSequence = append(job1.PlanSequence, types.Step{
+						Config: &types.TryStep{
+							Step: types.Step{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 						},
 					})
 
-					job2.PlanSequence = append(job2.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job2.PlanSequence = append(job2.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"job-one"},
 						},
@@ -1457,13 +1458,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within an abort", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.OnAbortStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.OnAbortStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1482,13 +1483,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within an error", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.OnErrorStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.OnErrorStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1507,13 +1508,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within an ensure", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.EnsureStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.EnsureStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1532,13 +1533,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within a success", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.OnSuccessStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.OnSuccessStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1557,13 +1558,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within a failure", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.OnFailureStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.OnFailureStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
-							Hook: atc.Step{
-								Config: &atc.PutStep{
+							Hook: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1582,10 +1583,10 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid step within a try", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TryStep{
-							Step: atc.Step{
-								Config: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TryStep{
+							Step: types.Step{
+								Config: &types.PutStep{
 									Name:     "custom-name",
 									Resource: "some-missing-resource",
 								},
@@ -1604,9 +1605,9 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a plan has an invalid timeout in a step", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TimeoutStep{
-							Step: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TimeoutStep{
+							Step: &types.GetStep{
 								Name: "some-resource",
 							},
 							Duration: "nope",
@@ -1624,9 +1625,9 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a retry plan has a negative attempts number", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.RetryStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.RetryStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
 							Attempts: 0,
@@ -1644,8 +1645,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a set_pipeline step has no file configured", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.SetPipelineStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.SetPipelineStep{
 							Name: "other-pipeline",
 						},
 					})
@@ -1661,8 +1662,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job's input's passed constraints reference a bogus job", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "lol",
 							Passed: []string{"bogus-job"},
 						},
@@ -1679,15 +1680,15 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job's input's passed constraints references a valid job that has the resource as an output", func() {
 				BeforeEach(func() {
-					config.Jobs[0].PlanSequence = append(config.Jobs[0].PlanSequence, atc.Step{
-						Config: &atc.PutStep{
+					config.Jobs[0].PlanSequence = append(config.Jobs[0].PlanSequence, types.Step{
+						Config: &types.PutStep{
 							Name:     "custom-name",
 							Resource: "some-resource",
 						},
 					})
 
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"some-job"},
 						},
@@ -1703,8 +1704,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job's input's passed constraints references a valid job that has the resource as an input", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"some-job"},
 						},
@@ -1720,8 +1721,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job's input's passed constraints references a valid job that has the resource (with a custom name) as an input", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:     "custom-name",
 							Resource: "some-resource",
 							Passed:   []string{"some-job"},
@@ -1738,8 +1739,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a job's input's passed constraints references a valid job that does not have the resource as an input or output", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.GetStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.GetStep{
 							Name:   "some-resource",
 							Passed: []string{"some-empty-job"},
 						},
@@ -1756,8 +1757,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a load_var has not defined 'File'", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.LoadVarStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.LoadVarStep{
 							Name: "a-var",
 						},
 					})
@@ -1773,13 +1774,13 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when two load_var steps have same name", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.LoadVarStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.LoadVarStep{
 							Name: "a-var",
 							File: "file1",
 						},
-					}, atc.Step{
-						Config: &atc.LoadVarStep{
+					}, types.Step{
+						Config: &types.LoadVarStep{
 							Name: "a-var",
 							File: "file1",
 						},
@@ -1796,8 +1797,8 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when a step has unknown fields", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.TaskStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.TaskStep{
 							Name:       "task",
 							ConfigPath: "some-file",
 						},
@@ -1815,24 +1816,24 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when an across step is valid", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.AcrossStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.AcrossStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
-							Vars: []atc.AcrossVarConfig{
+							Vars: []types.AcrossVarConfig{
 								{
 									Var:    "var1",
 									Values: []interface{}{"v1", "v2"},
 								},
 								{
 									Var:         "var2",
-									MaxInFlight: &atc.MaxInFlightConfig{Limit: 2},
+									MaxInFlight: &types.MaxInFlightConfig{Limit: 2},
 									Values:      []interface{}{"v1", "v2"},
 								},
 								{
 									Var:         "var3",
-									MaxInFlight: &atc.MaxInFlightConfig{All: true},
+									MaxInFlight: &types.MaxInFlightConfig{All: true},
 									Values:      []interface{}{"v1", "v2"},
 								},
 							},
@@ -1849,12 +1850,12 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when an across step has no vars", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.AcrossStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.AcrossStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
-							Vars: []atc.AcrossVarConfig{},
+							Vars: []types.AcrossVarConfig{},
 						},
 					})
 
@@ -1869,12 +1870,12 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when an across step repeats a var name", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.AcrossStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.AcrossStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
-							Vars: []atc.AcrossVarConfig{
+							Vars: []types.AcrossVarConfig{
 								{
 									Var: "var1",
 								},
@@ -1897,16 +1898,16 @@ var _ = Describe("ValidateConfig", func() {
 			Context("when an across step shadows a var name from a parent scope", func() {
 				BeforeEach(func() {
 					job.PlanSequence = append(job.PlanSequence,
-						atc.Step{Config: &atc.LoadVarStep{
+						types.Step{Config: &types.LoadVarStep{
 							Name: "var1",
 							File: "unused",
 						}},
-						atc.Step{
-							Config: &atc.AcrossStep{
-								Step: &atc.PutStep{
+						types.Step{
+							Config: &types.AcrossStep{
+								Step: &types.PutStep{
 									Name: "some-resource",
 								},
-								Vars: []atc.AcrossVarConfig{
+								Vars: []types.AcrossVarConfig{
 									{
 										Var: "var1",
 									},
@@ -1927,17 +1928,17 @@ var _ = Describe("ValidateConfig", func() {
 			Context("when a substep of the across step shadows a var name from a parent scope", func() {
 				BeforeEach(func() {
 					job.PlanSequence = append(job.PlanSequence,
-						atc.Step{Config: &atc.LoadVarStep{
+						types.Step{Config: &types.LoadVarStep{
 							Name: "a",
 							File: "unused",
 						}},
-						atc.Step{
-							Config: &atc.AcrossStep{
-								Step: &atc.LoadVarStep{
+						types.Step{
+							Config: &types.AcrossStep{
+								Step: &types.LoadVarStep{
 									Name: "a",
 									File: "unused",
 								},
-								Vars: []atc.AcrossVarConfig{
+								Vars: []types.AcrossVarConfig{
 									{
 										Var: "b",
 									},
@@ -1957,15 +1958,15 @@ var _ = Describe("ValidateConfig", func() {
 
 			Context("when an across step has a non-positive limit", func() {
 				BeforeEach(func() {
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.AcrossStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.AcrossStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
-							Vars: []atc.AcrossVarConfig{
+							Vars: []types.AcrossVarConfig{
 								{
 									Var:         "var",
-									MaxInFlight: &atc.MaxInFlightConfig{Limit: 0},
+									MaxInFlight: &types.MaxInFlightConfig{Limit: 0},
 								},
 							},
 						},
@@ -1984,12 +1985,12 @@ var _ = Describe("ValidateConfig", func() {
 				BeforeEach(func() {
 					atc.EnableAcrossStep = false
 
-					job.PlanSequence = append(job.PlanSequence, atc.Step{
-						Config: &atc.AcrossStep{
-							Step: &atc.PutStep{
+					job.PlanSequence = append(job.PlanSequence, types.Step{
+						Config: &types.AcrossStep{
+							Step: &types.PutStep{
 								Name: "some-resource",
 							},
-							Vars: []atc.AcrossVarConfig{
+							Vars: []types.AcrossVarConfig{
 								{
 									Var: "var",
 								},
@@ -2020,7 +2021,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job has build_log_retention and deprecated build_logs_to_retain", func() {
 			BeforeEach(func() {
-				config.Jobs[0].BuildLogRetention = &atc.BuildLogRetention{
+				config.Jobs[0].BuildLogRetention = &types.BuildLogRetention{
 					Builds: 1,
 					Days:   1,
 				}
@@ -2046,7 +2047,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when a job has negative build_log_retention values", func() {
 			BeforeEach(func() {
-				config.Jobs[0].BuildLogRetention = &atc.BuildLogRetention{
+				config.Jobs[0].BuildLogRetention = &types.BuildLogRetention{
 					Builds: -1,
 					Days:   -1,
 				}
@@ -2063,7 +2064,7 @@ var _ = Describe("ValidateConfig", func() {
 	Describe("validating display config", func() {
 		Context("when the background image is a valid http URL", func() {
 			BeforeEach(func() {
-				config.Display = &atc.DisplayConfig{
+				config.Display = &types.DisplayConfig{
 					BackgroundImage: "http://example.com/image.jpg",
 				}
 			})
@@ -2075,7 +2076,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the background image is a valid relative URL", func() {
 			BeforeEach(func() {
-				config.Display = &atc.DisplayConfig{
+				config.Display = &types.DisplayConfig{
 					BackgroundImage: "public/images/image.jpg",
 				}
 			})
@@ -2087,7 +2088,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the background image uses an unsupported scheme", func() {
 			BeforeEach(func() {
-				config.Display = &atc.DisplayConfig{
+				config.Display = &types.DisplayConfig{
 					BackgroundImage: "data:image/png;base64, iVBORw0KGgoA",
 				}
 			})
@@ -2101,7 +2102,7 @@ var _ = Describe("ValidateConfig", func() {
 
 		Context("when the background image is an invalid URL", func() {
 			BeforeEach(func() {
-				config.Display = &atc.DisplayConfig{
+				config.Display = &types.DisplayConfig{
 					BackgroundImage: "://example.com",
 				}
 			})

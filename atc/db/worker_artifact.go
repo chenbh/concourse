@@ -3,10 +3,10 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/lib/pq"
 )
 
@@ -53,7 +53,7 @@ func (a *artifact) Volume(teamID int) (CreatedVolume, bool, error) {
 	return created, true, nil
 }
 
-func saveWorkerArtifact(tx Tx, conn Conn, atcArtifact atc.WorkerArtifact) (WorkerArtifact, error) {
+func saveWorkerArtifact(tx Tx, conn Conn, atcArtifact types.WorkerArtifact) (WorkerArtifact, error) {
 
 	var artifactID int
 

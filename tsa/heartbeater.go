@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/worker/gclient"
 	"github.com/tedsuo/rata"
 )
@@ -34,7 +34,7 @@ type Heartbeater struct {
 	atcEndpointPicker EndpointPicker
 	httpClient        *http.Client
 
-	registration atc.Worker
+	registration types.Worker
 	eventWriter  EventWriter
 }
 
@@ -46,7 +46,7 @@ func NewHeartbeater(
 	baggageclaimClient baggageclaim.Client,
 	atcEndpointPicker EndpointPicker,
 	httpClient *http.Client,
-	worker atc.Worker,
+	worker types.Worker,
 	eventWriter EventWriter,
 ) *Heartbeater {
 	return &Heartbeater{
@@ -124,7 +124,7 @@ func (heartbeater *Heartbeater) register(logger lager.Logger) bool {
 		return false
 	}
 
-	request, err := heartbeater.atcEndpointPicker.Pick().CreateRequest(atc.RegisterWorker, nil, bytes.NewBuffer(payload))
+	request, err := heartbeater.atcEndpointPicker.Pick().CreateRequest(types.RegisterWorker, nil, bytes.NewBuffer(payload))
 	if err != nil {
 		logger.Error("failed-to-construct-request", err)
 		return false
@@ -189,7 +189,7 @@ func (heartbeater *Heartbeater) heartbeat(logger lager.Logger) HeartbeatStatus {
 		return HeartbeatStatusUnhealthy
 	}
 
-	request, err := heartbeater.atcEndpointPicker.Pick().CreateRequest(atc.HeartbeatWorker, rata.Params{
+	request, err := heartbeater.atcEndpointPicker.Pick().CreateRequest(types.HeartbeatWorker, rata.Params{
 		"worker_name": heartbeater.registration.Name,
 	}, bytes.NewBuffer(payload))
 	if err != nil {
@@ -227,7 +227,7 @@ func (heartbeater *Heartbeater) heartbeat(logger lager.Logger) HeartbeatStatus {
 		logger.Error("failed-to-emit-heartbeated-event", err)
 	}
 
-	var workerInfo atc.Worker
+	var workerInfo types.Worker
 	err = json.NewDecoder(response.Body).Decode(&workerInfo)
 	if err != nil {
 		logger.Error("failed-to-decode-response", err)
@@ -242,7 +242,7 @@ func (heartbeater *Heartbeater) heartbeat(logger lager.Logger) HeartbeatStatus {
 	return HeartbeatStatusHealthy
 }
 
-func (heartbeater *Heartbeater) pingWorker(logger lager.Logger) (atc.Worker, bool) {
+func (heartbeater *Heartbeater) pingWorker(logger lager.Logger) (types.Worker, bool) {
 	registration := heartbeater.registration
 
 	beforeGarden := time.Now()
@@ -276,7 +276,7 @@ func (heartbeater *Heartbeater) pingWorker(logger lager.Logger) (atc.Worker, boo
 		logger.Debug("reached-worker", durationData)
 	} else {
 		logger.Info("failed-to-reach-worker", durationData)
-		return atc.Worker{}, false
+		return types.Worker{}, false
 	}
 
 	registration.ActiveContainers = len(containers)

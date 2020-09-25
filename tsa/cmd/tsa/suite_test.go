@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +20,6 @@ import (
 	gserver "code.cloudfoundry.org/garden/server"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/localip"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/tsa"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -175,13 +175,13 @@ var _ = BeforeEach(func() {
 		Hosts:    []string{fmt.Sprintf("127.0.0.1:%d", tsaPort)},
 		HostKeys: []ssh.PublicKey{hostPubKey},
 
-		Worker: atc.Worker{
+		Worker: types.Worker{
 			Name: "some-worker",
 
 			Platform: "linux",
 			Tags:     []string{"some", "tags"},
 
-			ResourceTypes: []atc.WorkerResourceType{
+			ResourceTypes: []types.WorkerResourceType{
 				{Type: "resource-type-a", Image: "resource-image-a"},
 				{Type: "resource-type-b", Image: "resource-image-b"},
 			},

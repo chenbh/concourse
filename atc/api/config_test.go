@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds/noop"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -26,15 +26,15 @@ import (
 
 var _ = Describe("Config API", func() {
 	var (
-		pipelineConfig   atc.Config
+		pipelineConfig   types.Config
 		requestGenerator *rata.RequestGenerator
 	)
 
 	BeforeEach(func() {
-		requestGenerator = rata.NewRequestGenerator(server.URL, atc.Routes)
+		requestGenerator = rata.NewRequestGenerator(server.URL, types.Routes)
 
-		pipelineConfig = atc.Config{
-			Groups: atc.GroupConfigs{
+		pipelineConfig = types.Config{
+			Groups: types.GroupConfigs{
 				{
 					Name:      "some-group",
 					Jobs:      []string{"some-job"},
@@ -42,7 +42,7 @@ var _ = Describe("Config API", func() {
 				},
 			},
 
-			VarSources: atc.VarSourceConfigs{
+			VarSources: types.VarSourceConfigs{
 				{
 					Name: "some",
 					Type: "dummy",
@@ -52,56 +52,56 @@ var _ = Describe("Config API", func() {
 				},
 			},
 
-			Resources: atc.ResourceConfigs{
+			Resources: types.ResourceConfigs{
 				{
 					Name: "some-resource",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"source-config": "some-value",
 					},
 				},
 			},
 
-			ResourceTypes: atc.ResourceTypes{
+			ResourceTypes: types.ResourceTypes{
 				{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"custom": "source"},
-					Tags:   atc.Tags{"some-tag"},
+					Source: types.Source{"custom": "source"},
+					Tags:   types.Tags{"some-tag"},
 				},
 			},
 
-			Jobs: atc.JobConfigs{
+			Jobs: types.JobConfigs{
 				{
 					Name:   "some-job",
 					Public: true,
 					Serial: true,
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "some-resource",
-								Params:   atc.Params{"some-param": "some-value"},
+								Params:   types.Params{"some-param": "some-value"},
 							},
 						},
 						{
-							Config: &atc.TaskStep{
+							Config: &types.TaskStep{
 								Name:       "some-task",
 								Privileged: true,
-								Config: &atc.TaskConfig{
+								Config: &types.TaskConfig{
 									Platform:  "linux",
 									RootfsURI: "some-image",
-									Run: atc.TaskRunConfig{
+									Run: types.TaskRunConfig{
 										Path: "/path/to/run",
 									},
 								},
 							},
 						},
 						{
-							Config: &atc.PutStep{
+							Config: &types.PutStep{
 								Name:     "some-output",
 								Resource: "some-resource",
-								Params:   atc.Params{"some-param": "some-value"},
+								Params:   types.Params{"some-param": "some-value"},
 							},
 						},
 					},
@@ -116,7 +116,7 @@ var _ = Describe("Config API", func() {
 		)
 
 		JustBeforeEach(func() {
-			req, err := requestGenerator.CreateRequest(atc.GetConfig, rata.Params{
+			req, err := requestGenerator.CreateRequest(types.GetConfig, rata.Params{
 				"team_name":     "a-team",
 				"pipeline_name": "something-else",
 			}, nil)
@@ -146,14 +146,14 @@ var _ = Describe("Config API", func() {
 						fakePipeline = new(dbfakes.FakePipeline)
 						fakePipeline.NameReturns("something-else")
 						fakePipeline.ConfigVersionReturns(1)
-						fakePipeline.GroupsReturns(atc.GroupConfigs{
+						fakePipeline.GroupsReturns(types.GroupConfigs{
 							{
 								Name:      "some-group",
 								Jobs:      []string{"some-job"},
 								Resources: []string{"some-resource"},
 							},
 						})
-						fakePipeline.VarSourcesReturns(atc.VarSourceConfigs{
+						fakePipeline.VarSourcesReturns(types.VarSourceConfigs{
 							{
 								Name: "some",
 								Type: "dummy",
@@ -176,25 +176,25 @@ var _ = Describe("Config API", func() {
 
 						It("returns Content-Type 'application/json' and config version as X-Concourse-Config-Version", func() {
 							expectedHeaderEntries := map[string]string{
-								"Content-Type":          "application/json",
-								atc.ConfigVersionHeader: "1",
+								"Content-Type":            "application/json",
+								types.ConfigVersionHeader: "1",
 							}
 							Expect(response).Should(IncludeHeaderEntries(expectedHeaderEntries))
 						})
 
 						It("returns the config", func() {
-							var actualConfigResponse atc.ConfigResponse
+							var actualConfigResponse types.ConfigResponse
 							err := json.NewDecoder(response.Body).Decode(&actualConfigResponse)
 							Expect(err).NotTo(HaveOccurred())
 
-							Expect(actualConfigResponse).To(Equal(atc.ConfigResponse{
+							Expect(actualConfigResponse).To(Equal(types.ConfigResponse{
 								Config: pipelineConfig,
 							}))
 						})
 
 						Context("when finding the config fails", func() {
 							BeforeEach(func() {
-								fakePipeline.ConfigReturns(atc.Config{}, errors.New("fail"))
+								fakePipeline.ConfigReturns(types.Config{}, errors.New("fail"))
 							})
 
 							It("returns 500", func() {
@@ -274,7 +274,7 @@ var _ = Describe("Config API", func() {
 
 		BeforeEach(func() {
 			var err error
-			request, err = requestGenerator.CreateRequest(atc.SaveConfig, rata.Params{
+			request, err = requestGenerator.CreateRequest(types.SaveConfig, rata.Params{
 				"team_name":     "a-team",
 				"pipeline_name": "a-pipeline",
 			}, nil)
@@ -297,7 +297,7 @@ var _ = Describe("Config API", func() {
 
 				BeforeEach(func() {
 					var err error
-					request, err = requestGenerator.CreateRequest(atc.SaveConfig, rata.Params{
+					request, err = requestGenerator.CreateRequest(types.SaveConfig, rata.Params{
 						"team_name":     "_team",
 						"pipeline_name": "_pipeline",
 					}, nil)
@@ -330,7 +330,7 @@ var _ = Describe("Config API", func() {
 
 			Context("when a config version is specified", func() {
 				BeforeEach(func() {
-					request.Header.Set(atc.ConfigVersionHeader, "42")
+					request.Header.Set(types.ConfigVersionHeader, "42")
 				})
 
 				Context("when the config is malformed", func() {
@@ -573,8 +573,8 @@ jobs:
 
 								name, savedConfig, id, initiallyPaused := dbTeam.SavePipelineArgsForCall(0)
 								Expect(name).To(Equal("a-pipeline"))
-								Expect(savedConfig).To(Equal(atc.Config{
-									Resources: []atc.ResourceConfig{
+								Expect(savedConfig).To(Equal(types.Config{
+									Resources: []types.ResourceConfig{
 										{
 											Name:         "some-resource",
 											Type:         "some-type",
@@ -583,26 +583,26 @@ jobs:
 											CheckTimeout: "1m",
 										},
 									},
-									Jobs: atc.JobConfigs{
+									Jobs: types.JobConfigs{
 										{
 											Name: "some-job",
-											PlanSequence: []atc.Step{
+											PlanSequence: []types.Step{
 												{
-													Config: &atc.GetStep{
+													Config: &types.GetStep{
 														Name: "some-resource",
 													},
 												},
 												{
-													Config: &atc.TaskStep{
+													Config: &types.TaskStep{
 														Name: "some-task",
-														Config: &atc.TaskConfig{
+														Config: &types.TaskConfig{
 															Platform: "linux",
 
-															Run: atc.TaskRunConfig{
+															Run: types.TaskRunConfig{
 																Path: "ls",
 															},
 
-															Params: atc.TaskEnv{
+															Params: types.TaskEnv{
 																"FOO": "true",
 																"BAR": "1",
 																"BAZ": "1.9",
@@ -626,7 +626,7 @@ jobs:
 
 							BeforeEach(func() {
 								query := request.URL.Query()
-								query.Add(atc.SaveConfigCheckCreds, "")
+								query.Add(types.SaveConfigCheckCreds, "")
 								request.URL.RawQuery = query.Encode()
 							})
 
@@ -796,7 +796,7 @@ jobs:
 
 						Context("when it contains credentials to be interpolated", func() {
 							var (
-								payloadAsConfig atc.Config
+								payloadAsConfig types.Config
 								payload         string
 							)
 
@@ -817,7 +817,7 @@ jobs:
         path: ls
       params:
         FOO: ((BAR))`
-								payloadAsConfig = atc.Config{Resources: []atc.ResourceConfig{
+								payloadAsConfig = types.Config{Resources: []types.ResourceConfig{
 									{
 										Name:       "some-resource",
 										Type:       "some-type",
@@ -825,26 +825,26 @@ jobs:
 										CheckEvery: "10s",
 									},
 								},
-									Jobs: atc.JobConfigs{
+									Jobs: types.JobConfigs{
 										{
 											Name: "some-job",
-											PlanSequence: []atc.Step{
+											PlanSequence: []types.Step{
 												{
-													Config: &atc.GetStep{
+													Config: &types.GetStep{
 														Name: "some-resource",
 													},
 												},
 												{
-													Config: &atc.TaskStep{
+													Config: &types.TaskStep{
 														Name: "some-task",
-														Config: &atc.TaskConfig{
+														Config: &types.TaskConfig{
 															Platform: "linux",
 
-															Run: atc.TaskRunConfig{
+															Run: types.TaskRunConfig{
 																Path: "ls",
 															},
 
-															Params: atc.TaskEnv{
+															Params: types.TaskEnv{
 																"FOO": "((BAR))",
 															},
 														},
@@ -862,7 +862,7 @@ jobs:
 							Context("when the check_creds param is set", func() {
 								BeforeEach(func() {
 									query := request.URL.Query()
-									query.Add(atc.SaveConfigCheckCreds, "")
+									query.Add(types.SaveConfigCheckCreds, "")
 									request.URL.RawQuery = query.Encode()
 								})
 
@@ -1050,7 +1050,7 @@ jobs:
 								{
 									"name":   "some-job",
 									"public": true,
-									"plan":   []atc.Step{},
+									"plan":   []types.Step{},
 								},
 							},
 						})
@@ -1075,12 +1075,12 @@ jobs:
 
 						name, savedConfig, id, initiallyPaused := dbTeam.SavePipelineArgsForCall(0)
 						Expect(name).To(Equal("a-pipeline"))
-						Expect(savedConfig).To(Equal(atc.Config{
-							Jobs: atc.JobConfigs{
+						Expect(savedConfig).To(Equal(types.Config{
+							Jobs: types.JobConfigs{
 								{
 									Name:         "some-job",
 									Public:       true,
-									PlanSequence: []atc.Step{},
+									PlanSequence: []types.Step{},
 								},
 							},
 						}))
@@ -1100,7 +1100,7 @@ jobs:
 								{
 									"name":  "some-job",
 									"pubic": true,
-									"plan":  []atc.Step{},
+									"plan":  []types.Step{},
 								},
 							},
 						})
@@ -1132,7 +1132,7 @@ jobs:
 
 			Context("when a config version is malformed", func() {
 				BeforeEach(func() {
-					request.Header.Set(atc.ConfigVersionHeader, "forty-two")
+					request.Header.Set(types.ConfigVersionHeader, "forty-two")
 				})
 
 				It("returns 400", func() {

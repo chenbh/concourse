@@ -5,13 +5,13 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/compression"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -48,17 +48,17 @@ var _ = Describe("Image", func() {
 
 		logger                    lager.Logger
 		imageResource             worker.ImageResource
-		version                   atc.Version
+		version                   types.Version
 		ctx                       context.Context
 		fakeImageFetchingDelegate *workerfakes.FakeImageFetchingDelegate
 		fakeWorker                *workerfakes.FakeWorker
 
-		customTypes atc.VersionedResourceTypes
+		customTypes types.VersionedResourceTypes
 		privileged  bool
 
 		fetchedVolume         worker.Volume
 		fetchedMetadataReader io.ReadCloser
-		fetchedVersion        atc.Version
+		fetchedVersion        types.Version
 		fetchErr              error
 		teamID                int
 	)
@@ -75,8 +75,8 @@ var _ = Describe("Image", func() {
 		logger = lagertest.NewTestLogger("test")
 		imageResource = worker.ImageResource{
 			Type:   "docker",
-			Source: atc.Source{"some": "super-secret-sauce"},
-			Params: atc.Params{"some": "params"},
+			Source: types.Source{"some": "super-secret-sauce"},
+			Params: types.Params{"some": "params"},
 		}
 		version = nil
 		ctx = context.Background()
@@ -84,25 +84,25 @@ var _ = Describe("Image", func() {
 		fakeImageFetchingDelegate.StderrReturns(stderrBuf)
 		fakeWorker = new(workerfakes.FakeWorker)
 		fakeWorker.NameReturns("some-worker")
-		fakeWorker.TagsReturns(atc.Tags{"worker", "tags"})
+		fakeWorker.TagsReturns(types.Tags{"worker", "tags"})
 		teamID = 123
 
-		customTypes = atc.VersionedResourceTypes{
+		customTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-type-a",
 					Type:   "base-type",
-					Source: atc.Source{"some": "a-source-param"},
+					Source: types.Source{"some": "a-source-param"},
 				},
-				Version: atc.Version{"some": "a-version"},
+				Version: types.Version{"some": "a-version"},
 			},
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-type-b",
 					Type:   "custom-type-a",
-					Source: atc.Source{"some": "b-source-param"},
+					Source: types.Source{"some": "b-source-param"},
 				},
-				Version: atc.Version{"some": "b-version"},
+				Version: types.Version{"some": "b-version"},
 			},
 		}
 
@@ -171,8 +171,8 @@ var _ = Describe("Image", func() {
 				BeforeEach(func() {
 					imageResource = worker.ImageResource{
 						Type:   customResourceTypeName,
-						Source: atc.Source{"some": "source-param"},
-						Params: atc.Params{"some": "params"},
+						Source: types.Source{"some": "source-param"},
+						Params: types.Params{"some": "params"},
 					}
 
 				})
@@ -199,12 +199,12 @@ var _ = Describe("Image", func() {
 
 				Context("and the custom type does not have a version", func() {
 					BeforeEach(func() {
-						customTypes = atc.VersionedResourceTypes{
+						customTypes = types.VersionedResourceTypes{
 							{
-								ResourceType: atc.ResourceType{
+								ResourceType: types.ResourceType{
 									Name:   "custom-type-a",
 									Type:   "base-type",
-									Source: atc.Source{"some": "param"},
+									Source: types.Source{"some": "param"},
 								},
 								Version: nil,
 							},
@@ -212,7 +212,7 @@ var _ = Describe("Image", func() {
 
 						fakeCheckResourceType = new(resourcefakes.FakeResource)
 						fakeCheckResourceType.CheckReturns(
-							[]atc.Version{{"some-key": "some-value"}},
+							[]types.Version{{"some-key": "some-value"}},
 							nil)
 						fakeResourceFactory.NewResourceReturnsOnCall(0, fakeCheckResourceType)
 						fakeResourceFactory.NewResourceReturnsOnCall(1, fakeCheckResource)
@@ -232,14 +232,14 @@ var _ = Describe("Image", func() {
 
 					Context("when a version of the custom resource type is found", func() {
 						BeforeEach(func() {
-							fakeCheckResourceType.CheckReturns([]atc.Version{{"some": "version"}}, nil)
+							fakeCheckResourceType.CheckReturns([]types.Version{{"some": "version"}}, nil)
 						})
 
 						It("uses the version of the custom type when checking for the original resource", func() {
 							Expect(fakeWorker.FindOrCreateContainerCallCount()).To(Equal(2))
 							_, _, _, _, _, containerSpec, customTypes := fakeWorker.FindOrCreateContainerArgsForCall(1)
 							Expect(containerSpec.ImageSpec.ResourceType).To(Equal("custom-type-a"))
-							Expect(customTypes[0].Version).To(Equal(atc.Version{"some": "version"}))
+							Expect(customTypes[0].Version).To(Equal(types.Version{"some": "version"}))
 						})
 					})
 				})
@@ -250,7 +250,7 @@ var _ = Describe("Image", func() {
 					fakeResourceFactory.NewResourceReturnsOnCall(0, fakeCheckResource)
 					fakeResourceFactory.NewResourceReturnsOnCall(1, fakeGetResource)
 
-					fakeCheckResource.CheckReturns([]atc.Version{{"v": "1"}}, nil)
+					fakeCheckResource.CheckReturns([]types.Version{{"v": "1"}}, nil)
 				})
 
 				Context("when saving the version in the database succeeds", func() {
@@ -364,7 +364,7 @@ var _ = Describe("Image", func() {
 							})
 
 							It("has the version on the image", func() {
-								Expect(fetchedVersion).To(Equal(atc.Version{"v": "1"}))
+								Expect(fetchedVersion).To(Equal(types.Version{"v": "1"}))
 							})
 
 							It("saved the image resource version in the database", func() {
@@ -419,7 +419,7 @@ var _ = Describe("Image", func() {
 
 			Context("when check returns no versions", func() {
 				BeforeEach(func() {
-					fakeCheckResource.CheckReturns([]atc.Version{}, nil)
+					fakeCheckResource.CheckReturns([]types.Version{}, nil)
 					fakeResourceFactory.NewResourceReturnsOnCall(0, fakeCheckResource)
 				})
 
@@ -475,7 +475,7 @@ var _ = Describe("Image", func() {
 
 	Context("when a version is specified", func() {
 		BeforeEach(func() {
-			version = atc.Version{"v": "1"}
+			version = types.Version{"v": "1"}
 			fakeResourceFactory.NewResourceReturnsOnCall(0, fakeGetResource)
 		})
 
@@ -590,7 +590,7 @@ var _ = Describe("Image", func() {
 					})
 
 					It("has the version on the image", func() {
-						Expect(fetchedVersion).To(Equal(atc.Version{"v": "1"}))
+						Expect(fetchedVersion).To(Equal(types.Version{"v": "1"}))
 					})
 
 					It("saved the image resource version in the database", func() {

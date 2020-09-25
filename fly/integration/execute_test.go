@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -34,12 +35,12 @@ var _ = Describe("Fly CLI", func() {
 	var taskConfigPath string
 
 	var streaming chan struct{}
-	var events chan atc.Event
+	var events chan types.Event
 	var uploadedBits chan struct{}
 
 	var expectedPlan atc.Plan
 	var taskPlan atc.Plan
-	var workerArtifact = atc.WorkerArtifact{
+	var workerArtifact = types.WorkerArtifact{
 		ID:   125,
 		Name: "some-dir",
 	}
@@ -85,21 +86,21 @@ run:
 		Expect(err).NotTo(HaveOccurred())
 
 		streaming = make(chan struct{})
-		events = make(chan atc.Event)
+		events = make(chan types.Event)
 
 		planFactory = atc.NewPlanFactory(0)
 
 		taskPlan = planFactory.NewPlan(atc.TaskPlan{
 			Name: "one-off",
-			Config: &atc.TaskConfig{
+			Config: &types.TaskConfig{
 				Platform: "some-platform",
-				ImageResource: &atc.ImageResource{
+				ImageResource: &types.ImageResource{
 					Type: "registry-image",
-					Source: atc.Source{
+					Source: types.Source{
 						"repository": "ubuntu",
 					},
 				},
-				Inputs: []atc.TaskInputConfig{
+				Inputs: []types.TaskInputConfig{
 					{Name: "fixture"},
 				},
 				Params: map[string]string{
@@ -108,7 +109,7 @@ run:
 					"X":     "1",
 					"EMPTY": "",
 				},
-				Run: atc.TaskRunConfig{
+				Run: types.TaskRunConfig{
 					Path: "find",
 					Args: []string{"."},
 				},
@@ -215,7 +216,7 @@ run:
 			),
 		)
 		atcServer.RouteToHandler("GET", "/api/v1/builds/128/artifacts",
-			ghttp.RespondWithJSONEncoded(200, []atc.WorkerArtifact{workerArtifact}),
+			ghttp.RespondWithJSONEncoded(200, []types.WorkerArtifact{workerArtifact}),
 		)
 
 	})
@@ -247,12 +248,12 @@ run:
 
 	Context("when there is a pipeline job with the same input", func() {
 		BeforeEach(func() {
-			taskPlan.Task.VersionedResourceTypes = atc.VersionedResourceTypes{
-				atc.VersionedResourceType{
-					ResourceType: atc.ResourceType{
+			taskPlan.Task.VersionedResourceTypes = types.VersionedResourceTypes{
+				types.VersionedResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "resource-type",
 						Type:   "s3",
-						Source: atc.Source{},
+						Source: types.Source{},
 					},
 				},
 			}
@@ -263,12 +264,12 @@ run:
 				planFactory.NewPlan(atc.AggregatePlan{
 					planFactory.NewPlan(atc.GetPlan{
 						Name: "fixture",
-						VersionedResourceTypes: atc.VersionedResourceTypes{
-							atc.VersionedResourceType{
-								ResourceType: atc.ResourceType{
+						VersionedResourceTypes: types.VersionedResourceTypes{
+							types.VersionedResourceType{
+								ResourceType: types.ResourceType{
 									Name:   "resource-type",
 									Type:   "s3",
-									Source: atc.Source{},
+									Source: types.Source{},
 								},
 							},
 						},
@@ -293,15 +294,15 @@ run:
 				),
 			)
 			atcServer.RouteToHandler("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/inputs",
-				ghttp.RespondWithJSONEncoded(200, []atc.BuildInput{atc.BuildInput{Name: "fixture"}}),
+				ghttp.RespondWithJSONEncoded(200, []types.BuildInput{types.BuildInput{Name: "fixture"}}),
 			)
 			atcServer.RouteToHandler("GET", "/api/v1/teams/main/pipelines/some-pipeline/resource-types",
-				ghttp.RespondWithJSONEncoded(200, atc.VersionedResourceTypes{
-					atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+				ghttp.RespondWithJSONEncoded(200, types.VersionedResourceTypes{
+					types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "resource-type",
 							Type:   "s3",
-							Source: atc.Source{},
+							Source: types.Source{},
 						},
 					},
 				}),
@@ -421,7 +422,7 @@ run:
 				err = os.Mkdir(bardir, 0755)
 				Expect(err).ToNot(HaveOccurred())
 
-				taskPlan.Task.Config.Inputs = []atc.TaskInputConfig{
+				taskPlan.Task.Config.Inputs = []types.TaskInputConfig{
 					{Name: "fixture"},
 					{Name: "bar"},
 				}
@@ -501,7 +502,7 @@ run:
 						0644,
 					)
 					Expect(err).NotTo(HaveOccurred())
-					(*expectedPlan.Do)[1].Task.Config.Inputs = []atc.TaskInputConfig{
+					(*expectedPlan.Do)[1].Task.Config.Inputs = []types.TaskInputConfig{
 						{Name: "foo"},
 						{Name: "bar"},
 					}
@@ -868,7 +869,7 @@ run:
 				0644,
 			)
 			Expect(err).NotTo(HaveOccurred())
-			(*expectedPlan.Do)[1].Task.Config.Inputs = []atc.TaskInputConfig{
+			(*expectedPlan.Do)[1].Task.Config.Inputs = []types.TaskInputConfig{
 				{Name: "fixture"},
 				{Name: "some-optional-input", Optional: true},
 			}
@@ -1113,7 +1114,7 @@ run:
 
 					Eventually(aborted).Should(BeClosed())
 
-					events <- event.Status{Status: atc.StatusErrored}
+					events <- event.Status{Status: types.StatusErrored}
 					close(events)
 
 					<-sess.Exited
@@ -1137,7 +1138,7 @@ run:
 
 					Eventually(aborted).Should(BeClosed())
 
-					events <- event.Status{Status: atc.StatusErrored}
+					events <- event.Status{Status: types.StatusErrored}
 					close(events)
 
 					<-sess.Exited
@@ -1157,7 +1158,7 @@ run:
 
 			Eventually(streaming).Should(BeClosed())
 
-			events <- event.Status{Status: atc.StatusSucceeded}
+			events <- event.Status{Status: types.StatusSucceeded}
 			close(events)
 
 			<-sess.Exited
@@ -1177,7 +1178,7 @@ run:
 
 			Eventually(streaming).Should(BeClosed())
 
-			events <- event.Status{Status: atc.StatusFailed}
+			events <- event.Status{Status: types.StatusFailed}
 			close(events)
 
 			<-sess.Exited
@@ -1197,7 +1198,7 @@ run:
 
 			Eventually(streaming).Should(BeClosed())
 
-			events <- event.Status{Status: atc.StatusErrored}
+			events <- event.Status{Status: types.StatusErrored}
 			close(events)
 
 			<-sess.Exited

@@ -1,12 +1,12 @@
 package rc_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/rc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,7 +48,7 @@ var _ = Describe("Targets", func() {
 				Expect(targets).To(Equal(rc.Targets{
 					"some-target": {
 						API:      "http://concourse.com",
-						TeamName: atc.DefaultTeamName,
+						TeamName: types.DefaultTeamName,
 						Token: &rc.TargetToken{
 							Type:  "Bearer",
 							Value: "some-token",

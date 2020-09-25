@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net"
 	"net/http"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	conc "github.com/concourse/concourse"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/concourse/concourse/fly/version"
 	"github.com/concourse/concourse/go-concourse/concourse"
@@ -72,7 +72,7 @@ type target struct {
 	client            concourse.Client
 	url               string
 	token             *TargetToken
-	info              atc.Info
+	info              types.Info
 }
 
 func NewTarget(
@@ -480,8 +480,8 @@ func (t *target) validate(allowVersionMismatch bool) error {
 	return nil
 }
 
-func (t *target) getInfo() (atc.Info, error) {
-	if (t.info != atc.Info{}) {
+func (t *target) getInfo() (types.Info, error) {
+	if (t.info != types.Info{}) {
 		return t.info, nil
 	}
 

@@ -1,8 +1,8 @@
 package wrappa
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/auth"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/tedsuo/rata"
 )
 
@@ -37,121 +37,121 @@ func (wrappa *APIAuthWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 
 		switch name {
 		// pipeline is public or authorized
-		case atc.GetBuild,
-			atc.BuildResources:
+		case types.GetBuild,
+			types.BuildResources:
 			newHandler = wrappa.checkBuildReadAccessHandlerFactory.AnyJobHandler(handler, rejector)
 
 		// pipeline and job are public or authorized
-		case atc.GetBuildPreparation,
-			atc.BuildEvents,
-			atc.GetBuildPlan,
-			atc.ListBuildArtifacts:
+		case types.GetBuildPreparation,
+			types.BuildEvents,
+			types.GetBuildPlan,
+			types.ListBuildArtifacts:
 			newHandler = wrappa.checkBuildReadAccessHandlerFactory.CheckIfPrivateJobHandler(handler, rejector)
 
 			// resource belongs to authorized team
-		case atc.AbortBuild:
+		case types.AbortBuild:
 			newHandler = wrappa.checkBuildWriteAccessHandlerFactory.HandlerFor(handler, rejector)
 
 		// requester is system, admin team, or worker owning team
-		case atc.PruneWorker,
-			atc.LandWorker,
-			atc.RetireWorker,
-			atc.ListDestroyingVolumes,
-			atc.ListDestroyingContainers,
-			atc.ReportWorkerContainers,
-			atc.ReportWorkerVolumes:
+		case types.PruneWorker,
+			types.LandWorker,
+			types.RetireWorker,
+			types.ListDestroyingVolumes,
+			types.ListDestroyingContainers,
+			types.ReportWorkerContainers,
+			types.ReportWorkerVolumes:
 			newHandler = wrappa.checkWorkerTeamAccessHandlerFactory.HandlerFor(handler, rejector)
 
 		// pipeline is public or authorized
-		case atc.GetPipeline,
-			atc.GetJobBuild,
-			atc.PipelineBadge,
-			atc.JobBadge,
-			atc.ListJobs,
-			atc.GetJob,
-			atc.ListJobBuilds,
-			atc.ListPipelineBuilds,
-			atc.GetResource,
-			atc.ListBuildsWithVersionAsInput,
-			atc.ListBuildsWithVersionAsOutput,
-			atc.GetResourceCausality,
-			atc.GetResourceVersion,
-			atc.ListResources,
-			atc.ListResourceTypes,
-			atc.ListResourceVersions:
+		case types.GetPipeline,
+			types.GetJobBuild,
+			types.PipelineBadge,
+			types.JobBadge,
+			types.ListJobs,
+			types.GetJob,
+			types.ListJobBuilds,
+			types.ListPipelineBuilds,
+			types.GetResource,
+			types.ListBuildsWithVersionAsInput,
+			types.ListBuildsWithVersionAsOutput,
+			types.GetResourceCausality,
+			types.GetResourceVersion,
+			types.ListResources,
+			types.ListResourceTypes,
+			types.ListResourceVersions:
 			newHandler = wrappa.checkPipelineAccessHandlerFactory.HandlerFor(handler, rejector)
 
 		// authenticated
-		case atc.CreateBuild,
-			atc.GetContainer,
-			atc.HijackContainer,
-			atc.ListContainers,
-			atc.ListWorkers,
-			atc.RegisterWorker,
-			atc.HeartbeatWorker,
-			atc.DeleteWorker,
-			atc.GetTeam,
-			atc.SetTeam,
-			atc.ListTeamBuilds,
-			atc.RenameTeam,
-			atc.DestroyTeam,
-			atc.ListVolumes,
-			atc.GetUser:
+		case types.CreateBuild,
+			types.GetContainer,
+			types.HijackContainer,
+			types.ListContainers,
+			types.ListWorkers,
+			types.RegisterWorker,
+			types.HeartbeatWorker,
+			types.DeleteWorker,
+			types.GetTeam,
+			types.SetTeam,
+			types.ListTeamBuilds,
+			types.RenameTeam,
+			types.DestroyTeam,
+			types.ListVolumes,
+			types.GetUser:
 			newHandler = auth.CheckAuthenticationHandler(handler, rejector)
 
 		// unauthenticated / delegating to handler (validate token if provided)
-		case atc.DownloadCLI,
-			atc.CheckResourceWebHook,
-			atc.GetInfo,
-			atc.GetCheck,
-			atc.ListTeams,
-			atc.ListAllPipelines,
-			atc.ListPipelines,
-			atc.ListAllJobs,
-			atc.ListAllResources,
-			atc.ListBuilds,
-			atc.MainJobBadge,
-			atc.GetWall:
+		case types.DownloadCLI,
+			types.CheckResourceWebHook,
+			types.GetInfo,
+			types.GetCheck,
+			types.ListTeams,
+			types.ListAllPipelines,
+			types.ListPipelines,
+			types.ListAllJobs,
+			types.ListAllResources,
+			types.ListBuilds,
+			types.MainJobBadge,
+			types.GetWall:
 			newHandler = auth.CheckAuthenticationIfProvidedHandler(handler, rejector)
 
-		case atc.GetLogLevel,
-			atc.ListActiveUsersSince,
-			atc.SetLogLevel,
-			atc.GetInfoCreds,
-			atc.SetWall,
-			atc.ClearWall:
+		case types.GetLogLevel,
+			types.ListActiveUsersSince,
+			types.SetLogLevel,
+			types.GetInfoCreds,
+			types.SetWall,
+			types.ClearWall:
 			newHandler = auth.CheckAdminHandler(handler, rejector)
 
 		// authorized (requested team matches resource team)
-		case atc.CheckResource,
-			atc.CheckResourceType,
-			atc.CreateJobBuild,
-			atc.RerunJobBuild,
-			atc.CreatePipelineBuild,
-			atc.DeletePipeline,
-			atc.DisableResourceVersion,
-			atc.EnableResourceVersion,
-			atc.PinResourceVersion,
-			atc.UnpinResource,
-			atc.SetPinCommentOnResource,
-			atc.GetConfig,
-			atc.GetCC,
-			atc.GetVersionsDB,
-			atc.ListJobInputs,
-			atc.OrderPipelines,
-			atc.PauseJob,
-			atc.PausePipeline,
-			atc.RenamePipeline,
-			atc.UnpauseJob,
-			atc.UnpausePipeline,
-			atc.ExposePipeline,
-			atc.HidePipeline,
-			atc.SaveConfig,
-			atc.ArchivePipeline,
-			atc.ClearTaskCache,
-			atc.CreateArtifact,
-			atc.ScheduleJob,
-			atc.GetArtifact:
+		case types.CheckResource,
+			types.CheckResourceType,
+			types.CreateJobBuild,
+			types.RerunJobBuild,
+			types.CreatePipelineBuild,
+			types.DeletePipeline,
+			types.DisableResourceVersion,
+			types.EnableResourceVersion,
+			types.PinResourceVersion,
+			types.UnpinResource,
+			types.SetPinCommentOnResource,
+			types.GetConfig,
+			types.GetCC,
+			types.GetVersionsDB,
+			types.ListJobInputs,
+			types.OrderPipelines,
+			types.PauseJob,
+			types.PausePipeline,
+			types.RenamePipeline,
+			types.UnpauseJob,
+			types.UnpausePipeline,
+			types.ExposePipeline,
+			types.HidePipeline,
+			types.SaveConfig,
+			types.ArchivePipeline,
+			types.ClearTaskCache,
+			types.CreateArtifact,
+			types.ScheduleJob,
+			types.GetArtifact:
 			newHandler = auth.CheckAuthorizationHandler(handler, rejector)
 
 		// think about it!

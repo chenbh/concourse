@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/configvalidate"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
@@ -24,12 +24,12 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
 	checkCredentials := false
-	if _, exists := query[atc.SaveConfigCheckCreds]; exists {
+	if _, exists := query[types.SaveConfigCheckCreds]; exists {
 		checkCredentials = true
 	}
 
 	var version db.ConfigVersion
-	if configVersionStr := r.Header.Get(atc.ConfigVersionHeader); len(configVersionStr) != 0 {
+	if configVersionStr := r.Header.Get(types.ConfigVersionHeader); len(configVersionStr) != 0 {
 		_, err := fmt.Sscanf(configVersionStr, "%d", &version)
 		if err != nil {
 			session.Error("malformed-config-version", err)
@@ -38,7 +38,7 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var config atc.Config
+	var config types.Config
 	switch r.Header.Get("Content-type") {
 	case "application/json", "application/x-yaml":
 		body, err := ioutil.ReadAll(r.Body)
@@ -47,7 +47,7 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = atc.UnmarshalConfig(body, &config)
+		err = types.UnmarshalConfig(body, &config)
 		if err != nil {
 			session.Error("malformed-request-payload", err, lager.Data{
 				"content-type": r.Header.Get("Content-Type"),
@@ -69,13 +69,13 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pipelineName := rata.Param(r, "pipeline_name")
-	warning := atc.ValidateIdentifier(pipelineName, "pipeline")
+	warning := types.ValidateIdentifier(pipelineName, "pipeline")
 	if warning != nil {
 		warnings = append(warnings, *warning)
 	}
 
 	teamName := rata.Param(r, "team_name")
-	warning = atc.ValidateIdentifier(teamName, "team")
+	warning = types.ValidateIdentifier(teamName, "team")
 	if warning != nil {
 		warnings = append(warnings, *warning)
 	}
@@ -129,11 +129,11 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	s.writeSaveConfigResponse(w, atc.SaveConfigResponse{Warnings: warnings})
+	s.writeSaveConfigResponse(w, types.SaveConfigResponse{Warnings: warnings})
 }
 
 // Simply validate that the credentials exist; don't do anything with the actual secrets
-func validateCredParams(credMgrVars vars.Variables, config atc.Config, session lager.Logger) error {
+func validateCredParams(credMgrVars vars.Variables, config types.Config, session lager.Logger) error {
 	var errs error
 
 	for _, resourceType := range config.ResourceTypes {
@@ -156,8 +156,8 @@ func validateCredParams(credMgrVars vars.Variables, config atc.Config, session l
 	}
 
 	for _, job := range config.Jobs {
-		_ = job.StepConfig().Visit(atc.StepRecursor{
-			OnTask: func(step *atc.TaskStep) error {
+		_ = job.StepConfig().Visit(types.StepRecursor{
+			OnTask: func(step *types.TaskStep) error {
 				err := creds.NewTaskEnvValidator(credMgrVars, step.Params).Validate()
 				if err != nil {
 					errs = multierror.Append(errs, err)
@@ -200,12 +200,12 @@ func validateCredParams(credMgrVars vars.Variables, config atc.Config, session l
 func (s *Server) handleBadRequest(w http.ResponseWriter, errorMessages ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	s.writeSaveConfigResponse(w, atc.SaveConfigResponse{
+	s.writeSaveConfigResponse(w, types.SaveConfigResponse{
 		Errors: errorMessages,
 	})
 }
 
-func (s *Server) writeSaveConfigResponse(w http.ResponseWriter, saveConfigResponse atc.SaveConfigResponse) {
+func (s *Server) writeSaveConfigResponse(w http.ResponseWriter, saveConfigResponse types.SaveConfigResponse) {
 	responseJSON, err := json.Marshal(saveConfigResponse)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -3,6 +3,7 @@ package db_test
 import (
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -19,26 +20,26 @@ var _ = Describe("Job Factory", func() {
 		var publicPipeline db.Pipeline
 
 		BeforeEach(func() {
-			otherTeam, err := teamFactory.CreateTeam(atc.Team{Name: "other-team"})
+			otherTeam, err := teamFactory.CreateTeam(types.Team{Name: "other-team"})
 			Expect(err).NotTo(HaveOccurred())
 
-			publicPipeline, _, err = otherTeam.SavePipeline("public-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			publicPipeline, _, err = otherTeam.SavePipeline("public-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "public-pipeline-job-1",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-other-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
@@ -46,33 +47,33 @@ var _ = Describe("Job Factory", func() {
 					},
 					{
 						Name: "public-pipeline-job-2",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:   "some-resource",
 									Passed: []string{"public-pipeline-job-1"},
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:   "some-other-resource",
 									Passed: []string{"public-pipeline-job-1"},
 								},
 							},
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:     "resource",
 									Resource: "some-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name:     "resource",
 									Resource: "some-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
@@ -80,9 +81,9 @@ var _ = Describe("Job Factory", func() {
 					},
 					{
 						Name: "public-pipeline-job-3",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name:   "some-resource",
 									Passed: []string{"public-pipeline-job-1", "public-pipeline-job-2"},
 								},
@@ -90,7 +91,7 @@ var _ = Describe("Job Factory", func() {
 						},
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -104,25 +105,25 @@ var _ = Describe("Job Factory", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(publicPipeline.Expose()).To(Succeed())
 
-			_, _, err = otherTeam.SavePipeline("private-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			_, _, err = otherTeam.SavePipeline("private-pipeline", types.Config{
+				Jobs: types.JobConfigs{
 					{
 						Name: "private-pipeline-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
 								},
 							},
 							{
-								Config: &atc.PutStep{
+								Config: &types.PutStep{
 									Name: "some-resource",
 								},
 							},
 						},
 					},
 				},
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
@@ -179,18 +180,18 @@ var _ = Describe("Job Factory", func() {
 				}))
 
 				Expect(visibleJobs[0].Outputs).To(BeNil())
-				Expect(visibleJobs[1].Outputs).To(Equal([]atc.JobOutput{
-					atc.JobOutput{
+				Expect(visibleJobs[1].Outputs).To(Equal([]types.JobOutput{
+					types.JobOutput{
 						Name:     "some-resource",
 						Resource: "some-resource",
 					},
 				}))
-				Expect(visibleJobs[2].Outputs).To(Equal([]atc.JobOutput{
-					atc.JobOutput{
+				Expect(visibleJobs[2].Outputs).To(Equal([]types.JobOutput{
+					types.JobOutput{
 						Name:     "resource",
 						Resource: "some-resource",
 					},
-					atc.JobOutput{
+					types.JobOutput{
 						Name:     "some-resource",
 						Resource: "some-resource",
 					},
@@ -313,25 +314,25 @@ var _ = Describe("Job Factory", func() {
 				}))
 
 				Expect(allJobs[0].Outputs).To(BeNil())
-				Expect(allJobs[1].Outputs).To(Equal([]atc.JobOutput{
-					atc.JobOutput{
+				Expect(allJobs[1].Outputs).To(Equal([]types.JobOutput{
+					types.JobOutput{
 						Name:     "some-resource",
 						Resource: "some-resource",
 					},
 				}))
-				Expect(allJobs[2].Outputs).To(Equal([]atc.JobOutput{
-					atc.JobOutput{
+				Expect(allJobs[2].Outputs).To(Equal([]types.JobOutput{
+					types.JobOutput{
 						Name:     "resource",
 						Resource: "some-resource",
 					},
-					atc.JobOutput{
+					types.JobOutput{
 						Name:     "some-resource",
 						Resource: "some-resource",
 					},
 				}))
 				Expect(allJobs[3].Outputs).To(BeNil())
-				Expect(allJobs[4].Outputs).To(Equal([]atc.JobOutput{
-					atc.JobOutput{
+				Expect(allJobs[4].Outputs).To(Equal([]types.JobOutput{
+					types.JobOutput{
 						Name:     "some-resource",
 						Resource: "some-resource",
 					},
@@ -354,8 +355,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the job has a requested schedule time later than the last scheduled", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -380,8 +381,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the job has a requested schedule time earlier than the last scheduled", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -405,8 +406,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the job has a requested schedule time is the same as the last scheduled", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -437,8 +438,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when there are multiple jobs with different times", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -452,11 +453,11 @@ var _ = Describe("Job Factory", func() {
 				err = job1.RequestSchedule()
 				Expect(err).ToNot(HaveOccurred())
 
-				team, err := teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+				team, err := teamFactory.CreateTeam(types.Team{Name: "some-team"})
 				Expect(err).ToNot(HaveOccurred())
 
-				pipeline2, _, err := team.SavePipeline("fake-pipeline-two", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline2, _, err := team.SavePipeline("fake-pipeline-two", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-fake"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -466,8 +467,8 @@ var _ = Describe("Job Factory", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				pipeline3, _, err := team.SavePipeline("fake-pipeline-three", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline3, _, err := team.SavePipeline("fake-pipeline-three", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-fake-two"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -495,8 +496,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the job is paused but has a later schedule requested time", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -523,8 +524,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the job is inactive but has a later schedule requested time", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -538,7 +539,7 @@ var _ = Describe("Job Factory", func() {
 				err = job1.RequestSchedule()
 				Expect(err).ToNot(HaveOccurred())
 
-				_, _, err = defaultTeam.SavePipeline("fake-pipeline", atc.Config{}, pipeline1.ConfigVersion(), false)
+				_, _, err = defaultTeam.SavePipeline("fake-pipeline", types.Config{}, pipeline1.ConfigVersion(), false)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -551,8 +552,8 @@ var _ = Describe("Job Factory", func() {
 
 		Context("when the pipeline is paused but it's job has a later schedule requested time", func() {
 			BeforeEach(func() {
-				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+					Jobs: types.JobConfigs{
 						{Name: "job-name"},
 					},
 				}, db.ConfigVersion(1), false)
@@ -580,8 +581,8 @@ var _ = Describe("Job Factory", func() {
 		Describe("scheduler jobs resources", func() {
 			Context("when the job needed to be schedule has no resources", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{Name: "job-name"},
 						},
 					}, db.ConfigVersion(1), false)
@@ -607,13 +608,13 @@ var _ = Describe("Job Factory", func() {
 
 			Context("when the job needed to be schedule uses resources", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-name",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
@@ -621,11 +622,11 @@ var _ = Describe("Job Factory", func() {
 							},
 						},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
@@ -655,7 +656,7 @@ var _ = Describe("Job Factory", func() {
 						db.SchedulerResource{
 							Name:   "some-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 					))
 				})
@@ -663,13 +664,13 @@ var _ = Describe("Job Factory", func() {
 
 			Context("when multiple jobs needed to be schedule uses resources", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-1",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
@@ -677,14 +678,14 @@ var _ = Describe("Job Factory", func() {
 							},
 							{
 								Name: "job-2",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "other-resource",
 										},
 									},
@@ -692,7 +693,7 @@ var _ = Describe("Job Factory", func() {
 							},
 						},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
@@ -709,18 +710,18 @@ var _ = Describe("Job Factory", func() {
 					}, db.ConfigVersion(1), false)
 					Expect(err).ToNot(HaveOccurred())
 
-					pipeline2, _, err := defaultTeam.SavePipeline("fake-pipeline-2", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline2, _, err := defaultTeam.SavePipeline("fake-pipeline-2", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-3",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource-2",
 										},
 									},
@@ -728,7 +729,7 @@ var _ = Describe("Job Factory", func() {
 							},
 						},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "other-type",
@@ -804,13 +805,13 @@ var _ = Describe("Job Factory", func() {
 
 			Context("when the job needed to be schedule uses resources as puts", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-name",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.PutStep{
+										Config: &types.PutStep{
 											Name: "some-resource",
 										},
 									},
@@ -818,11 +819,11 @@ var _ = Describe("Job Factory", func() {
 							},
 						},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
@@ -851,7 +852,7 @@ var _ = Describe("Job Factory", func() {
 						db.SchedulerResource{
 							Name:   "some-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 					))
 				})
@@ -859,18 +860,18 @@ var _ = Describe("Job Factory", func() {
 
 			Context("when the job needed to be schedule uses the resource as a put and a get", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-name",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
 									{
-										Config: &atc.PutStep{
+										Config: &types.PutStep{
 											Name: "some-resource",
 										},
 									},
@@ -878,11 +879,11 @@ var _ = Describe("Job Factory", func() {
 							},
 						},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
@@ -911,7 +912,7 @@ var _ = Describe("Job Factory", func() {
 						db.SchedulerResource{
 							Name:   "some-resource",
 							Type:   "some-type",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
 					))
 				})
@@ -921,11 +922,11 @@ var _ = Describe("Job Factory", func() {
 		Describe("schedule jobs resource types", func() {
 			Context("when the pipeline for the job needed to be scheduled uses custom resource types", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{Name: "job-name"},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name: "some-type",
 								Type: "other-type",
@@ -949,8 +950,8 @@ var _ = Describe("Job Factory", func() {
 					Expect(len(jobs)).To(Equal(1))
 					Expect(jobs[0].Name()).To(Equal(job1.Name()))
 					Expect(jobs[0].ResourceTypes).To(ConsistOf(
-						atc.VersionedResourceType{
-							ResourceType: atc.ResourceType{
+						types.VersionedResourceType{
+							ResourceType: types.ResourceType{
 								Name: "some-type",
 								Type: "other-type",
 							},
@@ -961,12 +962,12 @@ var _ = Describe("Job Factory", func() {
 
 			Context("when multiple job from different pipelines uses custom resource types", func() {
 				BeforeEach(func() {
-					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline1, _, err := defaultTeam.SavePipeline("fake-pipeline", types.Config{
+						Jobs: types.JobConfigs{
 							{Name: "job-1"},
 							{Name: "job-2"},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name: "some-type",
 								Type: "other-type",
@@ -975,11 +976,11 @@ var _ = Describe("Job Factory", func() {
 					}, db.ConfigVersion(1), false)
 					Expect(err).ToNot(HaveOccurred())
 
-					pipeline2, _, err := defaultTeam.SavePipeline("fake-pipeline-2", atc.Config{
-						Jobs: atc.JobConfigs{
+					pipeline2, _, err := defaultTeam.SavePipeline("fake-pipeline-2", types.Config{
+						Jobs: types.JobConfigs{
 							{Name: "job-3"},
 						},
-						ResourceTypes: atc.ResourceTypes{
+						ResourceTypes: types.ResourceTypes{
 							{
 								Name: "some-type-1",
 								Type: "other-type-1",
@@ -1019,37 +1020,37 @@ var _ = Describe("Job Factory", func() {
 					jobs, err := jobFactory.JobsToSchedule()
 					Expect(err).ToNot(HaveOccurred())
 
-					jobResourceTypes := make(map[string]atc.VersionedResourceTypes)
+					jobResourceTypes := make(map[string]types.VersionedResourceTypes)
 					for _, job := range jobs {
 						jobResourceTypes[job.Name()] = job.ResourceTypes
 					}
 
 					Expect(jobResourceTypes).To(MatchAllKeys(Keys{
 						job1.Name(): ConsistOf(
-							atc.VersionedResourceType{
-								ResourceType: atc.ResourceType{
+							types.VersionedResourceType{
+								ResourceType: types.ResourceType{
 									Name: "some-type",
 									Type: "other-type",
 								},
 							},
 						),
 						job2.Name(): ConsistOf(
-							atc.VersionedResourceType{
-								ResourceType: atc.ResourceType{
+							types.VersionedResourceType{
+								ResourceType: types.ResourceType{
 									Name: "some-type",
 									Type: "other-type",
 								},
 							},
 						),
 						job3.Name(): ConsistOf(
-							atc.VersionedResourceType{
-								ResourceType: atc.ResourceType{
+							types.VersionedResourceType{
+								ResourceType: types.ResourceType{
 									Name: "some-type-1",
 									Type: "other-type-1",
 								},
 							},
-							atc.VersionedResourceType{
-								ResourceType: atc.ResourceType{
+							types.VersionedResourceType{
+								ResourceType: types.ResourceType{
 									Name: "some-type-2",
 									Type: "other-type-2",
 								},

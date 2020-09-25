@@ -3,9 +3,9 @@ package teamserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 )
@@ -20,7 +20,7 @@ func (s *Server) ListTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	acc := accessor.GetAccessor(r)
-	presentedTeams := make([]atc.Team, 0)
+	presentedTeams := make([]types.Team, 0)
 	for _, team := range teams {
 		if acc.IsAuthorized(team.Name()) {
 			presentedTeams = append(presentedTeams, present.Team(team))

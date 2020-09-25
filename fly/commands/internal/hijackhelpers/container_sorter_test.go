@@ -2,9 +2,9 @@ package hijackhelpers_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/fly/commands/internal/hijackhelpers"
 
 	. "github.com/onsi/ginkgo"
@@ -12,11 +12,11 @@ import (
 )
 
 var _ = Describe("ContainerSorter", func() {
-	var containers []atc.Container
+	var containers []types.Container
 	var sorter ContainerSorter
 
 	BeforeEach(func() {
-		containers = []atc.Container{
+		containers = []types.Container{
 			{
 				ID:       "8",
 				BuildID:  2,

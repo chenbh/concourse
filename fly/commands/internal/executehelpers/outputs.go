@@ -2,6 +2,7 @@ package executehelpers
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
@@ -15,7 +16,7 @@ type Output struct {
 
 func DetermineOutputs(
 	fact atc.PlanFactory,
-	taskOutputs []atc.TaskOutputConfig,
+	taskOutputs []types.TaskOutputConfig,
 	outputMappings []flaghelpers.OutputPairFlag,
 ) ([]Output, error) {
 	outputs := []Output{}

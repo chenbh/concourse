@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/scheduler"
@@ -264,13 +264,13 @@ var _ = Describe("Scheduler", func() {
 					fakeJob.GetFullNextBuildInputsReturns([]db.BuildInput{
 						{
 							Name:            "a",
-							Version:         atc.Version{"ref": "v1"},
+							Version:         types.Version{"ref": "v1"},
 							ResourceID:      11,
 							FirstOccurrence: false,
 						},
 						{
 							Name:            "b",
-							Version:         atc.Version{"ref": "v2"},
+							Version:         types.Version{"ref": "v2"},
 							ResourceID:      12,
 							FirstOccurrence: true,
 						},
@@ -329,13 +329,13 @@ var _ = Describe("Scheduler", func() {
 					fakeJob.GetFullNextBuildInputsReturns([]db.BuildInput{
 						{
 							Name:            "a",
-							Version:         atc.Version{"ref": "v1"},
+							Version:         types.Version{"ref": "v1"},
 							ResourceID:      11,
 							FirstOccurrence: true,
 						},
 						{
 							Name:            "b",
-							Version:         atc.Version{"ref": "v2"},
+							Version:         types.Version{"ref": "v2"},
 							ResourceID:      12,
 							FirstOccurrence: false,
 						},
@@ -373,13 +373,13 @@ var _ = Describe("Scheduler", func() {
 					fakeJob.GetFullNextBuildInputsReturns([]db.BuildInput{
 						{
 							Name:            "a",
-							Version:         atc.Version{"ref": "v1"},
+							Version:         types.Version{"ref": "v1"},
 							ResourceID:      11,
 							FirstOccurrence: false,
 						},
 						{
 							Name:            "b",
-							Version:         atc.Version{"ref": "v2"},
+							Version:         types.Version{"ref": "v2"},
 							ResourceID:      12,
 							FirstOccurrence: false,
 						},
@@ -430,20 +430,20 @@ var _ = Describe("Scheduler", func() {
 				fakeJob.GetFullNextBuildInputsReturns([]db.BuildInput{
 					{
 						Name:            "a",
-						Version:         atc.Version{"ref": "v1"},
+						Version:         types.Version{"ref": "v1"},
 						ResourceID:      11,
 						FirstOccurrence: true,
 						Context:         db.NewSpanContext(inputCtx1),
 					},
 					{
 						Name:            "b",
-						Version:         atc.Version{"ref": "v2"},
+						Version:         types.Version{"ref": "v2"},
 						ResourceID:      12,
 						FirstOccurrence: false,
 					},
 					{
 						Name:            "c",
-						Version:         atc.Version{"ref": "v3"},
+						Version:         types.Version{"ref": "v3"},
 						ResourceID:      13,
 						FirstOccurrence: true,
 						Context:         db.NewSpanContext(inputCtx2),

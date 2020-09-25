@@ -1,19 +1,19 @@
 package creds
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/vars"
 )
 
 type VersionedResourceType struct {
-	atc.VersionedResourceType
+	types.VersionedResourceType
 
 	Source Source
 }
 
 type VersionedResourceTypes []VersionedResourceType
 
-func NewVersionedResourceTypes(variables vars.Variables, rawTypes atc.VersionedResourceTypes) VersionedResourceTypes {
+func NewVersionedResourceTypes(variables vars.Variables, rawTypes types.VersionedResourceTypes) VersionedResourceTypes {
 	var types VersionedResourceTypes
 	for _, t := range rawTypes {
 		types = append(types, VersionedResourceType{
@@ -25,8 +25,8 @@ func NewVersionedResourceTypes(variables vars.Variables, rawTypes atc.VersionedR
 	return types
 }
 
-func (types VersionedResourceTypes) Lookup(name string) (VersionedResourceType, bool) {
-	for _, t := range types {
+func (vrt VersionedResourceTypes) Lookup(name string) (VersionedResourceType, bool) {
+	for _, t := range vrt {
 		if t.Name == name {
 			return t, true
 		}
@@ -35,10 +35,10 @@ func (types VersionedResourceTypes) Lookup(name string) (VersionedResourceType, 
 	return VersionedResourceType{}, false
 }
 
-func (types VersionedResourceTypes) Without(name string) VersionedResourceTypes {
+func (vrt VersionedResourceTypes) Without(name string) VersionedResourceTypes {
 	newTypes := VersionedResourceTypes{}
 
-	for _, t := range types {
+	for _, t := range vrt {
 		if t.Name != name {
 			newTypes = append(newTypes, t)
 		}
@@ -47,10 +47,10 @@ func (types VersionedResourceTypes) Without(name string) VersionedResourceTypes 
 	return newTypes
 }
 
-func (types VersionedResourceTypes) Evaluate() (atc.VersionedResourceTypes, error) {
+func (vrt VersionedResourceTypes) Evaluate() (types.VersionedResourceTypes, error) {
 
-	var rawTypes atc.VersionedResourceTypes
-	for _, t := range types {
+	var rawTypes types.VersionedResourceTypes
+	for _, t := range vrt {
 		source, err := t.Source.Evaluate()
 		if err != nil {
 			return nil, err
@@ -59,7 +59,7 @@ func (types VersionedResourceTypes) Evaluate() (atc.VersionedResourceTypes, erro
 		resourceType := t.ResourceType
 		resourceType.Source = source
 
-		rawTypes = append(rawTypes, atc.VersionedResourceType{
+		rawTypes = append(rawTypes, types.VersionedResourceType{
 			ResourceType: resourceType,
 			Version:      t.Version,
 		})

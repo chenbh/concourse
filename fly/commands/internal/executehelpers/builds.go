@@ -2,6 +2,7 @@ package executehelpers
 
 import (
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/fly/rc"
 )
 
@@ -11,9 +12,9 @@ func CreateBuildPlan(
 	privileged bool,
 	inputs []Input,
 	inputMappings map[string]string,
-	versionedResourceTypes atc.VersionedResourceTypes,
+	versionedResourceTypes types.VersionedResourceTypes,
 	outputs []Output,
-	config atc.TaskConfig,
+	config types.TaskConfig,
 	tags []string,
 ) (atc.Plan, error) {
 	if err := config.Validate(); err != nil {

@@ -3,6 +3,7 @@ package scheduler_test
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/concourse/atc"
@@ -45,13 +46,13 @@ var _ = Describe("BuildStarter", func() {
 		var createdBuild *dbfakes.FakeBuild
 		var job *dbfakes.FakeJob
 		var resources db.SchedulerResources
-		var versionedResourceTypes atc.VersionedResourceTypes
+		var versionedResourceTypes types.VersionedResourceTypes
 
 		BeforeEach(func() {
-			versionedResourceTypes = atc.VersionedResourceTypes{
+			versionedResourceTypes = types.VersionedResourceTypes{
 				{
-					ResourceType: atc.ResourceType{Name: "some-resource-type"},
-					Version:      atc.Version{"some": "version"},
+					ResourceType: types.ResourceType{Name: "some-resource-type"},
+					Version:      types.Version{"some": "version"},
 				},
 			}
 
@@ -74,15 +75,15 @@ var _ = Describe("BuildStarter", func() {
 				job.GetPendingBuildsReturns(pendingBuilds, nil)
 				job.NameReturns("some-job")
 				job.IDReturns(1)
-				job.ConfigReturns(atc.JobConfig{
-					PlanSequence: []atc.Step{
+				job.ConfigReturns(types.JobConfig{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "input-1",
 								Resource: "some-resource",
 							},
 						}, {
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "input-2",
 								Resource: "some-resource",
 							},
@@ -409,11 +410,11 @@ var _ = Describe("BuildStarter", func() {
 				var pendingBuild2 *dbfakes.FakeBuild
 				var rerunBuild *dbfakes.FakeBuild
 
-				var jobConfig = atc.JobConfig{
+				var jobConfig = types.JobConfig{
 					Name: "some-job",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name: "some-input",
 							},
 						},
@@ -442,12 +443,12 @@ var _ = Describe("BuildStarter", func() {
 						db.SchedulerJob{
 							Job:       job,
 							Resources: resources,
-							ResourceTypes: atc.VersionedResourceTypes{
+							ResourceTypes: types.VersionedResourceTypes{
 								{
-									ResourceType: atc.ResourceType{
+									ResourceType: types.ResourceType{
 										Name: "some-resource-type",
 									},
-									Version: atc.Version{"some": "version"},
+									Version: types.Version{"some": "version"},
 								},
 							},
 						},
@@ -662,19 +663,19 @@ var _ = Describe("BuildStarter", func() {
 										Expect(fakePlanner.CreateCallCount()).To(Equal(3))
 
 										actualPlanConfig, actualResourceConfigs, actualResourceTypes, actualBuildInputs := fakePlanner.CreateArgsForCall(0)
-										Expect(actualPlanConfig).To(Equal(&atc.DoStep{Steps: jobConfig.PlanSequence}))
+										Expect(actualPlanConfig).To(Equal(&types.DoStep{Steps: jobConfig.PlanSequence}))
 										Expect(actualResourceConfigs).To(Equal(db.SchedulerResources{{Name: "some-resource"}}))
 										Expect(actualResourceTypes).To(Equal(versionedResourceTypes))
 										Expect(actualBuildInputs).To(Equal([]db.BuildInput{{Name: "some-input"}}))
 
 										actualPlanConfig, actualResourceConfigs, actualResourceTypes, actualBuildInputs = fakePlanner.CreateArgsForCall(1)
-										Expect(actualPlanConfig).To(Equal(&atc.DoStep{Steps: jobConfig.PlanSequence}))
+										Expect(actualPlanConfig).To(Equal(&types.DoStep{Steps: jobConfig.PlanSequence}))
 										Expect(actualResourceConfigs).To(Equal(db.SchedulerResources{{Name: "some-resource"}}))
 										Expect(actualResourceTypes).To(Equal(versionedResourceTypes))
 										Expect(actualBuildInputs).To(Equal([]db.BuildInput{{Name: "some-input"}}))
 
 										actualPlanConfig, actualResourceConfigs, actualResourceTypes, actualBuildInputs = fakePlanner.CreateArgsForCall(2)
-										Expect(actualPlanConfig).To(Equal(&atc.DoStep{Steps: jobConfig.PlanSequence}))
+										Expect(actualPlanConfig).To(Equal(&types.DoStep{Steps: jobConfig.PlanSequence}))
 										Expect(actualResourceConfigs).To(Equal(db.SchedulerResources{{Name: "some-resource"}}))
 										Expect(actualResourceTypes).To(Equal(versionedResourceTypes))
 										Expect(actualBuildInputs).To(Equal([]db.BuildInput{{Name: "some-input"}}))

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/concourse/concourse/atc/types"
+
 	"code.cloudfoundry.org/lager"
 
 	sq "github.com/Masterminds/squirrel"
@@ -42,11 +44,11 @@ type Pipeline interface {
 	TeamName() string
 	ParentJobID() int
 	ParentBuildID() int
-	Groups() atc.GroupConfigs
-	VarSources() atc.VarSourceConfigs
-	Display() *atc.DisplayConfig
+	Groups() types.GroupConfigs
+	VarSources() types.VarSourceConfigs
+	Display() *types.DisplayConfig
 	ConfigVersion() ConfigVersion
-	Config() (atc.Config, error)
+	Config() (types.Config, error)
 	Public() bool
 	Paused() bool
 	Archived() bool
@@ -56,7 +58,7 @@ type Pipeline interface {
 	Reload() (bool, error)
 
 	Causality(versionedResourceID int) ([]Cause, error)
-	ResourceVersion(resourceConfigVersionID int) (atc.ResourceVersion, bool, error)
+	ResourceVersion(resourceConfigVersionID int) (types.ResourceVersion, bool, error)
 
 	GetBuildsWithVersionAsInput(int, int) ([]Build, error)
 	GetBuildsWithVersionAsOutput(int, int) ([]Build, error)
@@ -106,9 +108,9 @@ type pipeline struct {
 	teamName      string
 	parentJobID   int
 	parentBuildID int
-	groups        atc.GroupConfigs
-	varSources    atc.VarSourceConfigs
-	display       *atc.DisplayConfig
+	groups        types.GroupConfigs
+	varSources    types.VarSourceConfigs
+	display       *types.DisplayConfig
 	configVersion ConfigVersion
 	paused        bool
 	public        bool
@@ -149,21 +151,21 @@ func newPipeline(conn Conn, lockFactory lock.LockFactory) *pipeline {
 	}
 }
 
-func (p *pipeline) ID() int                  { return p.id }
-func (p *pipeline) Name() string             { return p.name }
-func (p *pipeline) TeamID() int              { return p.teamID }
-func (p *pipeline) TeamName() string         { return p.teamName }
-func (p *pipeline) ParentJobID() int         { return p.parentJobID }
-func (p *pipeline) ParentBuildID() int       { return p.parentBuildID }
-func (p *pipeline) Groups() atc.GroupConfigs { return p.groups }
+func (p *pipeline) ID() int                    { return p.id }
+func (p *pipeline) Name() string               { return p.name }
+func (p *pipeline) TeamID() int                { return p.teamID }
+func (p *pipeline) TeamName() string           { return p.teamName }
+func (p *pipeline) ParentJobID() int           { return p.parentJobID }
+func (p *pipeline) ParentBuildID() int         { return p.parentBuildID }
+func (p *pipeline) Groups() types.GroupConfigs { return p.groups }
 
-func (p *pipeline) VarSources() atc.VarSourceConfigs { return p.varSources }
-func (p *pipeline) Display() *atc.DisplayConfig      { return p.display }
-func (p *pipeline) ConfigVersion() ConfigVersion     { return p.configVersion }
-func (p *pipeline) Public() bool                     { return p.public }
-func (p *pipeline) Paused() bool                     { return p.paused }
-func (p *pipeline) Archived() bool                   { return p.archived }
-func (p *pipeline) LastUpdated() time.Time           { return p.lastUpdated }
+func (p *pipeline) VarSources() types.VarSourceConfigs { return p.varSources }
+func (p *pipeline) Display() *types.DisplayConfig      { return p.display }
+func (p *pipeline) ConfigVersion() ConfigVersion       { return p.configVersion }
+func (p *pipeline) Public() bool                       { return p.public }
+func (p *pipeline) Paused() bool                       { return p.paused }
+func (p *pipeline) Archived() bool                     { return p.archived }
+func (p *pipeline) LastUpdated() time.Time             { return p.lastUpdated }
 
 // IMPORTANT: This method is broken with the new resource config versions changes
 func (p *pipeline) Causality(versionedResourceID int) ([]Cause, error) {
@@ -245,28 +247,28 @@ func (p *pipeline) Reload() (bool, error) {
 	return true, nil
 }
 
-func (p *pipeline) Config() (atc.Config, error) {
+func (p *pipeline) Config() (types.Config, error) {
 	jobs, err := p.Jobs()
 	if err != nil {
-		return atc.Config{}, fmt.Errorf("failed to get jobs: %w", err)
+		return types.Config{}, fmt.Errorf("failed to get jobs: %w", err)
 	}
 
 	resources, err := p.Resources()
 	if err != nil {
-		return atc.Config{}, fmt.Errorf("failed to get resources: %w", err)
+		return types.Config{}, fmt.Errorf("failed to get resources: %w", err)
 	}
 
 	resourceTypes, err := p.ResourceTypes()
 	if err != nil {
-		return atc.Config{}, fmt.Errorf("failed to get resources-types: %w", err)
+		return types.Config{}, fmt.Errorf("failed to get resources-types: %w", err)
 	}
 
 	jobConfigs, err := jobs.Configs()
 	if err != nil {
-		return atc.Config{}, fmt.Errorf("failed to get job configs: %w", err)
+		return types.Config{}, fmt.Errorf("failed to get job configs: %w", err)
 	}
 
-	config := atc.Config{
+	config := types.Config{
 		Groups:        p.Groups(),
 		VarSources:    p.VarSources(),
 		Resources:     resources.Configs(),
@@ -331,8 +333,8 @@ func (p *pipeline) CreateJobBuild(jobName string) (Build, error) {
 // resource version struct. This method is used by the API call
 // GetResourceVersion to get all the attributes for that version of the
 // resource.
-func (p *pipeline) ResourceVersion(resourceConfigVersionID int) (atc.ResourceVersion, bool, error) {
-	rv := atc.ResourceVersion{}
+func (p *pipeline) ResourceVersion(resourceConfigVersionID int) (types.ResourceVersion, bool, error) {
+	rv := types.ResourceVersion{}
 	var (
 		versionBytes  string
 		metadataBytes string
@@ -357,20 +359,20 @@ func (p *pipeline) ResourceVersion(resourceConfigVersionID int) (atc.ResourceVer
 		Scan(&rv.ID, &versionBytes, &metadataBytes, &rv.Enabled)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return atc.ResourceVersion{}, false, nil
+			return types.ResourceVersion{}, false, nil
 		}
 
-		return atc.ResourceVersion{}, false, err
+		return types.ResourceVersion{}, false, err
 	}
 
 	err = json.Unmarshal([]byte(versionBytes), &rv.Version)
 	if err != nil {
-		return atc.ResourceVersion{}, false, err
+		return types.ResourceVersion{}, false, err
 	}
 
 	err = json.Unmarshal([]byte(metadataBytes), &rv.Metadata)
 	if err != nil {
-		return atc.ResourceVersion{}, false, err
+		return types.ResourceVersion{}, false, err
 	}
 
 	return rv, true, nil
@@ -1077,7 +1079,7 @@ func (p *pipeline) CreateStartedBuild(plan atc.Plan) (Build, error) {
 	}
 
 	err = build.saveEvent(tx, event.Status{
-		Status: atc.StatusStarted,
+		Status: types.StatusStarted,
 		Time:   build.StartTime().Unix(),
 	})
 	if err != nil {
@@ -1138,7 +1140,7 @@ func (p *pipeline) Variables(logger lager.Logger, globalSecrets creds.Secrets, v
 	// a map is passed by reference.
 	allVars := vars.NewMultiVars([]vars.Variables{namedVarsMap, globalVars})
 
-	orderedVarSources, err := p.varSources.OrderByDependency()
+	orderedVarSources, err := atc.OrderByDependency(p.varSources)
 	if err != nil {
 		return nil, err
 	}
@@ -1150,7 +1152,7 @@ func (p *pipeline) Variables(logger lager.Logger, globalSecrets creds.Secrets, v
 		}
 
 		// Interpolate variables in pipeline credential manager's config
-		newConfig, err := creds.NewParams(allVars, atc.Params{"config": cm.Config}).Evaluate()
+		newConfig, err := creds.NewParams(allVars, types.Params{"config": cm.Config}).Evaluate()
 		if err != nil {
 			return nil, errors.Wrapf(err, "evaluate var_source '%s' error", cm.Name)
 		}

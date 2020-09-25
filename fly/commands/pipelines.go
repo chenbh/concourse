@@ -1,10 +1,10 @@
 package commands
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -28,7 +28,7 @@ func (command *PipelinesCommand) Execute([]string) error {
 		return err
 	}
 
-	var unfilteredPipelines []atc.Pipeline
+	var unfilteredPipelines []types.Pipeline
 
 	if command.All {
 		unfilteredPipelines, err = target.Client().ListPipelines()
@@ -116,8 +116,8 @@ func (command *PipelinesCommand) buildHeader() []string {
 	return headers
 }
 
-func (command *PipelinesCommand) filterPipelines(unfilteredPipelines []atc.Pipeline) []atc.Pipeline {
-	pipelines := make([]atc.Pipeline, 0)
+func (command *PipelinesCommand) filterPipelines(unfilteredPipelines []types.Pipeline) []types.Pipeline {
+	pipelines := make([]types.Pipeline, 0)
 
 	if !command.IncludeArchived {
 		for _, p := range unfilteredPipelines {

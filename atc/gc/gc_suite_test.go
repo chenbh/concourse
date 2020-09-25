@@ -2,6 +2,7 @@ package gc_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/atc/postgresrunner"
@@ -77,28 +77,28 @@ var _ = BeforeEach(func() {
 	teamFactory = db.NewTeamFactory(dbConn, lockFactory)
 	buildFactory = db.NewBuildFactory(dbConn, lockFactory, 0, time.Hour)
 
-	defaultTeam, err = teamFactory.CreateTeam(atc.Team{Name: "default-team"})
+	defaultTeam, err = teamFactory.CreateTeam(types.Team{Name: "default-team"})
 	Expect(err).NotTo(HaveOccurred())
 
 	defaultBuild, err = defaultTeam.CreateOneOffBuild()
 	Expect(err).NotTo(HaveOccurred())
 
-	atcConfig := atc.Config{
-		Resources: atc.ResourceConfigs{
+	atcConfig := types.Config{
+		Resources: types.ResourceConfigs{
 			{
 				Name:   "some-resource",
 				Type:   "some-base-type",
-				Source: atc.Source{"some": "source"},
+				Source: types.Source{"some": "source"},
 			},
 		},
-		ResourceTypes: atc.ResourceTypes{
+		ResourceTypes: types.ResourceTypes{
 			{
 				Name:   "some-resource-type",
 				Type:   "some-base-type",
-				Source: atc.Source{"some": "source-type"},
+				Source: types.Source{"some": "source-type"},
 			},
 		},
-		Jobs: atc.JobConfigs{
+		Jobs: types.JobConfigs{
 			{
 				Name: "some-job",
 			},

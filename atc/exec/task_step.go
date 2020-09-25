@@ -3,6 +3,7 @@ package exec
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"path"
 	"path/filepath"
@@ -54,14 +55,14 @@ func (err TaskImageSourceParametersError) Error() string {
 
 type TaskDelegate interface {
 	ImageVersionDetermined(db.UsedResourceCache) error
-	RedactImageSource(source atc.Source) (atc.Source, error)
+	RedactImageSource(source types.Source) (types.Source, error)
 
 	Stdout() io.Writer
 	Stderr() io.Writer
 
 	Variables() *vars.BuildVariables
 
-	SetTaskConfig(config atc.TaskConfig)
+	SetTaskConfig(config types.TaskConfig)
 
 	Initializing(lager.Logger)
 	Starting(lager.Logger)
@@ -75,7 +76,7 @@ type TaskDelegate interface {
 type TaskStep struct {
 	planID            atc.PlanID
 	plan              atc.TaskPlan
-	defaultLimits     atc.ContainerLimits
+	defaultLimits     types.ContainerLimits
 	metadata          StepMetadata
 	containerMetadata db.ContainerMetadata
 	strategy          worker.ContainerPlacementStrategy
@@ -88,7 +89,7 @@ type TaskStep struct {
 func NewTaskStep(
 	planID atc.PlanID,
 	plan atc.TaskPlan,
-	defaultLimits atc.ContainerLimits,
+	defaultLimits types.ContainerLimits,
 	metadata StepMetadata,
 	containerMetadata db.ContainerMetadata,
 	strategy worker.ContainerPlacementStrategy,
@@ -205,7 +206,7 @@ func (step *TaskStep) run(ctx context.Context, state RunState) error {
 	}
 
 	if config.Limits == nil {
-		config.Limits = &atc.ContainerLimits{}
+		config.Limits = &types.ContainerLimits{}
 	}
 	if config.Limits.CPU == nil {
 		config.Limits.CPU = step.defaultLimits.CPU
@@ -283,7 +284,7 @@ func (step *TaskStep) Succeeded() bool {
 	return step.succeeded
 }
 
-func (step *TaskStep) imageSpec(logger lager.Logger, repository *build.Repository, config atc.TaskConfig) (worker.ImageSpec, error) {
+func (step *TaskStep) imageSpec(logger lager.Logger, repository *build.Repository, config types.TaskConfig) (worker.ImageSpec, error) {
 	imageSpec := worker.ImageSpec{
 		Privileged: bool(step.plan.Privileged),
 	}
@@ -314,7 +315,7 @@ func (step *TaskStep) imageSpec(logger lager.Logger, repository *build.Repositor
 	return imageSpec, nil
 }
 
-func (step *TaskStep) containerInputs(logger lager.Logger, repository *build.Repository, config atc.TaskConfig, metadata db.ContainerMetadata) (map[string]runtime.Artifact, error) {
+func (step *TaskStep) containerInputs(logger lager.Logger, repository *build.Repository, config types.TaskConfig, metadata db.ContainerMetadata) (map[string]runtime.Artifact, error) {
 	inputs := map[string]runtime.Artifact{}
 
 	var missingRequiredInputs []string
@@ -363,7 +364,7 @@ func (step *TaskStep) containerInputs(logger lager.Logger, repository *build.Rep
 	return inputs, nil
 }
 
-func (step *TaskStep) containerSpec(logger lager.Logger, repository *build.Repository, config atc.TaskConfig, metadata db.ContainerMetadata) (worker.ContainerSpec, error) {
+func (step *TaskStep) containerSpec(logger lager.Logger, repository *build.Repository, config types.TaskConfig, metadata db.ContainerMetadata) (worker.ContainerSpec, error) {
 	imageSpec, err := step.imageSpec(logger, repository, config)
 	if err != nil {
 		return worker.ContainerSpec{}, err
@@ -402,7 +403,7 @@ func (step *TaskStep) containerSpec(logger lager.Logger, repository *build.Repos
 	return containerSpec, nil
 }
 
-func (step *TaskStep) workerSpec(logger lager.Logger, resourceTypes atc.VersionedResourceTypes, repository *build.Repository, config atc.TaskConfig) (worker.WorkerSpec, error) {
+func (step *TaskStep) workerSpec(logger lager.Logger, resourceTypes types.VersionedResourceTypes, repository *build.Repository, config types.TaskConfig) (worker.WorkerSpec, error) {
 	workerSpec := worker.WorkerSpec{
 		Platform:      config.Platform,
 		Tags:          step.plan.Tags,
@@ -422,7 +423,7 @@ func (step *TaskStep) workerSpec(logger lager.Logger, resourceTypes atc.Versione
 	return workerSpec, nil
 }
 
-func (step *TaskStep) registerOutputs(logger lager.Logger, repository *build.Repository, config atc.TaskConfig, volumeMounts []worker.VolumeMount, metadata db.ContainerMetadata) {
+func (step *TaskStep) registerOutputs(logger lager.Logger, repository *build.Repository, config types.TaskConfig, volumeMounts []worker.VolumeMount, metadata db.ContainerMetadata) {
 	logger.Debug("registering-outputs", lager.Data{"outputs": config.Outputs})
 
 	for _, output := range config.Outputs {
@@ -444,7 +445,7 @@ func (step *TaskStep) registerOutputs(logger lager.Logger, repository *build.Rep
 	}
 }
 
-func (step *TaskStep) registerCaches(logger lager.Logger, repository *build.Repository, config atc.TaskConfig, volumeMounts []worker.VolumeMount, metadata db.ContainerMetadata) error {
+func (step *TaskStep) registerCaches(logger lager.Logger, repository *build.Repository, config types.TaskConfig, volumeMounts []worker.VolumeMount, metadata db.ContainerMetadata) error {
 	logger.Debug("initializing-caches", lager.Data{"caches": config.Caches})
 
 	for _, cacheConfig := range config.Caches {
@@ -470,7 +471,7 @@ func (step *TaskStep) registerCaches(logger lager.Logger, repository *build.Repo
 }
 
 type taskInput struct {
-	config        atc.TaskInputConfig
+	config        types.TaskInputConfig
 	artifact      runtime.Artifact
 	artifactsRoot string
 }
@@ -486,7 +487,7 @@ func (s taskInput) Path() string {
 	return filepath.Join(s.artifactsRoot, subdir)
 }
 
-func artifactsPath(outputConfig atc.TaskOutputConfig, artifactsRoot string) string {
+func artifactsPath(outputConfig types.TaskOutputConfig, artifactsRoot string) string {
 	outputSrc := outputConfig.Path
 	if len(outputSrc) == 0 {
 		outputSrc = outputConfig.Name

@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds/credsfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -51,15 +51,15 @@ var (
 	dbWall                              db.Wall
 	fakeClock                           dbfakes.FakeClock
 
-	defaultWorkerResourceType atc.WorkerResourceType
+	defaultWorkerResourceType types.WorkerResourceType
 	defaultTeam               db.Team
-	defaultWorkerPayload      atc.Worker
+	defaultWorkerPayload      types.Worker
 	defaultWorker             db.Worker
 	otherWorker               db.Worker
-	otherWorkerPayload        atc.Worker
+	otherWorkerPayload        types.Worker
 	defaultResourceType       db.ResourceType
 	defaultResource           db.Resource
-	defaultPipelineConfig     atc.Config
+	defaultPipelineConfig     types.Config
 	defaultPipeline           db.Pipeline
 	defaultJob                db.Job
 	logger                    *lagertest.TestLogger
@@ -123,10 +123,10 @@ var _ = BeforeEach(func() {
 	dbWall = db.NewWall(dbConn, &fakeClock)
 
 	var err error
-	defaultTeam, err = teamFactory.CreateTeam(atc.Team{Name: "default-team"})
+	defaultTeam, err = teamFactory.CreateTeam(types.Team{Name: "default-team"})
 	Expect(err).NotTo(HaveOccurred())
 
-	defaultWorkerResourceType = atc.WorkerResourceType{
+	defaultWorkerResourceType = types.WorkerResourceType{
 		Type:    "some-base-resource-type",
 		Image:   "/path/to/image",
 		Version: "some-brt-version",
@@ -134,16 +134,16 @@ var _ = BeforeEach(func() {
 
 	certsPath := "/etc/ssl/certs"
 
-	defaultWorkerPayload = atc.Worker{
-		ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+	defaultWorkerPayload = types.Worker{
+		ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 		Name:            "default-worker",
 		GardenAddr:      "1.2.3.4:7777",
 		BaggageclaimURL: "5.6.7.8:7878",
 		CertsPath:       &certsPath,
 	}
 
-	otherWorkerPayload = atc.Worker{
-		ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+	otherWorkerPayload = types.Worker{
+		ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 		Name:            "other-worker",
 		GardenAddr:      "2.3.4.5:7777",
 		BaggageclaimURL: "6.7.8.9:7878",
@@ -156,26 +156,26 @@ var _ = BeforeEach(func() {
 	otherWorker, err = workerFactory.SaveWorker(otherWorkerPayload, 0)
 	Expect(err).NotTo(HaveOccurred())
 
-	defaultPipelineConfig = atc.Config{
-		Jobs: atc.JobConfigs{
+	defaultPipelineConfig = types.Config{
+		Jobs: types.JobConfigs{
 			{
 				Name: "some-job",
 			},
 		},
-		Resources: atc.ResourceConfigs{
+		Resources: types.ResourceConfigs{
 			{
 				Name: "some-resource",
 				Type: "some-base-resource-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"some": "source",
 				},
 			},
 		},
-		ResourceTypes: atc.ResourceTypes{
+		ResourceTypes: types.ResourceTypes{
 			{
 				Name: "some-type",
 				Type: "some-base-resource-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"some-type": "source",
 				},
 			},

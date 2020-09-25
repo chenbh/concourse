@@ -1,11 +1,11 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func VersionedResourceTypes(showCheckError bool, savedResourceTypes db.ResourceTypes) atc.VersionedResourceTypes {
+func VersionedResourceTypes(showCheckError bool, savedResourceTypes db.ResourceTypes) types.VersionedResourceTypes {
 	versionedResourceTypes := savedResourceTypes.Deserialize()
 
 	for i, resourceType := range savedResourceTypes {

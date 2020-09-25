@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
@@ -38,7 +39,7 @@ type ResourceConfigDescriptor struct {
 	CreatedByBaseResourceType *BaseResourceType
 
 	// The resource's source configuration.
-	Source atc.Source
+	Source types.Source
 }
 
 //go:generate counterfeiter . ResourceConfig
@@ -289,7 +290,7 @@ func findOrCreateResourceConfigScope(
 	resourceConfig ResourceConfig,
 	resource Resource,
 	resourceType string,
-	resourceTypes atc.VersionedResourceTypes,
+	resourceTypes types.VersionedResourceTypes,
 ) (ResourceConfigScope, error) {
 
 	var unique bool

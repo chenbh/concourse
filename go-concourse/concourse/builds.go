@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"github.com/concourse/concourse/atc"
@@ -11,8 +12,8 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) CreateBuild(plan atc.Plan) (atc.Build, error) {
-	var build atc.Build
+func (team *team) CreateBuild(plan atc.Plan) (types.Build, error) {
+	var build types.Build
 
 	buffer := &bytes.Buffer{}
 	err := json.NewEncoder(buffer).Encode(plan)
@@ -20,7 +21,7 @@ func (team *team) CreateBuild(plan atc.Plan) (atc.Build, error) {
 		return build, fmt.Errorf("Unable to marshal plan: %s", err)
 	}
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.CreateBuild,
+		RequestName: types.CreateBuild,
 		Body:        buffer,
 		Params: rata.Params{
 			"team_name": team.Name(),
@@ -35,16 +36,16 @@ func (team *team) CreateBuild(plan atc.Plan) (atc.Build, error) {
 	return build, err
 }
 
-func (team *team) CreateJobBuild(pipelineName string, jobName string) (atc.Build, error) {
+func (team *team) CreateJobBuild(pipelineName string, jobName string) (types.Build, error) {
 	params := rata.Params{
 		"job_name":      jobName,
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var build atc.Build
+	var build types.Build
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.CreateJobBuild,
+		RequestName: types.CreateJobBuild,
 		Params:      params,
 	}, &internal.Response{
 		Result: &build,
@@ -53,7 +54,7 @@ func (team *team) CreateJobBuild(pipelineName string, jobName string) (atc.Build
 	return build, err
 }
 
-func (team *team) RerunJobBuild(pipelineName string, jobName string, buildName string) (atc.Build, error) {
+func (team *team) RerunJobBuild(pipelineName string, jobName string, buildName string) (types.Build, error) {
 	params := rata.Params{
 		"build_name":    buildName,
 		"job_name":      jobName,
@@ -61,9 +62,9 @@ func (team *team) RerunJobBuild(pipelineName string, jobName string, buildName s
 		"team_name":     team.name,
 	}
 
-	var build atc.Build
+	var build types.Build
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.RerunJobBuild,
+		RequestName: types.RerunJobBuild,
 		Params:      params,
 	}, &internal.Response{
 		Result: &build,
@@ -72,7 +73,7 @@ func (team *team) RerunJobBuild(pipelineName string, jobName string, buildName s
 	return build, err
 }
 
-func (team *team) JobBuild(pipelineName, jobName, buildName string) (atc.Build, bool, error) {
+func (team *team) JobBuild(pipelineName, jobName, buildName string) (types.Build, bool, error) {
 	params := rata.Params{
 		"job_name":      jobName,
 		"build_name":    buildName,
@@ -80,9 +81,9 @@ func (team *team) JobBuild(pipelineName, jobName, buildName string) (atc.Build, 
 		"team_name":     team.name,
 	}
 
-	var build atc.Build
+	var build types.Build
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.GetJobBuild,
+		RequestName: types.GetJobBuild,
 		Params:      params,
 	}, &internal.Response{
 		Result: &build,
@@ -98,14 +99,14 @@ func (team *team) JobBuild(pipelineName, jobName, buildName string) (atc.Build, 
 	}
 }
 
-func (client *client) Build(buildID string) (atc.Build, bool, error) {
+func (client *client) Build(buildID string) (types.Build, bool, error) {
 	params := rata.Params{
 		"build_id": buildID,
 	}
 
-	var build atc.Build
+	var build types.Build
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.GetBuild,
+		RequestName: types.GetBuild,
 		Params:      params,
 	}, &internal.Response{
 		Result: &build,
@@ -121,12 +122,12 @@ func (client *client) Build(buildID string) (atc.Build, bool, error) {
 	}
 }
 
-func (client *client) Builds(page Page) ([]atc.Build, Pagination, error) {
-	var builds []atc.Build
+func (client *client) Builds(page Page) ([]types.Build, Pagination, error) {
+	var builds []types.Build
 
 	headers := http.Header{}
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListBuilds,
+		RequestName: types.ListBuilds,
 		Query:       page.QueryParams(),
 	}, &internal.Response{
 		Result:  &builds,
@@ -152,13 +153,13 @@ func (client *client) AbortBuild(buildID string) error {
 	}
 
 	return client.connection.Send(internal.Request{
-		RequestName: atc.AbortBuild,
+		RequestName: types.AbortBuild,
 		Params:      params,
 	}, nil)
 }
 
-func (team *team) Builds(page Page) ([]atc.Build, Pagination, error) {
-	var builds []atc.Build
+func (team *team) Builds(page Page) ([]types.Build, Pagination, error) {
+	var builds []types.Build
 
 	headers := http.Header{}
 
@@ -167,7 +168,7 @@ func (team *team) Builds(page Page) ([]atc.Build, Pagination, error) {
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListTeamBuilds,
+		RequestName: types.ListTeamBuilds,
 		Params:      params,
 		Query:       page.QueryParams(),
 	}, &internal.Response{
@@ -188,15 +189,15 @@ func (team *team) Builds(page Page) ([]atc.Build, Pagination, error) {
 	}
 }
 
-func (client *client) ListBuildArtifacts(buildID string) ([]atc.WorkerArtifact, error) {
+func (client *client) ListBuildArtifacts(buildID string) ([]types.WorkerArtifact, error) {
 	params := rata.Params{
 		"build_id": buildID,
 	}
 
-	var artifacts []atc.WorkerArtifact
+	var artifacts []types.WorkerArtifact
 
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListBuildArtifacts,
+		RequestName: types.ListBuildArtifacts,
 		Params:      params,
 	}, &internal.Response{
 		Result: &artifacts,

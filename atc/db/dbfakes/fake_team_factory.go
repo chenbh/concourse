@@ -2,9 +2,9 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -21,10 +21,10 @@ type FakeTeamFactory struct {
 		result1 db.Team
 		result2 error
 	}
-	CreateTeamStub        func(atc.Team) (db.Team, error)
+	CreateTeamStub        func(types.Team) (db.Team, error)
 	createTeamMutex       sync.RWMutex
 	createTeamArgsForCall []struct {
-		arg1 atc.Team
+		arg1 types.Team
 	}
 	createTeamReturns struct {
 		result1 db.Team
@@ -151,11 +151,11 @@ func (fake *FakeTeamFactory) CreateDefaultTeamIfNotExistsReturnsOnCall(i int, re
 	}{result1, result2}
 }
 
-func (fake *FakeTeamFactory) CreateTeam(arg1 atc.Team) (db.Team, error) {
+func (fake *FakeTeamFactory) CreateTeam(arg1 types.Team) (db.Team, error) {
 	fake.createTeamMutex.Lock()
 	ret, specificReturn := fake.createTeamReturnsOnCall[len(fake.createTeamArgsForCall)]
 	fake.createTeamArgsForCall = append(fake.createTeamArgsForCall, struct {
-		arg1 atc.Team
+		arg1 types.Team
 	}{arg1})
 	fake.recordInvocation("CreateTeam", []interface{}{arg1})
 	fake.createTeamMutex.Unlock()
@@ -175,13 +175,13 @@ func (fake *FakeTeamFactory) CreateTeamCallCount() int {
 	return len(fake.createTeamArgsForCall)
 }
 
-func (fake *FakeTeamFactory) CreateTeamCalls(stub func(atc.Team) (db.Team, error)) {
+func (fake *FakeTeamFactory) CreateTeamCalls(stub func(types.Team) (db.Team, error)) {
 	fake.createTeamMutex.Lock()
 	defer fake.createTeamMutex.Unlock()
 	fake.CreateTeamStub = stub
 }
 
-func (fake *FakeTeamFactory) CreateTeamArgsForCall(i int) atc.Team {
+func (fake *FakeTeamFactory) CreateTeamArgsForCall(i int) types.Team {
 	fake.createTeamMutex.RLock()
 	defer fake.createTeamMutex.RUnlock()
 	argsForCall := fake.createTeamArgsForCall[i]

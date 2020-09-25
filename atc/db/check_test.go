@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -32,10 +33,10 @@ var _ = Describe("Check", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(setupTx.Commit()).To(Succeed())
 
-		resourceConfigScope, err = defaultResource.SetResourceConfig(atc.Source{"some": "repository"}, atc.VersionedResourceTypes{})
+		resourceConfigScope, err = defaultResource.SetResourceConfig(types.Source{"some": "repository"}, types.VersionedResourceTypes{})
 		Expect(err).NotTo(HaveOccurred())
 
-		resourceTypeConfigScope, err = defaultResourceType.SetResourceConfig(atc.Source{"some": "type-repository"}, atc.VersionedResourceTypes{})
+		resourceTypeConfigScope, err = defaultResourceType.SetResourceConfig(types.Source{"some": "type-repository"}, types.VersionedResourceTypes{})
 		Expect(err).NotTo(HaveOccurred())
 
 		metadata := db.CheckMetadata{
@@ -207,7 +208,7 @@ var _ = Describe("Check", func() {
 		JustBeforeEach(func() {
 			err = check.SaveVersions(
 				map[string]string{"fake": "span"},
-				[]atc.Version{{"some": "version"}},
+				[]types.Version{{"some": "version"}},
 			)
 		})
 
@@ -231,7 +232,7 @@ var _ = Describe("Check", func() {
 		It("does not update span context for pre-existing versions", func() {
 			check.SaveVersions(
 				map[string]string{"new": "span"},
-				[]atc.Version{{"some": "version"}},
+				[]types.Version{{"some": "version"}},
 			)
 			version, _, _ := resourceConfigScope.LatestVersion()
 			Expect(version.SpanContext()).To(HaveKeyWithValue("fake", Equal("span")))

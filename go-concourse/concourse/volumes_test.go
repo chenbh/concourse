@@ -1,9 +1,8 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
-
-	"github.com/concourse/concourse/atc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,13 +12,13 @@ import (
 var _ = Describe("ATC Handler Volumes", func() {
 	Describe("ListVolumes", func() {
 		var (
-			expectedVolumes []atc.Volume
+			expectedVolumes []types.Volume
 		)
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/teams/some-team/volumes"
 
-			expectedVolumes = []atc.Volume{
+			expectedVolumes = []types.Volume{
 				{
 					ID:              "myid-1",
 					WorkerName:      "some-worker",

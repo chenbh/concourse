@@ -1,20 +1,20 @@
 package concourse
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/go-concourse/concourse/eventstream"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
 type Events interface {
-	NextEvent() (atc.Event, error)
+	NextEvent() (types.Event, error)
 	Close() error
 }
 
 func (client *client) BuildEvents(buildID string) (Events, error) {
 	sseEvents, err := client.connection.ConnectToEventStream(internal.Request{
-		RequestName: atc.BuildEvents,
+		RequestName: types.BuildEvents,
 		Params: rata.Params{
 			"build_id": buildID,
 		},

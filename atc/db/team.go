@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -27,14 +28,14 @@ type Team interface {
 	Name() string
 	Admin() bool
 
-	Auth() atc.TeamAuth
+	Auth() types.TeamAuth
 
 	Delete() error
 	Rename(string) error
 
 	SavePipeline(
 		pipelineName string,
-		config atc.Config,
+		config types.Config,
 		from ConfigVersion,
 		initiallyPaused bool,
 	) (Pipeline, bool, error)
@@ -51,7 +52,7 @@ type Team interface {
 	Builds(page Page) ([]Build, Pagination, error)
 	BuildsWithTime(page Page) ([]Build, Pagination, error)
 
-	SaveWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, error)
+	SaveWorker(atcWorker types.Worker, ttl time.Duration) (Worker, error)
 	Workers() ([]Worker, error)
 	FindVolumeForWorkerArtifact(int) (CreatedVolume, bool, error)
 
@@ -66,7 +67,7 @@ type Team interface {
 	FindWorkerForContainer(handle string) (Worker, bool, error)
 	FindWorkerForVolume(handle string) (Worker, bool, error)
 
-	UpdateProviderAuth(auth atc.TeamAuth) error
+	UpdateProviderAuth(auth types.TeamAuth) error
 }
 
 type team struct {
@@ -77,14 +78,14 @@ type team struct {
 	name  string
 	admin bool
 
-	auth atc.TeamAuth
+	auth types.TeamAuth
 }
 
 func (t *team) ID() int      { return t.id }
 func (t *team) Name() string { return t.name }
 func (t *team) Admin() bool  { return t.admin }
 
-func (t *team) Auth() atc.TeamAuth { return t.auth }
+func (t *team) Auth() types.TeamAuth { return t.auth }
 
 func (t *team) Delete() error {
 	_, err := psql.Delete("teams").
@@ -342,7 +343,7 @@ func (t *team) FindCreatedContainerByHandle(
 func savePipeline(
 	tx Tx,
 	pipelineName string,
-	config atc.Config,
+	config types.Config,
 	from ConfigVersion,
 	initiallyPaused bool,
 	teamID int,
@@ -514,7 +515,7 @@ func savePipeline(
 
 func (t *team) SavePipeline(
 	pipelineName string,
-	config atc.Config,
+	config types.Config,
 	from ConfigVersion,
 	initiallyPaused bool,
 ) (Pipeline, bool, error) {
@@ -709,7 +710,7 @@ func (t *team) CreateStartedBuild(plan atc.Plan) (Build, error) {
 	}
 
 	err = build.saveEvent(tx, event.Status{
-		Status: atc.StatusStarted,
+		Status: types.StatusStarted,
 		Time:   build.StartTime().Unix(),
 	})
 	if err != nil {
@@ -747,7 +748,7 @@ func (t *team) Builds(page Page) ([]Build, Pagination, error) {
 	return getBuildsWithPagination(buildsQuery.Where(sq.Eq{"t.id": t.id}), minMaxIdQuery, page, t.conn, t.lockFactory)
 }
 
-func (t *team) SaveWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, error) {
+func (t *team) SaveWorker(atcWorker types.Worker, ttl time.Duration) (Worker, error) {
 	tx, err := t.conn.Begin()
 	if err != nil {
 		return nil, err
@@ -768,7 +769,7 @@ func (t *team) SaveWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, erro
 	return savedWorker, nil
 }
 
-func (t *team) UpdateProviderAuth(auth atc.TeamAuth) error {
+func (t *team) UpdateProviderAuth(auth types.TeamAuth) error {
 	tx, err := t.conn.Begin()
 	if err != nil {
 		return err
@@ -900,7 +901,7 @@ type UpdateName struct {
 	NewName string
 }
 
-func updateJobsName(tx Tx, jobs []atc.JobConfig, pipelineID int) error {
+func updateJobsName(tx Tx, jobs []types.JobConfig, pipelineID int) error {
 	jobsToUpdate := []UpdateName{}
 
 	for _, job := range jobs {
@@ -962,7 +963,7 @@ func updateJobsName(tx Tx, jobs []atc.JobConfig, pipelineID int) error {
 	return nil
 }
 
-func updateResourcesName(tx Tx, resources []atc.ResourceConfig, pipelineID int) error {
+func updateResourcesName(tx Tx, resources []types.ResourceConfig, pipelineID int) error {
 	resourcesToUpdate := []UpdateName{}
 
 	for _, res := range resources {
@@ -1055,7 +1056,7 @@ func sortUpdateNames(updateNames []UpdateName) []UpdateName {
 	return updateNames
 }
 
-func saveJob(tx Tx, job atc.JobConfig, pipelineID int, groups []string) (int, error) {
+func saveJob(tx Tx, job types.JobConfig, pipelineID int, groups []string) (int, error) {
 	configPayload, err := json.Marshal(job)
 	if err != nil {
 		return 0, err
@@ -1092,7 +1093,7 @@ func registerSerialGroup(tx Tx, serialGroup string, jobID int) error {
 	return err
 }
 
-func saveResource(tx Tx, resource atc.ResourceConfig, pipelineID int) (int, error) {
+func saveResource(tx Tx, resource types.ResourceConfig, pipelineID int) (int, error) {
 	configPayload, err := json.Marshal(resource)
 	if err != nil {
 		return 0, err
@@ -1148,7 +1149,7 @@ func saveResource(tx Tx, resource atc.ResourceConfig, pipelineID int) (int, erro
 	return resourceID, nil
 }
 
-func saveResourceType(tx Tx, resourceType atc.ResourceType, pipelineID int) error {
+func saveResourceType(tx Tx, resourceType types.ResourceType, pipelineID int) error {
 	configPayload, err := json.Marshal(resourceType)
 	if err != nil {
 		return err
@@ -1245,7 +1246,7 @@ func scanPipeline(p *pipeline, scan scannable) error {
 	p.parentBuildID = int(parentBuildID.Int64)
 
 	if groups.Valid {
-		var pipelineGroups atc.GroupConfigs
+		var pipelineGroups types.GroupConfigs
 		err = json.Unmarshal([]byte(groups.String), &pipelineGroups)
 		if err != nil {
 			return err
@@ -1259,7 +1260,7 @@ func scanPipeline(p *pipeline, scan scannable) error {
 	}
 
 	if display.Valid {
-		var displayConfig *atc.DisplayConfig
+		var displayConfig *types.DisplayConfig
 		err = json.Unmarshal([]byte(display.String), &displayConfig)
 		if err != nil {
 			return err
@@ -1269,7 +1270,7 @@ func scanPipeline(p *pipeline, scan scannable) error {
 	}
 
 	if varSources.Valid {
-		var pipelineVarSources atc.VarSourceConfigs
+		var pipelineVarSources types.VarSourceConfigs
 		decryptedVarSource, err := p.conn.EncryptionStrategy().Decrypt(varSources.String, nonceStr)
 		if err != nil {
 			return err
@@ -1346,7 +1347,7 @@ func (t *team) queryTeam(tx Tx, query string, params ...interface{}) error {
 	}
 
 	if providerAuth.Valid {
-		var auth atc.TeamAuth
+		var auth types.TeamAuth
 		err = json.Unmarshal([]byte(providerAuth.String), &auth)
 		if err != nil {
 			return err
@@ -1391,7 +1392,7 @@ func inactivateTableForPipeline(tx Tx, pipelineID int, tableName string) error {
 	return err
 }
 
-func saveResources(tx Tx, resources atc.ResourceConfigs, pipelineID int) (map[string]int, error) {
+func saveResources(tx Tx, resources types.ResourceConfigs, pipelineID int) (map[string]int, error) {
 	resourceNameToID := make(map[string]int)
 	for _, resource := range resources {
 		resourceID, err := saveResource(tx, resource, pipelineID)
@@ -1405,7 +1406,7 @@ func saveResources(tx Tx, resources atc.ResourceConfigs, pipelineID int) (map[st
 	return resourceNameToID, nil
 }
 
-func saveResourceTypes(tx Tx, resourceTypes atc.ResourceTypes, pipelineID int) error {
+func saveResourceTypes(tx Tx, resourceTypes types.ResourceTypes, pipelineID int) error {
 	for _, resourceType := range resourceTypes {
 		err := saveResourceType(tx, resourceType, pipelineID)
 		if err != nil {
@@ -1416,7 +1417,7 @@ func saveResourceTypes(tx Tx, resourceTypes atc.ResourceTypes, pipelineID int) e
 	return nil
 }
 
-func saveJobsAndSerialGroups(tx Tx, jobs atc.JobConfigs, groups atc.GroupConfigs, pipelineID int) (map[string]int, error) {
+func saveJobsAndSerialGroups(tx Tx, jobs types.JobConfigs, groups types.GroupConfigs, pipelineID int) (map[string]int, error) {
 	jobGroups := make(map[string][]string)
 	for _, group := range groups {
 		for _, job := range group.Jobs {
@@ -1453,7 +1454,7 @@ func saveJobsAndSerialGroups(tx Tx, jobs atc.JobConfigs, groups atc.GroupConfigs
 	return jobNameToID, nil
 }
 
-func insertJobPipes(tx Tx, jobConfigs atc.JobConfigs, resourceNameToID map[string]int, jobNameToID map[string]int, pipelineID int) error {
+func insertJobPipes(tx Tx, jobConfigs types.JobConfigs, resourceNameToID map[string]int, jobNameToID map[string]int, pipelineID int) error {
 	_, err := psql.Delete("job_inputs").
 		Where(sq.Expr(`job_id in (
         SELECT j.id
@@ -1479,11 +1480,11 @@ func insertJobPipes(tx Tx, jobConfigs atc.JobConfigs, resourceNameToID map[strin
 	}
 
 	for _, jobConfig := range jobConfigs {
-		err := jobConfig.StepConfig().Visit(atc.StepRecursor{
-			OnGet: func(step *atc.GetStep) error {
+		err := jobConfig.StepConfig().Visit(types.StepRecursor{
+			OnGet: func(step *types.GetStep) error {
 				return insertJobInput(tx, step, jobConfig.Name, resourceNameToID, jobNameToID)
 			},
-			OnPut: func(step *atc.PutStep) error {
+			OnPut: func(step *types.PutStep) error {
 				return insertJobOutput(tx, step, jobConfig.Name, resourceNameToID, jobNameToID)
 			},
 		})
@@ -1495,7 +1496,7 @@ func insertJobPipes(tx Tx, jobConfigs atc.JobConfigs, resourceNameToID map[strin
 	return nil
 }
 
-func insertJobInput(tx Tx, step *atc.GetStep, jobName string, resourceNameToID map[string]int, jobNameToID map[string]int) error {
+func insertJobInput(tx Tx, step *types.GetStep, jobName string, resourceNameToID map[string]int, jobNameToID map[string]int) error {
 	if len(step.Passed) != 0 {
 		for _, passedJob := range step.Passed {
 			var version sql.NullString
@@ -1541,7 +1542,7 @@ func insertJobInput(tx Tx, step *atc.GetStep, jobName string, resourceNameToID m
 	return nil
 }
 
-func insertJobOutput(tx Tx, step *atc.PutStep, jobName string, resourceNameToID map[string]int, jobNameToID map[string]int) error {
+func insertJobOutput(tx Tx, step *types.PutStep, jobName string, resourceNameToID map[string]int, jobNameToID map[string]int) error {
 	_, err := psql.Insert("job_outputs").
 		Columns("name", "job_id", "resource_id").
 		Values(step.Name, jobNameToID[jobName], resourceNameToID[step.ResourceName()]).

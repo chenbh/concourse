@@ -3,6 +3,7 @@ package worker_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
@@ -32,7 +33,7 @@ var _ = Describe("FetchSource", func() {
 		fakeUsedResourceCache    *dbfakes.FakeUsedResourceCache
 		fakeResource             *resourcefakes.FakeResource
 		fakeDelegate             *workerfakes.FakeImageFetchingDelegate
-		resourceTypes            atc.VersionedResourceTypes
+		resourceTypes            types.VersionedResourceTypes
 		metadata                 db.ContainerMetadata
 		owner                    db.ContainerOwner
 
@@ -91,14 +92,14 @@ var _ = Describe("FetchSource", func() {
 
 		fakeDelegate = new(workerfakes.FakeImageFetchingDelegate)
 
-		resourceTypes = atc.VersionedResourceTypes{
+		resourceTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "source"},
+					Source: types.Source{"some-custom": "source"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
@@ -142,7 +143,7 @@ var _ = Describe("FetchSource", func() {
 			BeforeEach(func() {
 				fakeWorker.FindVolumeForResourceCacheReturns(fakeVolume, true, nil)
 
-				expectedMetadata := []atc.MetadataField{
+				expectedMetadata := []types.MetadataField{
 					{Name: "some", Value: "metadata"},
 				}
 				expectedGetResult = worker.GetResult{
@@ -193,7 +194,7 @@ var _ = Describe("FetchSource", func() {
 			BeforeEach(func() {
 				fakeWorker.FindVolumeForResourceCacheReturns(fakeVolume, true, nil)
 
-				expectedMetadata := []atc.MetadataField{
+				expectedMetadata := []types.MetadataField{
 					{Name: "some", Value: "metadata"},
 				}
 				expectedGetResult = worker.GetResult{
@@ -217,9 +218,9 @@ var _ = Describe("FetchSource", func() {
 		})
 
 		Context("when there is no initialized volume", func() {
-			var atcMetadata []atc.MetadataField
+			var atcMetadata []types.MetadataField
 			BeforeEach(func() {
-				atcMetadata = []atc.MetadataField{{"foo", "bar"}}
+				atcMetadata = []types.MetadataField{{"foo", "bar"}}
 				fakeWorker.FindVolumeForResourceCacheReturns(nil, false, nil)
 				fakeResource.GetReturns(runtime.VersionResult{Metadata: atcMetadata}, nil)
 			})

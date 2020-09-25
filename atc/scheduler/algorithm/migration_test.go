@@ -4,8 +4,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo/extensions/table"
 )
 
@@ -608,7 +608,7 @@ var _ = DescribeTable("Migrating build inputs and outputs into successful build 
 )
 
 func migratorConvertToMD5(version string) string {
-	versionJSON, _ := json.Marshal(atc.Version{"ver": version})
+	versionJSON, _ := json.Marshal(types.Version{"ver": version})
 
 	hasher := md5.New()
 	hasher.Write([]byte(versionJSON))

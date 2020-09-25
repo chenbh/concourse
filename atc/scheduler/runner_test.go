@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/component"
 	"github.com/concourse/concourse/atc/db/lock/lockfakes"
 	. "github.com/concourse/concourse/atc/scheduler"
@@ -95,12 +95,12 @@ var _ = Describe("Runner", func() {
 						{
 							Name:   "some-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-resource"},
+							Source: types.Source{"uri": "git://some-resource"},
 						},
 						{
 							Name:   "some-dependent-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-dependent-resource"},
+							Source: types.Source{"uri": "git://some-dependent-resource"},
 						},
 					},
 				},
@@ -110,12 +110,12 @@ var _ = Describe("Runner", func() {
 						{
 							Name:   "some-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-resource"},
+							Source: types.Source{"uri": "git://some-resource"},
 						},
 						{
 							Name:   "some-dependent-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-dependent-resource"},
+							Source: types.Source{"uri": "git://some-dependent-resource"},
 						},
 					},
 				},
@@ -179,12 +179,12 @@ var _ = Describe("Runner", func() {
 						{
 							Name:   "some-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-resource"},
+							Source: types.Source{"uri": "git://some-resource"},
 						},
 						{
 							Name:   "some-dependent-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-dependent-resource"},
+							Source: types.Source{"uri": "git://some-dependent-resource"},
 						},
 					}))
 					jobs = append(jobs, job.Name())
@@ -194,12 +194,12 @@ var _ = Describe("Runner", func() {
 						{
 							Name:   "some-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-resource"},
+							Source: types.Source{"uri": "git://some-resource"},
 						},
 						{
 							Name:   "some-dependent-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-dependent-resource"},
+							Source: types.Source{"uri": "git://some-dependent-resource"},
 						},
 					}))
 					jobs = append(jobs, job.Name())
@@ -235,7 +235,7 @@ var _ = Describe("Runner", func() {
 									{
 										Name:   "some-resource",
 										Type:   "git",
-										Source: atc.Source{"uri": "git://some-resource"},
+										Source: types.Source{"uri": "git://some-resource"},
 									},
 								},
 							},
@@ -245,7 +245,7 @@ var _ = Describe("Runner", func() {
 									{
 										Name:   "some-resource",
 										Type:   "git",
-										Source: atc.Source{"uri": "git://some-resource"},
+										Source: types.Source{"uri": "git://some-resource"},
 									},
 								},
 							},
@@ -364,12 +364,12 @@ var _ = Describe("Runner", func() {
 						{
 							Name:   "some-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-resource"},
+							Source: types.Source{"uri": "git://some-resource"},
 						},
 						{
 							Name:   "some-dependent-resource",
 							Type:   "git",
-							Source: atc.Source{"uri": "git://some-dependent-resource"},
+							Source: types.Source{"uri": "git://some-dependent-resource"},
 						},
 					},
 				}))
@@ -434,7 +434,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-resource"},
+								Source: types.Source{"uri": "git://some-resource"},
 							},
 						},
 					},
@@ -444,7 +444,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-dependent-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-dependent-resource"},
+								Source: types.Source{"uri": "git://some-dependent-resource"},
 							},
 						},
 					},
@@ -454,7 +454,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-dependent-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-dependent-resource"},
+								Source: types.Source{"uri": "git://some-dependent-resource"},
 							},
 						},
 					},
@@ -464,7 +464,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-resource"},
+								Source: types.Source{"uri": "git://some-resource"},
 							},
 						},
 					},
@@ -503,7 +503,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-resource"},
+								Source: types.Source{"uri": "git://some-resource"},
 							},
 						},
 					},
@@ -513,7 +513,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-dependent-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-dependent-resource"},
+								Source: types.Source{"uri": "git://some-dependent-resource"},
 							},
 						},
 					},
@@ -523,7 +523,7 @@ var _ = Describe("Runner", func() {
 							{
 								Name:   "some-dependent-resource",
 								Type:   "git",
-								Source: atc.Source{"uri": "git://some-dependent-resource"},
+								Source: types.Source{"uri": "git://some-dependent-resource"},
 							},
 						},
 					},

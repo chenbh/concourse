@@ -2,11 +2,11 @@
 package execfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/exec"
 	"github.com/concourse/concourse/vars"
@@ -41,17 +41,17 @@ type FakeTaskDelegate struct {
 	initializingArgsForCall []struct {
 		arg1 lager.Logger
 	}
-	RedactImageSourceStub        func(atc.Source) (atc.Source, error)
+	RedactImageSourceStub        func(types.Source) (types.Source, error)
 	redactImageSourceMutex       sync.RWMutex
 	redactImageSourceArgsForCall []struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}
 	redactImageSourceReturns struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	redactImageSourceReturnsOnCall map[int]struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	SelectedWorkerStub        func(lager.Logger, string)
@@ -60,10 +60,10 @@ type FakeTaskDelegate struct {
 		arg1 lager.Logger
 		arg2 string
 	}
-	SetTaskConfigStub        func(atc.TaskConfig)
+	SetTaskConfigStub        func(types.TaskConfig)
 	setTaskConfigMutex       sync.RWMutex
 	setTaskConfigArgsForCall []struct {
-		arg1 atc.TaskConfig
+		arg1 types.TaskConfig
 	}
 	StartingStub        func(lager.Logger)
 	startingMutex       sync.RWMutex
@@ -259,11 +259,11 @@ func (fake *FakeTaskDelegate) InitializingArgsForCall(i int) lager.Logger {
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskDelegate) RedactImageSource(arg1 atc.Source) (atc.Source, error) {
+func (fake *FakeTaskDelegate) RedactImageSource(arg1 types.Source) (types.Source, error) {
 	fake.redactImageSourceMutex.Lock()
 	ret, specificReturn := fake.redactImageSourceReturnsOnCall[len(fake.redactImageSourceArgsForCall)]
 	fake.redactImageSourceArgsForCall = append(fake.redactImageSourceArgsForCall, struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}{arg1})
 	fake.recordInvocation("RedactImageSource", []interface{}{arg1})
 	fake.redactImageSourceMutex.Unlock()
@@ -283,41 +283,41 @@ func (fake *FakeTaskDelegate) RedactImageSourceCallCount() int {
 	return len(fake.redactImageSourceArgsForCall)
 }
 
-func (fake *FakeTaskDelegate) RedactImageSourceCalls(stub func(atc.Source) (atc.Source, error)) {
+func (fake *FakeTaskDelegate) RedactImageSourceCalls(stub func(types.Source) (types.Source, error)) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = stub
 }
 
-func (fake *FakeTaskDelegate) RedactImageSourceArgsForCall(i int) atc.Source {
+func (fake *FakeTaskDelegate) RedactImageSourceArgsForCall(i int) types.Source {
 	fake.redactImageSourceMutex.RLock()
 	defer fake.redactImageSourceMutex.RUnlock()
 	argsForCall := fake.redactImageSourceArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskDelegate) RedactImageSourceReturns(result1 atc.Source, result2 error) {
+func (fake *FakeTaskDelegate) RedactImageSourceReturns(result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	fake.redactImageSourceReturns = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDelegate) RedactImageSourceReturnsOnCall(i int, result1 atc.Source, result2 error) {
+func (fake *FakeTaskDelegate) RedactImageSourceReturnsOnCall(i int, result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	if fake.redactImageSourceReturnsOnCall == nil {
 		fake.redactImageSourceReturnsOnCall = make(map[int]struct {
-			result1 atc.Source
+			result1 types.Source
 			result2 error
 		})
 	}
 	fake.redactImageSourceReturnsOnCall[i] = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
@@ -354,10 +354,10 @@ func (fake *FakeTaskDelegate) SelectedWorkerArgsForCall(i int) (lager.Logger, st
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeTaskDelegate) SetTaskConfig(arg1 atc.TaskConfig) {
+func (fake *FakeTaskDelegate) SetTaskConfig(arg1 types.TaskConfig) {
 	fake.setTaskConfigMutex.Lock()
 	fake.setTaskConfigArgsForCall = append(fake.setTaskConfigArgsForCall, struct {
-		arg1 atc.TaskConfig
+		arg1 types.TaskConfig
 	}{arg1})
 	fake.recordInvocation("SetTaskConfig", []interface{}{arg1})
 	fake.setTaskConfigMutex.Unlock()
@@ -372,13 +372,13 @@ func (fake *FakeTaskDelegate) SetTaskConfigCallCount() int {
 	return len(fake.setTaskConfigArgsForCall)
 }
 
-func (fake *FakeTaskDelegate) SetTaskConfigCalls(stub func(atc.TaskConfig)) {
+func (fake *FakeTaskDelegate) SetTaskConfigCalls(stub func(types.TaskConfig)) {
 	fake.setTaskConfigMutex.Lock()
 	defer fake.setTaskConfigMutex.Unlock()
 	fake.SetTaskConfigStub = stub
 }
 
-func (fake *FakeTaskDelegate) SetTaskConfigArgsForCall(i int) atc.TaskConfig {
+func (fake *FakeTaskDelegate) SetTaskConfigArgsForCall(i int) types.TaskConfig {
 	fake.setTaskConfigMutex.RLock()
 	defer fake.setTaskConfigMutex.RUnlock()
 	argsForCall := fake.setTaskConfigArgsForCall[i]

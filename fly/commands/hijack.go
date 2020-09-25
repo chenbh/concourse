@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/url"
 	"os"
@@ -38,7 +39,7 @@ type HijackCommand struct {
 
 func (command *HijackCommand) Execute([]string) error {
 	var (
-		chosenContainer atc.Container
+		chosenContainer types.Container
 		err             error
 		name            rc.TargetName
 		target          rc.Target
@@ -93,10 +94,10 @@ func (command *HijackCommand) Execute([]string) error {
 			return err
 		}
 
-		hijackableContainers := make([]atc.Container, 0)
+		hijackableContainers := make([]types.Container, 0)
 
 		for _, container := range containers {
-			if container.State == atc.ContainerStateCreated || container.State == atc.ContainerStateFailed {
+			if container.State == types.ContainerStateCreated || container.State == types.ContainerStateFailed {
 				hijackableContainers = append(hijackableContainers, container)
 			}
 		}
@@ -155,7 +156,7 @@ func (command *HijackCommand) Execute([]string) error {
 
 	privileged := true
 
-	reqGenerator := rata.NewRequestGenerator(target.URL(), atc.Routes)
+	reqGenerator := rata.NewRequestGenerator(target.URL(), types.Routes)
 
 	var ttySpec *atc.HijackTTYSpec
 	rows, cols, err := pty.Getsize(os.Stdout)
@@ -305,7 +306,7 @@ func (command *HijackCommand) getContainerFingerprint(target rc.Target, team con
 	return fingerprint, nil
 }
 
-func (command *HijackCommand) getContainerIDs(target rc.Target, fingerprint *containerFingerprint, team concourse.Team) ([]atc.Container, error) {
+func (command *HijackCommand) getContainerIDs(target rc.Target, fingerprint *containerFingerprint, team concourse.Team) ([]types.Container, error) {
 	reqValues, err := locateContainer(target.Client(), fingerprint)
 	if err != nil {
 		return nil, err

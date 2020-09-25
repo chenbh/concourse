@@ -3,6 +3,7 @@ package executehelpers
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"path/filepath"
 	"sync"
@@ -24,7 +25,7 @@ type Input struct {
 func DetermineInputs(
 	fact atc.PlanFactory,
 	team concourse.Team,
-	taskInputs []atc.TaskInputConfig,
+	taskInputs []types.TaskInputConfig,
 	localInputMappings []flaghelpers.InputPairFlag,
 	userInputMappings []flaghelpers.VariablePairFlag,
 	jobInputImage string,
@@ -32,7 +33,7 @@ func DetermineInputs(
 	includeIgnored bool,
 	platform string,
 	tags []string,
-) ([]Input, map[string]string, *atc.ImageResource, atc.VersionedResourceTypes, error) {
+) ([]Input, map[string]string, *types.ImageResource, types.VersionedResourceTypes, error) {
 	inputMappings := ConvertInputMappings(userInputMappings)
 
 	err := CheckForUnknownInputMappings(localInputMappings, taskInputs)
@@ -135,7 +136,7 @@ func CheckForInputType(inputMaps []flaghelpers.InputPairFlag) error {
 	return nil
 }
 
-func CheckForUnknownInputMappings(inputMappings []flaghelpers.InputPairFlag, validInputs []atc.TaskInputConfig) error {
+func CheckForUnknownInputMappings(inputMappings []flaghelpers.InputPairFlag, validInputs []types.TaskInputConfig) error {
 	for _, inputMapping := range inputMappings {
 		if !TaskInputsContainsName(validInputs, inputMapping.Name) {
 			return fmt.Errorf("unknown input `%s`", inputMapping.Name)
@@ -144,7 +145,7 @@ func CheckForUnknownInputMappings(inputMappings []flaghelpers.InputPairFlag, val
 	return nil
 }
 
-func TaskInputsContainsName(inputs []atc.TaskInputConfig, name string) bool {
+func TaskInputsContainsName(inputs []types.TaskInputConfig, name string) bool {
 	for _, input := range inputs {
 		if input.Name == name {
 			return true
@@ -195,7 +196,7 @@ func GenerateLocalInputs(
 			Name: mapping.Name,
 			Path: mapping.Path,
 			Plan: fact.NewPlan(atc.ArtifactInputPlan{
-				ArtifactID: val.(atc.WorkerArtifact).ID,
+				ArtifactID: val.(types.WorkerArtifact).ID,
 				Name:       mapping.Name,
 			}),
 		}
@@ -204,7 +205,7 @@ func GenerateLocalInputs(
 	return inputs, nil
 }
 
-func FetchInputsFromJob(fact atc.PlanFactory, team concourse.Team, inputsFrom flaghelpers.JobFlag, imageName string) (map[string]Input, *atc.ImageResource, atc.VersionedResourceTypes, error) {
+func FetchInputsFromJob(fact atc.PlanFactory, team concourse.Team, inputsFrom flaghelpers.JobFlag, imageName string) (map[string]Input, *types.ImageResource, types.VersionedResourceTypes, error) {
 	kvMap := map[string]Input{}
 
 	if inputsFrom.PipelineName == "" && inputsFrom.JobName == "" {
@@ -229,7 +230,7 @@ func FetchInputsFromJob(fact atc.PlanFactory, team concourse.Team, inputsFrom fl
 		return nil, nil, nil, fmt.Errorf("versioned resource types of %s not found", inputsFrom.PipelineName)
 	}
 
-	var imageResource *atc.ImageResource
+	var imageResource *types.ImageResource
 	if imageName != "" {
 		imageResource, found, err = FetchImageResourceFromJobInputs(buildInputs, imageName)
 		if err != nil {
@@ -262,12 +263,12 @@ func FetchInputsFromJob(fact atc.PlanFactory, team concourse.Team, inputsFrom fl
 	return kvMap, imageResource, versionedResourceTypes, nil
 }
 
-func FetchImageResourceFromJobInputs(inputs []atc.BuildInput, imageName string) (*atc.ImageResource, bool, error) {
+func FetchImageResourceFromJobInputs(inputs []types.BuildInput, imageName string) (*types.ImageResource, bool, error) {
 
 	for _, input := range inputs {
 		if input.Name == imageName {
 			version := input.Version
-			imageResource := atc.ImageResource{
+			imageResource := types.ImageResource{
 				Type:    input.Type,
 				Source:  input.Source,
 				Version: version,

@@ -2,11 +2,11 @@ package versionserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -38,7 +38,7 @@ func (s *Server) ListBuildsWithVersionAsInput(pipeline db.Pipeline) http.Handler
 			return
 		}
 
-		presentedBuilds := []atc.Build{}
+		presentedBuilds := []types.Build{}
 		for _, build := range builds {
 			presentedBuilds = append(presentedBuilds, present.Build(build))
 		}

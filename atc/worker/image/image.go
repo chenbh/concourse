@@ -2,13 +2,13 @@ package image
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/url"
 	"path"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/baggageclaim"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/worker"
 	"github.com/concourse/concourse/tracing"
@@ -237,7 +237,7 @@ func (i *imageFromBaseResourceType) FetchForContainer(
 
 			return worker.FetchedImage{
 				Metadata:   worker.ImageMetadata{},
-				Version:    atc.Version{i.resourceTypeName: t.Version},
+				Version:    types.Version{i.resourceTypeName: t.Version},
 				URL:        rootFSURL.String(),
 				Privileged: t.Privileged,
 			}, nil

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -12,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -451,11 +451,11 @@ var _ = Describe("Resources API", func() {
 
 	Describe("PUT /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/pin_comment", func() {
 		var response *http.Response
-		var pinCommentRequestBody atc.SetPinCommentRequestBody
+		var pinCommentRequestBody types.SetPinCommentRequestBody
 		var fakeResource *dbfakes.FakeResource
 
 		BeforeEach(func() {
-			pinCommentRequestBody = atc.SetPinCommentRequestBody{}
+			pinCommentRequestBody = types.SetPinCommentRequestBody{}
 		})
 
 		JustBeforeEach(func() {
@@ -562,11 +562,11 @@ var _ = Describe("Resources API", func() {
 	})
 
 	Describe("POST /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/check", func() {
-		var checkRequestBody atc.CheckRequestBody
+		var checkRequestBody types.CheckRequestBody
 		var response *http.Response
 
 		BeforeEach(func() {
-			checkRequestBody = atc.CheckRequestBody{}
+			checkRequestBody = types.CheckRequestBody{}
 		})
 
 		JustBeforeEach(func() {
@@ -642,8 +642,8 @@ var _ = Describe("Resources API", func() {
 
 					Context("when checking with a version specified", func() {
 						BeforeEach(func() {
-							checkRequestBody = atc.CheckRequestBody{
-								From: atc.Version{
+							checkRequestBody = types.CheckRequestBody{
+								From: types.Version{
 									"some-version-key": "some-version-value",
 								},
 							}
@@ -1038,7 +1038,7 @@ var _ = Describe("Resources API", func() {
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
 						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
-						resource1.ConfigPinnedVersionReturns(atc.Version{"version": "v1"})
+						resource1.ConfigPinnedVersionReturns(types.Version{"version": "v1"})
 
 						fakePipeline.ResourceReturns(resource1, true, nil)
 					})
@@ -1080,7 +1080,7 @@ var _ = Describe("Resources API", func() {
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
 						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
-						resource1.APIPinnedVersionReturns(atc.Version{"version": "v1"})
+						resource1.APIPinnedVersionReturns(types.Version{"version": "v1"})
 
 						fakePipeline.ResourceReturns(resource1, true, nil)
 					})
@@ -1119,7 +1119,7 @@ var _ = Describe("Resources API", func() {
 						resource1.NameReturns("resource-1")
 						resource1.TypeReturns("type-1")
 						resource1.LastCheckEndTimeReturns(time.Unix(1513364881, 0))
-						resource1.APIPinnedVersionReturns(atc.Version{"version": "v1"})
+						resource1.APIPinnedVersionReturns(types.Version{"version": "v1"})
 						resource1.PinCommentReturns("a pin comment")
 						fakePipeline.ResourceReturns(resource1, true, nil)
 					})
@@ -1204,11 +1204,11 @@ var _ = Describe("Resources API", func() {
 	})
 
 	Describe("POST /api/v1/teams/:team_name/pipelines/:pipeline_name/resource-types/:resource_type_name/check", func() {
-		var checkRequestBody atc.CheckRequestBody
+		var checkRequestBody types.CheckRequestBody
 		var response *http.Response
 
 		BeforeEach(func() {
-			checkRequestBody = atc.CheckRequestBody{}
+			checkRequestBody = types.CheckRequestBody{}
 		})
 
 		JustBeforeEach(func() {
@@ -1307,8 +1307,8 @@ var _ = Describe("Resources API", func() {
 
 					Context("when checking with a version specified", func() {
 						BeforeEach(func() {
-							checkRequestBody = atc.CheckRequestBody{
-								From: atc.Version{
+							checkRequestBody = types.CheckRequestBody{
+								From: types.Version{
 									"some-version-key": "some-version-value",
 								},
 							}
@@ -1381,13 +1381,13 @@ var _ = Describe("Resources API", func() {
 
 	Describe("POST /api/v1/teams/:team_name/pipelines/:pipeline_name/resources/:resource_name/check/webhook", func() {
 		var (
-			checkRequestBody atc.CheckRequestBody
+			checkRequestBody types.CheckRequestBody
 			response         *http.Response
 			fakeResource     *dbfakes.FakeResource
 		)
 
 		BeforeEach(func() {
-			checkRequestBody = atc.CheckRequestBody{}
+			checkRequestBody = types.CheckRequestBody{}
 
 			fakeResource = new(dbfakes.FakeResource)
 			fakeResource.NameReturns("resource-name")

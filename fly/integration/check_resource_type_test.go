@@ -1,10 +1,10 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -18,25 +18,25 @@ import (
 var _ = Describe("CheckResourceType", func() {
 	var (
 		flyCmd          *exec.Cmd
-		check           atc.Check
-		resourceTypes   atc.VersionedResourceTypes
+		check           types.Check
+		resourceTypes   types.VersionedResourceTypes
 		expectedHeaders ui.TableRow
 	)
 
 	BeforeEach(func() {
-		check = atc.Check{
+		check = types.Check{
 			ID:         123,
 			Status:     "started",
 			CreateTime: 100000000000,
 		}
 
-		resourceTypes = atc.VersionedResourceTypes{{
-			ResourceType: atc.ResourceType{
+		resourceTypes = types.VersionedResourceTypes{{
+			ResourceType: types.ResourceType{
 				Name: "myresource",
 				Type: "myresourcetype",
 			},
 		}, {
-			ResourceType: atc.ResourceType{
+			ResourceType: types.ResourceType{
 				Name: "myresourcetype",
 				Type: "mybaseresourcetype",
 			},
@@ -137,7 +137,7 @@ var _ = Describe("CheckResourceType", func() {
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/checks/123"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:         123,
 						Status:     "succeeded",
 						CreateTime: 100000000000,
@@ -184,7 +184,7 @@ var _ = Describe("CheckResourceType", func() {
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/checks/123"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:         123,
 						Status:     "errored",
 						CreateTime: 100000000000,
@@ -231,7 +231,7 @@ var _ = Describe("CheckResourceType", func() {
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/info"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Info{Version: atcVersion, WorkerVersion: workerVersion}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Info{Version: atcVersion, WorkerVersion: workerVersion}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/mypipeline/resource-types"),
@@ -240,14 +240,14 @@ var _ = Describe("CheckResourceType", func() {
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/api/v1/teams/main/pipelines/mypipeline/resource-types/myresourcetype/check"),
 					ghttp.VerifyJSON(`{"from":null}`),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:     987,
 						Status: "started",
 					}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/checks/987"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:         987,
 						Status:     "succeeded",
 						CreateTime: 100000000000,
@@ -311,7 +311,7 @@ var _ = Describe("CheckResourceType", func() {
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/info"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Info{Version: atcVersion, WorkerVersion: workerVersion}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Info{Version: atcVersion, WorkerVersion: workerVersion}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/mypipeline/resource-types"),
@@ -320,14 +320,14 @@ var _ = Describe("CheckResourceType", func() {
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/api/v1/teams/main/pipelines/mypipeline/resource-types/myresourcetype/check"),
 					ghttp.VerifyJSON(`{"from":null}`),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:     987,
 						Status: "started",
 					}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/checks/987"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Check{
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Check{
 						ID:         987,
 						Status:     "errored",
 						CreateTime: 100000000000,

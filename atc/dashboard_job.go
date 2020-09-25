@@ -1,6 +1,9 @@
 package atc
 
-import "time"
+import (
+	"github.com/concourse/concourse/atc/types"
+	"time"
+)
 
 type Dashboard []DashboardJob
 
@@ -17,7 +20,7 @@ type DashboardJob struct {
 	TransitionBuild *DashboardBuild
 
 	Inputs  []DashboardJobInput
-	Outputs []JobOutput
+	Outputs []types.JobOutput
 
 	Groups []string
 }

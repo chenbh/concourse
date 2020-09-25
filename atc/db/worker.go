@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/lib/pq"
 	uuid "github.com/nu7hatch/gouuid"
 )
@@ -61,7 +61,7 @@ type Worker interface {
 	NoProxy() string
 	ActiveContainers() int
 	ActiveVolumes() int
-	ResourceTypes() []atc.WorkerResourceType
+	ResourceTypes() []types.WorkerResourceType
 	Platform() string
 	Tags() []string
 	TeamID() int
@@ -99,7 +99,7 @@ type worker struct {
 	activeContainers int
 	activeVolumes    int
 	activeTasks      int
-	resourceTypes    []atc.WorkerResourceType
+	resourceTypes    []types.WorkerResourceType
 	platform         string
 	tags             []string
 	teamID           int
@@ -121,9 +121,9 @@ func (worker *worker) HTTPProxyURL() string                    { return worker.h
 func (worker *worker) HTTPSProxyURL() string                   { return worker.httpsProxyURL }
 func (worker *worker) NoProxy() string                         { return worker.noProxy }
 func (worker *worker) ActiveContainers() int                   { return worker.activeContainers }
-func (worker *worker) ActiveVolumes() int                      { return worker.activeVolumes }
-func (worker *worker) ResourceTypes() []atc.WorkerResourceType { return worker.resourceTypes }
-func (worker *worker) Platform() string                        { return worker.platform }
+func (worker *worker) ActiveVolumes() int                        { return worker.activeVolumes }
+func (worker *worker) ResourceTypes() []types.WorkerResourceType { return worker.resourceTypes }
+func (worker *worker) Platform() string                          { return worker.platform }
 func (worker *worker) Tags() []string                          { return worker.tags }
 func (worker *worker) TeamID() int                             { return worker.teamID }
 func (worker *worker) TeamName() string                        { return worker.teamName }

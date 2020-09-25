@@ -1,12 +1,11 @@
 package hijackhelpers
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strings"
-
-	"github.com/concourse/concourse/atc"
 )
 
-type ContainerSorter []atc.Container
+type ContainerSorter []types.Container
 
 func (sorter ContainerSorter) Len() int {
 	return len(sorter)

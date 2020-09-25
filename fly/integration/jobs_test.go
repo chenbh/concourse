@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -70,7 +70,7 @@ var _ = Describe("Fly CLI", func() {
                 "groups": null
               }
             ]`
-		var sampleJobs []atc.Job
+		var sampleJobs []types.Job
 
 		Context("when not specifying a pipeline name", func() {
 			It("fails and says you should give a pipeline name", func() {
@@ -87,19 +87,19 @@ var _ = Describe("Fly CLI", func() {
 		})
 
 		Context("when jobs are returned from the API", func() {
-			createJob := func(num int, paused bool, status string, nextStatus string) atc.Job {
+			createJob := func(num int, paused bool, status string, nextStatus string) types.Job {
 				var (
-					build     *atc.Build
-					nextBuild *atc.Build
+					build     *types.Build
+					nextBuild *types.Build
 				)
 				if status != "" {
-					build = &atc.Build{Status: status}
+					build = &types.Build{Status: status}
 				}
 				if nextStatus != "" {
-					nextBuild = &atc.Build{Status: nextStatus}
+					nextBuild = &types.Build{Status: nextStatus}
 				}
 
-				return atc.Job{
+				return types.Job{
 					Name:          fmt.Sprintf("job-%d", num),
 					Paused:        paused,
 					FinishedBuild: build,
@@ -107,7 +107,7 @@ var _ = Describe("Fly CLI", func() {
 				}
 			}
 
-			sampleJobs = []atc.Job{
+			sampleJobs = []types.Job{
 				createJob(1, false, "succeeded", "started"),
 				createJob(2, true, "failed", ""),
 				createJob(3, false, "", ""),
@@ -178,7 +178,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/other-team"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: "other-team"}),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: "other-team"}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/other-team/pipelines/pipeline/jobs"),

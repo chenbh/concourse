@@ -3,11 +3,11 @@ package worker_test
 import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/concourse/concourse/atc/types"
 
 	"context"
 	"errors"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/worker"
 	"github.com/concourse/concourse/atc/worker/workerfakes"
@@ -33,7 +33,7 @@ var _ = Describe("Pool", func() {
 		var (
 			spec          ContainerSpec
 			workerSpec    WorkerSpec
-			resourceTypes atc.VersionedResourceTypes
+			resourceTypes types.VersionedResourceTypes
 			fakeOwner     *dbfakes.FakeContainerOwner
 
 			chosenWorker Worker
@@ -84,21 +84,21 @@ var _ = Describe("Pool", func() {
 				},
 			}
 
-			resourceTypes = atc.VersionedResourceTypes{
+			resourceTypes = types.VersionedResourceTypes{
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "custom-type-b",
 						Type:   "custom-type-a",
-						Source: atc.Source{"some": "super-secret-source"},
+						Source: types.Source{"some": "super-secret-source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 			}
 
 			workerSpec = WorkerSpec{
 				ResourceType:  "some-type",
 				TeamID:        4567,
-				Tags:          atc.Tags{"some-tag"},
+				Tags:          types.Tags{"some-tag"},
 				ResourceTypes: resourceTypes,
 			}
 

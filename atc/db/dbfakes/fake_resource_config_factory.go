@@ -2,9 +2,9 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -19,12 +19,12 @@ type FakeResourceConfigFactory struct {
 	cleanUnreferencedConfigsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	FindOrCreateResourceConfigStub        func(string, atc.Source, atc.VersionedResourceTypes) (db.ResourceConfig, error)
+	FindOrCreateResourceConfigStub        func(string, types.Source, types.VersionedResourceTypes) (db.ResourceConfig, error)
 	findOrCreateResourceConfigMutex       sync.RWMutex
 	findOrCreateResourceConfigArgsForCall []struct {
 		arg1 string
-		arg2 atc.Source
-		arg3 atc.VersionedResourceTypes
+		arg2 types.Source
+		arg3 types.VersionedResourceTypes
 	}
 	findOrCreateResourceConfigReturns struct {
 		result1 db.ResourceConfig
@@ -105,13 +105,13 @@ func (fake *FakeResourceConfigFactory) CleanUnreferencedConfigsReturnsOnCall(i i
 	}{result1}
 }
 
-func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfig(arg1 string, arg2 atc.Source, arg3 atc.VersionedResourceTypes) (db.ResourceConfig, error) {
+func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfig(arg1 string, arg2 types.Source, arg3 types.VersionedResourceTypes) (db.ResourceConfig, error) {
 	fake.findOrCreateResourceConfigMutex.Lock()
 	ret, specificReturn := fake.findOrCreateResourceConfigReturnsOnCall[len(fake.findOrCreateResourceConfigArgsForCall)]
 	fake.findOrCreateResourceConfigArgsForCall = append(fake.findOrCreateResourceConfigArgsForCall, struct {
 		arg1 string
-		arg2 atc.Source
-		arg3 atc.VersionedResourceTypes
+		arg2 types.Source
+		arg3 types.VersionedResourceTypes
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("FindOrCreateResourceConfig", []interface{}{arg1, arg2, arg3})
 	fake.findOrCreateResourceConfigMutex.Unlock()
@@ -131,13 +131,13 @@ func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfigCallCount() int
 	return len(fake.findOrCreateResourceConfigArgsForCall)
 }
 
-func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfigCalls(stub func(string, atc.Source, atc.VersionedResourceTypes) (db.ResourceConfig, error)) {
+func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfigCalls(stub func(string, types.Source, types.VersionedResourceTypes) (db.ResourceConfig, error)) {
 	fake.findOrCreateResourceConfigMutex.Lock()
 	defer fake.findOrCreateResourceConfigMutex.Unlock()
 	fake.FindOrCreateResourceConfigStub = stub
 }
 
-func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfigArgsForCall(i int) (string, atc.Source, atc.VersionedResourceTypes) {
+func (fake *FakeResourceConfigFactory) FindOrCreateResourceConfigArgsForCall(i int) (string, types.Source, types.VersionedResourceTypes) {
 	fake.findOrCreateResourceConfigMutex.RLock()
 	defer fake.findOrCreateResourceConfigMutex.RUnlock()
 	argsForCall := fake.findOrCreateResourceConfigArgsForCall[i]

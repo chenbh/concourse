@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
@@ -26,7 +27,7 @@ var ErrSetByNewerBuild = errors.New("pipeline set by a newer build")
 
 type BuildInput struct {
 	Name       string
-	Version    atc.Version
+	Version    types.Version
 	ResourceID int
 
 	FirstOccurrence bool
@@ -41,7 +42,7 @@ func (bi BuildInput) SpanContext() propagators.Supplier {
 
 type BuildOutput struct {
 	Name    string
-	Version atc.Version
+	Version types.Version
 }
 
 type BuildStatus string
@@ -141,12 +142,12 @@ type Build interface {
 	SetInterceptible(bool) error
 
 	Events(uint) (EventSource, error)
-	SaveEvent(event atc.Event) error
+	SaveEvent(event types.Event) error
 
 	Artifacts() ([]WorkerArtifact, error)
 	Artifact(artifactID int) (WorkerArtifact, error)
 
-	SaveOutput(string, atc.Source, atc.VersionedResourceTypes, atc.Version, ResourceConfigMetadataFields, string, string) error
+	SaveOutput(string, types.Source, types.VersionedResourceTypes, types.Version, ResourceConfigMetadataFields, string, string) error
 	AdoptInputsAndPipes() ([]BuildInput, bool, error)
 	AdoptRerunInputsAndPipes() ([]BuildInput, bool, error)
 
@@ -166,7 +167,7 @@ type Build interface {
 	SavePipeline(
 		pipelineName string,
 		teamId int,
-		config atc.Config,
+		config types.Config,
 		from ConfigVersion,
 		initiallyPaused bool,
 	) (Pipeline, bool, error)
@@ -379,7 +380,7 @@ func (b *build) Start(plan atc.Plan) (bool, error) {
 	}
 
 	err = b.saveEvent(tx, event.Status{
-		Status: atc.StatusStarted,
+		Status: types.StatusStarted,
 		Time:   startTime.Unix(),
 	})
 	if err != nil {
@@ -430,7 +431,7 @@ func (b *build) Finish(status BuildStatus) error {
 	}
 
 	err = b.saveEvent(tx, event.Status{
-		Status: atc.BuildStatus(status),
+		Status: types.BuildStatus(status),
 		Time:   endTime.Unix(),
 	})
 	if err != nil {
@@ -924,7 +925,7 @@ func (b *build) Events(from uint) (EventSource, error) {
 	), nil
 }
 
-func (b *build) SaveEvent(event atc.Event) error {
+func (b *build) SaveEvent(event types.Event) error {
 	tx, err := b.conn.Begin()
 	if err != nil {
 		return err
@@ -997,9 +998,9 @@ func (b *build) Artifacts() ([]WorkerArtifact, error) {
 
 func (b *build) SaveOutput(
 	resourceType string,
-	source atc.Source,
-	resourceTypes atc.VersionedResourceTypes,
-	version atc.Version,
+	source types.Source,
+	resourceTypes types.VersionedResourceTypes,
+	version types.Version,
 	metadata ResourceConfigMetadataFields,
 	outputName string,
 	resourceName string,
@@ -1199,7 +1200,7 @@ func (b *build) AdoptInputsAndPipes() ([]BuildInput, bool, error) {
 			return nil, false, err
 		}
 
-		var version atc.Version
+		var version types.Version
 		err = json.Unmarshal([]byte(versionBlob), &version)
 		if err != nil {
 			return nil, false, err
@@ -1356,7 +1357,7 @@ func (b *build) AdoptRerunInputsAndPipes() ([]BuildInput, bool, error) {
 			return nil, false, err
 		}
 
-		var version atc.Version
+		var version types.Version
 		err = json.Unmarshal([]byte(versionBlob), &version)
 		if err != nil {
 			return nil, false, err
@@ -1459,7 +1460,7 @@ func (b *build) Resources() ([]BuildInput, []BuildOutput, error) {
 			inputName   string
 			firstOcc    bool
 			versionBlob string
-			version     atc.Version
+			version     types.Version
 			resourceID  int
 		)
 
@@ -1502,7 +1503,7 @@ func (b *build) Resources() ([]BuildInput, []BuildOutput, error) {
 		var (
 			outputName  string
 			versionBlob string
-			version     atc.Version
+			version     types.Version
 		)
 
 		err := rows.Scan(&outputName, &versionBlob)
@@ -1536,7 +1537,7 @@ func (b *build) SpanContext() propagators.Supplier {
 func (b *build) SavePipeline(
 	pipelineName string,
 	teamID int,
-	config atc.Config,
+	config types.Config,
 	from ConfigVersion,
 	initiallyPaused bool,
 ) (Pipeline, bool, error) {
@@ -1691,7 +1692,7 @@ func scanBuild(b *build, row scannable, encryptionStrategy encryption.Strategy) 
 	return nil
 }
 
-func (b *build) saveEvent(tx Tx, event atc.Event) error {
+func (b *build) saveEvent(tx Tx, event types.Event) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return err

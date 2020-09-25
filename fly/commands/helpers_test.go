@@ -3,11 +3,11 @@ package commands_test
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/fly/commands"
 	"github.com/concourse/concourse/fly/rc/rcfakes"
 	"github.com/concourse/concourse/go-concourse/concourse"
@@ -25,7 +25,7 @@ var _ = Describe("Helper Functions", func() {
 		expectedBuildName := "5"
 		expectedJobName := "myjob"
 		expectedPipelineName := "mypipeline"
-		expectedBuild := atc.Build{
+		expectedBuild := types.Build{
 			ID:      123,
 			Name:    expectedBuildName,
 			Status:  "Great Success",
@@ -56,7 +56,7 @@ var _ = Describe("Helper Functions", func() {
 
 				Context("when a build does not exist", func() {
 					BeforeEach(func() {
-						client.BuildReturns(atc.Build{}, false, nil)
+						client.BuildReturns(types.Build{}, false, nil)
 					})
 
 					It("returns an error", func() {
@@ -69,7 +69,7 @@ var _ = Describe("Helper Functions", func() {
 
 			Context("when an error is encountered while fetching build", func() {
 				BeforeEach(func() {
-					client.BuildReturns(atc.Build{}, false, errors.New("some-error"))
+					client.BuildReturns(types.Build{}, false, errors.New("some-error"))
 				})
 
 				It("return an error", func() {
@@ -84,7 +84,7 @@ var _ = Describe("Helper Functions", func() {
 				Context("when job exists", func() {
 					Context("when the next build exists", func() {
 						BeforeEach(func() {
-							job := atc.Job{
+							job := types.Job{
 								Name:      expectedJobName,
 								NextBuild: &expectedBuild,
 							}
@@ -104,7 +104,7 @@ var _ = Describe("Helper Functions", func() {
 
 					Context("when the only the finished build exists", func() {
 						BeforeEach(func() {
-							job := atc.Job{
+							job := types.Job{
 								Name:          expectedJobName,
 								FinishedBuild: &expectedBuild,
 							}
@@ -124,7 +124,7 @@ var _ = Describe("Helper Functions", func() {
 
 					Context("when no builds exist", func() {
 						BeforeEach(func() {
-							job := atc.Job{
+							job := types.Job{
 								Name: expectedJobName,
 							}
 							team.JobReturns(job, true, nil)
@@ -139,7 +139,7 @@ var _ = Describe("Helper Functions", func() {
 
 				Context("when job does not exists", func() {
 					BeforeEach(func() {
-						team.JobReturns(atc.Job{}, false, nil)
+						team.JobReturns(types.Job{}, false, nil)
 					})
 
 					It("returns an error", func() {
@@ -151,7 +151,7 @@ var _ = Describe("Helper Functions", func() {
 
 			Context("when an error was encountered while looking up for team job", func() {
 				BeforeEach(func() {
-					team.JobReturns(atc.Job{}, false, errors.New("some-error"))
+					team.JobReturns(types.Job{}, false, errors.New("some-error"))
 				})
 
 				It("should return an error", func() {
@@ -183,7 +183,7 @@ var _ = Describe("Helper Functions", func() {
 
 			Context("when the build does not exist", func() {
 				BeforeEach(func() {
-					team.JobBuildReturns(atc.Build{}, false, nil)
+					team.JobBuildReturns(types.Build{}, false, nil)
 				})
 
 				It("returns an error", func() {
@@ -195,9 +195,9 @@ var _ = Describe("Helper Functions", func() {
 
 		Context("when nothing is passed", func() {
 			Context("when client.Builds does not return an error", func() {
-				var allBuilds [300]atc.Build
+				var allBuilds [300]types.Build
 
-				expectedOneOffBuild := atc.Build{
+				expectedOneOffBuild := types.Build{
 					ID:      150,
 					Name:    expectedBuildName,
 					Status:  "success",
@@ -208,7 +208,7 @@ var _ = Describe("Helper Functions", func() {
 				Context("when a build was found", func() {
 					BeforeEach(func() {
 						for i := 300 - 1; i >= 0; i-- {
-							allBuilds[i] = atc.Build{
+							allBuilds[i] = types.Build{
 								ID:      i,
 								Name:    strconv.Itoa(i),
 								JobName: "some-job",
@@ -218,8 +218,8 @@ var _ = Describe("Helper Functions", func() {
 
 						allBuilds[150] = expectedOneOffBuild
 
-						client.BuildsStub = func(page concourse.Page) ([]atc.Build, concourse.Pagination, error) {
-							var builds []atc.Build
+						client.BuildsStub = func(page concourse.Page) ([]types.Build, concourse.Pagination, error) {
+							var builds []types.Build
 							if page.To != 0 {
 								builds = allBuilds[page.To : page.To+page.Limit]
 							} else {
@@ -251,7 +251,7 @@ var _ = Describe("Helper Functions", func() {
 
 				Context("when no builds were found ", func() {
 					BeforeEach(func() {
-						client.BuildsReturns([]atc.Build{}, concourse.Pagination{Next: nil}, nil)
+						client.BuildsReturns([]types.Build{}, concourse.Pagination{Next: nil}, nil)
 					})
 
 					It("returns an error", func() {
@@ -277,7 +277,7 @@ var _ = Describe("Helper Functions", func() {
 	})
 	Describe("#GetLatestResourceVersions", func() {
 		var team *fakes.FakeTeam
-		var resourceVersions []atc.ResourceVersion
+		var resourceVersions []types.ResourceVersion
 
 		resource := flaghelpers.ResourceFlag{
 			PipelineName: "mypipeline",
@@ -286,14 +286,14 @@ var _ = Describe("Helper Functions", func() {
 
 		BeforeEach(func() {
 			team = new(fakes.FakeTeam)
-			resourceVersions = []atc.ResourceVersion{
+			resourceVersions = []types.ResourceVersion{
 				{
 					ID:      1,
-					Version: atc.Version{"version": "v1"},
+					Version: types.Version{"version": "v1"},
 				},
 				{
 					ID:      2,
-					Version: atc.Version{"version": "v1"},
+					Version: types.Version{"version": "v1"},
 				},
 			}
 		})
@@ -301,9 +301,9 @@ var _ = Describe("Helper Functions", func() {
 		When("resource versions exist", func() {
 			It("returns latest resource version", func() {
 				team.ResourceVersionsReturns(resourceVersions, concourse.Pagination{}, true, nil)
-				latestResourceVersion, err := GetLatestResourceVersion(team, resource, atc.Version{"version": "v1"})
+				latestResourceVersion, err := GetLatestResourceVersion(team, resource, types.Version{"version": "v1"})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(latestResourceVersion.Version).To(Equal(atc.Version{"version": "v1"}))
+				Expect(latestResourceVersion.Version).To(Equal(types.Version{"version": "v1"}))
 				Expect(latestResourceVersion.ID).To(Equal(1))
 			})
 		})
@@ -311,15 +311,15 @@ var _ = Describe("Helper Functions", func() {
 		When("call to resource versions returns an error", func() {
 			It("returns an error", func() {
 				team.ResourceVersionsReturns(nil, concourse.Pagination{}, false, errors.New("fake error"))
-				_, err := GetLatestResourceVersion(team, resource, atc.Version{"version": "v1"})
+				_, err := GetLatestResourceVersion(team, resource, types.Version{"version": "v1"})
 				Expect(err).To(MatchError("fake error"))
 			})
 		})
 
 		When("call to resource versions returns an empty array", func() {
 			It("returns an error", func() {
-				team.ResourceVersionsReturns([]atc.ResourceVersion{}, concourse.Pagination{}, true, nil)
-				_, err := GetLatestResourceVersion(team, resource, atc.Version{"version": "v2"})
+				team.ResourceVersionsReturns([]types.ResourceVersion{}, concourse.Pagination{}, true, nil)
+				_, err := GetLatestResourceVersion(team, resource, types.Version{"version": "v2"})
 				Expect(err).To(MatchError("could not find version matching {\"version\":\"v2\"}"))
 			})
 		})

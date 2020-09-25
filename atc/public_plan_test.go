@@ -2,6 +2,7 @@ package atc_test
 
 import (
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -20,8 +21,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -34,10 +35,10 @@ var _ = Describe("Plan", func() {
 							Type:     "type",
 							Name:     "name",
 							Resource: "resource",
-							Source:   atc.Source{"some": "source"},
-							Params:   atc.Params{"some": "params"},
-							Version:  &atc.Version{"some": "version"},
-							Tags:     atc.Tags{"tags"},
+							Source:   types.Source{"some": "source"},
+							Params:   types.Params{"some": "params"},
+							Version:  &types.Version{"some": "version"},
+							Tags:     types.Tags{"tags"},
 						},
 					},
 
@@ -47,9 +48,9 @@ var _ = Describe("Plan", func() {
 							Type:     "type",
 							Name:     "name",
 							Resource: "resource",
-							Source:   atc.Source{"some": "source"},
-							Params:   atc.Params{"some": "params"},
-							Tags:     atc.Tags{"tags"},
+							Source:   types.Source{"some": "source"},
+							Params:   types.Params{"some": "params"},
+							Tags:     types.Tags{"tags"},
 						},
 					},
 
@@ -58,8 +59,8 @@ var _ = Describe("Plan", func() {
 						Check: &atc.CheckPlan{
 							Type:   "type",
 							Name:   "name",
-							Source: atc.Source{"some": "source"},
-							Tags:   atc.Tags{"tags"},
+							Source: types.Source{"some": "source"},
+							Tags:   types.Tags{"tags"},
 						},
 					},
 
@@ -68,10 +69,10 @@ var _ = Describe("Plan", func() {
 						Task: &atc.TaskPlan{
 							Name:       "name",
 							Privileged: true,
-							Tags:       atc.Tags{"tags"},
+							Tags:       types.Tags{"tags"},
 							ConfigPath: "some/config/path.yml",
-							Config: &atc.TaskConfig{
-								Params: atc.TaskEnv{"some": "secret"},
+							Config: &types.TaskConfig{
+								Params: types.TaskEnv{"some": "secret"},
 							},
 						},
 					},
@@ -84,8 +85,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -94,8 +95,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -110,8 +111,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -120,8 +121,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -136,8 +137,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -146,8 +147,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -162,8 +163,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -172,8 +173,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -188,8 +189,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -204,8 +205,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -221,8 +222,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -237,8 +238,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -247,8 +248,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -257,8 +258,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -273,8 +274,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -283,8 +284,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -314,8 +315,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -324,8 +325,8 @@ var _ = Describe("Plan", func() {
 								Task: &atc.TaskPlan{
 									Name:       "name",
 									ConfigPath: "some/config/path.yml",
-									Config: &atc.TaskConfig{
-										Params: atc.TaskEnv{"some": "secret"},
+									Config: &types.TaskConfig{
+										Params: types.TaskEnv{"some": "secret"},
 									},
 								},
 							},
@@ -342,8 +343,8 @@ var _ = Describe("Plan", func() {
 									Task: &atc.TaskPlan{
 										Name:       "name",
 										ConfigPath: "some/config/path.yml",
-										Config: &atc.TaskConfig{
-											Params: atc.TaskEnv{"some": "secret"},
+										Config: &types.TaskConfig{
+											Params: types.TaskEnv{"some": "secret"},
 										},
 									},
 								},
@@ -382,8 +383,8 @@ var _ = Describe("Plan", func() {
 										Task: &atc.TaskPlan{
 											Name:       "name",
 											ConfigPath: "some/config/path.yml",
-											Config: &atc.TaskConfig{
-												Params: atc.TaskEnv{"some": "secret"},
+											Config: &types.TaskConfig{
+												Params: types.TaskEnv{"some": "secret"},
 											},
 										},
 									},

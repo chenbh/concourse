@@ -4,6 +4,7 @@ import (
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/atc/worker/workerfakes"
 
 	"context"
@@ -49,21 +50,21 @@ jobs:
          - hello
 `
 
-	var pipelineObject = atc.Config{
-		Jobs: atc.JobConfigs{
+	var pipelineObject = types.Config{
+		Jobs: types.JobConfigs{
 			{
 				Name: "some-job",
-				PlanSequence: []atc.Step{
+				PlanSequence: []types.Step{
 					{
-						Config: &atc.TaskStep{
+						Config: &types.TaskStep{
 							Name: "some-task",
-							Config: &atc.TaskConfig{
+							Config: &types.TaskConfig{
 								Platform: "linux",
-								ImageResource: &atc.ImageResource{
+								ImageResource: &types.ImageResource{
 									Type:   "registry-image",
-									Source: atc.Source{"repository": "busybox"},
+									Source: types.Source{"repository": "busybox"},
 								},
-								Run: atc.TaskRunConfig{
+								Run: types.TaskRunConfig{
 									Path: "echo",
 									Args: []string{"hello"},
 								},
@@ -303,7 +304,7 @@ jobs:
 
 				Context("when there are some diff", func() {
 					BeforeEach(func() {
-						pipelineObject.Jobs[0].PlanSequence[0].Config.(*atc.TaskStep).Config.Run.Args = []string{"hello world"}
+						pipelineObject.Jobs[0].PlanSequence[0].Config.(*types.TaskStep).Config.Run.Args = []string{"hello world"}
 						fakePipeline.ConfigReturns(pipelineObject, nil)
 					})
 

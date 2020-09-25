@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,14 +20,12 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"github.com/tedsuo/rata"
 	"sigs.k8s.io/yaml"
-
-	"github.com/concourse/concourse/atc"
 )
 
 var _ = Describe("Fly CLI", func() {
 	Describe("set-pipeline", func() {
 		var (
-			config atc.Config
+			config types.Config
 		)
 
 		yes := func(stdin io.Writer) {
@@ -38,8 +37,8 @@ var _ = Describe("Fly CLI", func() {
 		}
 
 		BeforeEach(func() {
-			config = atc.Config{
-				Groups: atc.GroupConfigs{
+			config = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"job-1", "job-2"},
@@ -52,48 +51,48 @@ var _ = Describe("Fly CLI", func() {
 					},
 				},
 
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 					{
 						Name: "some-other-resource",
 						Type: "some-other-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 					{
 						Name: "some-resource-with-int-field",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": 5,
 						},
 					},
 				},
 
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-resource-type",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 					{
 						Name: "some-other-resource-type",
 						Type: "some-other-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name:   "some-job",
 						Public: true,
@@ -107,12 +106,12 @@ var _ = Describe("Fly CLI", func() {
 					},
 					{
 						Name: "pinned-resource-job",
-						PlanSequence: []atc.Step{
+						PlanSequence: []types.Step{
 							{
-								Config: &atc.GetStep{
+								Config: &types.GetStep{
 									Name: "some-resource",
-									Version: &atc.VersionConfig{
-										Pinned: atc.Version{
+									Version: &types.VersionConfig{
+										Pinned: types.Version{
 											"ref": "some-ref",
 										},
 									},
@@ -126,36 +125,36 @@ var _ = Describe("Fly CLI", func() {
 
 		Describe("templating", func() {
 			BeforeEach(func() {
-				config = atc.Config{
-					Groups: atc.GroupConfigs{},
+				config = types.Config{
+					Groups: types.GroupConfigs{},
 
-					Resources: atc.ResourceConfigs{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "template-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"source-config": "some-value",
 							},
 						},
 						{
 							Name: "some-other-resource",
 							Type: "some-other-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"secret_key": "verysecret",
 							},
 						},
 					},
 
-					Jobs: atc.JobConfigs{},
+					Jobs: types.JobConfigs{},
 				}
 
-				path, err := atc.Routes.CreatePathForRoute(atc.GetConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+				path, err := types.Routes.CreatePathForRoute(types.GetConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 				Expect(err).NotTo(HaveOccurred())
 
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", path),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ConfigResponse{Config: config}, http.Header{atc.ConfigVersionHeader: {"42"}}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.ConfigResponse{Config: config}, http.Header{types.ConfigVersionHeader: {"42"}}),
 					),
 				)
 			})
@@ -207,42 +206,42 @@ var _ = Describe("Fly CLI", func() {
 
 			Context("when configuring with old-style templated value succeeds", func() {
 				BeforeEach(func() {
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
-					path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
-					config = atc.Config{
-						Groups: atc.GroupConfigs{},
+					config = types.Config{
+						Groups: types.GroupConfigs{},
 
-						Resources: atc.ResourceConfigs{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "template-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"source-config": "some-value",
 								},
 							},
 							{
 								Name: "some-other-resource",
 								Type: "some-other-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"secret_key": "overridden-secret",
 								},
 							},
 						},
 
-						Jobs: atc.JobConfigs{},
+						Jobs: types.JobConfigs{},
 					}
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								bodyConfig := getConfig(r)
 
-								receivedConfig := atc.Config{}
+								receivedConfig := types.Config{}
 								err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 								Expect(err).NotTo(HaveOccurred())
 
@@ -255,7 +254,7 @@ var _ = Describe("Fly CLI", func() {
 					)
 
 					atcServer.RouteToHandler("GET", path_get,
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
 					)
 				})
 
@@ -289,39 +288,39 @@ var _ = Describe("Fly CLI", func() {
 
 				Context("when a non-stringy var is specified with -v", func() {
 					BeforeEach(func() {
-						config = atc.Config{
-							Groups: atc.GroupConfigs{},
+						config = types.Config{
+							Groups: types.GroupConfigs{},
 
-							Resources: atc.ResourceConfigs{
+							Resources: types.ResourceConfigs{
 								{
 									Name: "some-resource",
 									Type: "template-type",
-									Source: atc.Source{
+									Source: types.Source{
 										"source-config": "some-value",
 									},
 								},
 								{
 									Name: "some-other-resource",
 									Type: "some-other-type",
-									Source: atc.Source{
+									Source: types.Source{
 										"secret_key": `{"complicated": "secret"}`,
 									},
 								},
 							},
 
-							Jobs: atc.JobConfigs{},
+							Jobs: types.JobConfigs{},
 						}
 
-						path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+						path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 						Expect(err).NotTo(HaveOccurred())
 
 						atcServer.RouteToHandler("PUT", path,
 							ghttp.CombineHandlers(
-								ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+								ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 								func(w http.ResponseWriter, r *http.Request) {
 									bodyConfig := getConfig(r)
 
-									receivedConfig := atc.Config{}
+									receivedConfig := types.Config{}
 									err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 									Expect(err).NotTo(HaveOccurred())
 
@@ -386,13 +385,13 @@ var _ = Describe("Fly CLI", func() {
 
 			Context("when a var is specified with -v", func() {
 				BeforeEach(func() {
-					config = atc.Config{
-						Resources: atc.ResourceConfigs{
+					config = types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Tags: atc.Tags{"val-1", "val-2"},
-								Source: atc.Source{
+								Tags: types.Tags{"val-1", "val-2"},
+								Source: types.Source{
 									"private_key": `-----BEGIN SOME KEY-----
 this is super secure
 -----END SOME KEY-----
@@ -404,12 +403,12 @@ this is super secure
 							},
 						},
 
-						Jobs: atc.JobConfigs{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
@@ -418,16 +417,16 @@ this is super secure
 						},
 					}
 
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								bodyConfig := getConfig(r)
 
-								receivedConfig := atc.Config{}
+								receivedConfig := types.Config{}
 								err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 								Expect(err).NotTo(HaveOccurred())
 
@@ -439,11 +438,11 @@ this is super secure
 						),
 					)
 
-					path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("GET", path_get,
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
 					)
 				})
 
@@ -472,13 +471,13 @@ this is super secure
 
 			Context("when vars are overridden with -v, some with special types", func() {
 				BeforeEach(func() {
-					config = atc.Config{
-						Resources: atc.ResourceConfigs{
+					config = types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Tags: atc.Tags{"val-1", "val-2"},
-								Source: atc.Source{
+								Tags: types.Tags{"val-1", "val-2"},
+								Source: types.Source{
 									"private_key": `-----BEGIN SOME KEY-----
 this is super secure
 -----END SOME KEY-----
@@ -490,12 +489,12 @@ this is super secure
 							},
 						},
 
-						Jobs: atc.JobConfigs{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
@@ -504,16 +503,16 @@ this is super secure
 						},
 					}
 
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								bodyConfig := getConfig(r)
 
-								receivedConfig := atc.Config{}
+								receivedConfig := types.Config{}
 								err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 								Expect(err).NotTo(HaveOccurred())
 
@@ -525,11 +524,11 @@ this is super secure
 						),
 					)
 
-					path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("GET", path_get,
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
 					)
 				})
 
@@ -560,13 +559,13 @@ this is super secure
 
 			Context("when a var is not specified", func() {
 				BeforeEach(func() {
-					config = atc.Config{
-						Resources: atc.ResourceConfigs{
+					config = types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-type",
-								Tags: atc.Tags{"val-1", "val-2"},
-								Source: atc.Source{
+								Tags: types.Tags{"val-1", "val-2"},
+								Source: types.Source{
 									"private_key": `-----BEGIN SOME KEY-----
 this is super secure
 -----END SOME KEY-----
@@ -578,12 +577,12 @@ this is super secure
 							},
 						},
 
-						Jobs: atc.JobConfigs{
+						Jobs: types.JobConfigs{
 							{
 								Name: "some-job",
-								PlanSequence: []atc.Step{
+								PlanSequence: []types.Step{
 									{
-										Config: &atc.GetStep{
+										Config: &types.GetStep{
 											Name: "some-resource",
 										},
 									},
@@ -592,16 +591,16 @@ this is super secure
 						},
 					}
 
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								bodyConfig := getConfig(r)
 
-								receivedConfig := atc.Config{}
+								receivedConfig := types.Config{}
 								err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 								Expect(err).NotTo(HaveOccurred())
 
@@ -613,11 +612,11 @@ this is super secure
 						),
 					)
 
-					path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("GET", path_get,
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
 					)
 				})
 
@@ -669,23 +668,23 @@ this is super secure
 
 					Context("when the variable does not exist in the credentials manager", func() {
 						BeforeEach(func() {
-							path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+							path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 							Expect(err).NotTo(HaveOccurred())
 
-							configResponse := atc.SaveConfigResponse{Errors: []string{"some-error"}}
+							configResponse := types.SaveConfigResponse{Errors: []string{"some-error"}}
 							atcServer.RouteToHandler("PUT", path,
 								ghttp.CombineHandlers(
-									ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+									ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 									func(w http.ResponseWriter, r *http.Request) {
 										bodyConfig := getConfig(r)
 
-										receivedConfig := atc.Config{}
+										receivedConfig := types.Config{}
 										err = yaml.Unmarshal(bodyConfig, &receivedConfig)
 										Expect(err).NotTo(HaveOccurred())
 
 										Expect(receivedConfig).To(Equal(config))
 									},
-									ghttp.RespondWithJSONEncoded(http.StatusBadRequest, configResponse, http.Header{atc.ConfigVersionHeader: {"42"}}),
+									ghttp.RespondWithJSONEncoded(http.StatusBadRequest, configResponse, http.Header{types.ConfigVersionHeader: {"42"}}),
 								),
 							)
 						})
@@ -723,7 +722,7 @@ this is super secure
 
 		Describe("setting", func() {
 			var (
-				changedConfig atc.Config
+				changedConfig types.Config
 
 				payload    []byte
 				configFile *os.File
@@ -737,18 +736,18 @@ this is super secure
 
 				changedConfig = config
 
-				path, err := atc.Routes.CreatePathForRoute(atc.GetConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+				path, err := types.Routes.CreatePathForRoute(types.GetConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 				Expect(err).NotTo(HaveOccurred())
 
 				atcServer.RouteToHandler("GET", path,
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ConfigResponse{Config: config}, http.Header{atc.ConfigVersionHeader: {"42"}}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.ConfigResponse{Config: config}, http.Header{types.ConfigVersionHeader: {"42"}}),
 				)
 
-				path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+				path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 				Expect(err).NotTo(HaveOccurred())
 
 				atcServer.RouteToHandler("GET", path_get,
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{Name: "awesome-pipeline", Paused: false, TeamName: "main"}),
 				)
 			})
 
@@ -814,7 +813,7 @@ this is super secure
 
 			Context("when configuring with groups re-ordered", func() {
 				BeforeEach(func() {
-					changedConfig.Groups = atc.GroupConfigs{
+					changedConfig.Groups = types.GroupConfigs{
 						{
 							Name:      "some-other-group",
 							Jobs:      []string{"job-3", "job-4"},
@@ -827,12 +826,12 @@ this is super secure
 						},
 					}
 
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								config := getConfig(r)
 								Expect(config).To(MatchYAML(payload))
@@ -880,18 +879,18 @@ this is super secure
 					newResource := changedConfig.Resources[1]
 					newResource.Name = "some-new-resource"
 
-					newResources := make(atc.ResourceConfigs, len(changedConfig.Resources))
+					newResources := make(types.ResourceConfigs, len(changedConfig.Resources))
 					copy(newResources, changedConfig.Resources)
 					newResources[0].Type = "some-new-type"
 					newResources[1] = newResource
-					newResources[2].Source = atc.Source{"source-config": 5.0}
+					newResources[2].Source = types.Source{"source-config": 5.0}
 
 					changedConfig.Resources = newResources
 
 					newResourceType := changedConfig.ResourceTypes[1]
 					newResourceType.Name = "some-new-resource-type"
 
-					newResourceTypes := make(atc.ResourceTypes, len(changedConfig.ResourceTypes))
+					newResourceTypes := make(types.ResourceTypes, len(changedConfig.ResourceTypes))
 					copy(newResourceTypes, changedConfig.ResourceTypes)
 					newResourceTypes[0].Type = "some-new-type"
 					newResourceTypes[1] = newResourceType
@@ -903,12 +902,12 @@ this is super secure
 					changedConfig.Jobs[0].Serial = false
 					changedConfig.Jobs = append(changedConfig.Jobs[:2], newJob)
 
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
 						ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								config := getConfig(r)
 								Expect(config).To(MatchYAML(payload))
@@ -1080,25 +1079,25 @@ this is super secure
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/other-team"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: "other-team",
 							}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/other-team/pipelines/awesome-pipeline/config"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: "other-team",
 							}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", "/api/v1/teams/other-team/pipelines/awesome-pipeline/config"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: "other-team",
 							}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/other-team/pipelines/awesome-pipeline"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Pipeline{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Pipeline{
 								Name: "awesome-pipeline",
 							}),
 						),
@@ -1152,7 +1151,7 @@ this is super secure
 
 			Context("when configuring fails", func() {
 				BeforeEach(func() {
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path,
@@ -1218,14 +1217,14 @@ this is super secure
 				
 				Context("when updating an existing pipeline", func(){
 					BeforeEach(func() {
-						path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+						path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 						Expect(err).NotTo(HaveOccurred())
 
-						path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+						path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 						Expect(err).NotTo(HaveOccurred())
 
 						atcServer.RouteToHandler("PUT", path, ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								config := getConfig(r)
 								Expect(config).To(MatchYAML(payload))
@@ -1234,7 +1233,7 @@ this is super secure
 						))
 
 						atcServer.RouteToHandler("GET", path_get, ghttp.RespondWithJSONEncoded(http.StatusOK,
-							atc.Pipeline{Name: "awesome-pipeline", Paused: true, TeamName: "main"}))
+							types.Pipeline{Name: "awesome-pipeline", Paused: true, TeamName: "main"}))
 						
 						config.Resources[0].Name = "updated-name"
 					})
@@ -1244,14 +1243,14 @@ this is super secure
 
 				Context("when the pipeline is being created for the first time", func() {
 					BeforeEach(func() {
-						path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+						path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 						Expect(err).NotTo(HaveOccurred())
 
-						path_get, err := atc.Routes.CreatePathForRoute(atc.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+						path_get, err := types.Routes.CreatePathForRoute(types.GetPipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 						Expect(err).NotTo(HaveOccurred())
 
 						atcServer.RouteToHandler("PUT", path, ghttp.CombineHandlers(
-							ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+							ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 							func(w http.ResponseWriter, r *http.Request) {
 								config := getConfig(r)
 								Expect(config).To(MatchYAML(payload))
@@ -1260,7 +1259,7 @@ this is super secure
 						))
 
 						atcServer.RouteToHandler("GET", path_get, ghttp.RespondWithJSONEncoded(http.StatusOK,
-							atc.Pipeline{Name: "awesome-pipeline", Paused: true, TeamName: "main"}))
+							types.Pipeline{Name: "awesome-pipeline", Paused: true, TeamName: "main"}))
 						
 						config.Resources[0].Name = "updated-name"
 					})
@@ -1271,11 +1270,11 @@ this is super secure
 
 			Context("when the server returns warnings", func() {
 				BeforeEach(func() {
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path, ghttp.CombineHandlers(
-						ghttp.VerifyHeaderKV(atc.ConfigVersionHeader, "42"),
+						ghttp.VerifyHeaderKV(types.ConfigVersionHeader, "42"),
 						func(w http.ResponseWriter, r *http.Request) {
 							config := getConfig(r)
 							Expect(config).To(MatchYAML(payload))
@@ -1333,7 +1332,7 @@ this is super secure
 
 			Context("when the server rejects the request", func() {
 				BeforeEach(func() {
-					path, err := atc.Routes.CreatePathForRoute(atc.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
+					path, err := types.Routes.CreatePathForRoute(types.SaveConfig, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 
 					atcServer.RouteToHandler("PUT", path, func(w http.ResponseWriter, r *http.Request) {

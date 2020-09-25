@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -29,10 +29,10 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/pipeline/resources/foo/versions"),
-							ghttp.RespondWithJSONEncoded(200, []atc.ResourceVersion{
-								{ID: 3, Version: atc.Version{"version": "3", "another": "field"}, Enabled: true},
-								{ID: 2, Version: atc.Version{"version": "2", "another": "field"}, Enabled: false},
-								{ID: 1, Version: atc.Version{"version": "1", "another": "field"}, Enabled: true},
+							ghttp.RespondWithJSONEncoded(200, []types.ResourceVersion{
+								{ID: 3, Version: types.Version{"version": "3", "another": "field"}, Enabled: true},
+								{ID: 2, Version: types.Version{"version": "2", "another": "field"}, Enabled: false},
+								{ID: 1, Version: types.Version{"version": "1", "another": "field"}, Enabled: true},
 							}),
 						),
 					)

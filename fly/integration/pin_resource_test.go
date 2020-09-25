@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -29,9 +29,9 @@ var _ = Describe("Fly CLI", func() {
 			resourceVersionID             = "42"
 			pinVersion                    = "some:value"
 			pipelineResource              = fmt.Sprintf("%s/%s", pipelineName, resourceName)
-			expectedPinVersion            = atc.ResourceVersion{
+			expectedPinVersion            = types.ResourceVersion{
 				ID:      42,
-				Version: atc.Version{"some": "value"},
+				Version: types.Version{"some": "value"},
 			}
 		)
 
@@ -50,14 +50,14 @@ var _ = Describe("Fly CLI", func() {
 		Context("when the resource is specified", func() {
 			Context("when the resource version json string is specified", func() {
 				BeforeEach(func() {
-					getPath, err = atc.Routes.CreatePathForRoute(atc.ListResourceVersions, rata.Params{
+					getPath, err = types.Routes.CreatePathForRoute(types.ListResourceVersions, rata.Params{
 						"pipeline_name": pipelineName,
 						"team_name":     teamName,
 						"resource_name": resourceName,
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					pinPath, err = atc.Routes.CreatePathForRoute(atc.PinResourceVersion, rata.Params{
+					pinPath, err = types.Routes.CreatePathForRoute(types.PinResourceVersion, rata.Params{
 						"pipeline_name":              pipelineName,
 						"team_name":                  teamName,
 						"resource_name":              resourceName,
@@ -71,7 +71,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", getPath, "filter=some:value"),
-							ghttp.RespondWithJSONEncoded(expectedGetStatus, []atc.ResourceVersion{expectedPinVersion}),
+							ghttp.RespondWithJSONEncoded(expectedGetStatus, []types.ResourceVersion{expectedPinVersion}),
 						),
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", pinPath),
@@ -151,7 +151,7 @@ var _ = Describe("Fly CLI", func() {
 
 			Context("when pin comment is provided", func() {
 				BeforeEach(func() {
-					commentPath, err = atc.Routes.CreatePathForRoute(atc.SetPinCommentOnResource, rata.Params{
+					commentPath, err = types.Routes.CreatePathForRoute(types.SetPinCommentOnResource, rata.Params{
 						"pipeline_name": pipelineName,
 						"team_name":     teamName,
 						"resource_name": resourceName,
@@ -163,7 +163,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", commentPath),
-							ghttp.VerifyJSONRepresenting(atc.SetPinCommentRequestBody{PinComment: "some pin message"}),
+							ghttp.VerifyJSONRepresenting(types.SetPinCommentRequestBody{PinComment: "some pin message"}),
 							ghttp.RespondWith(expectedPutCommentStatus, nil),
 						),
 					)

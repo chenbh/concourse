@@ -3,6 +3,7 @@ package worker_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -13,7 +14,6 @@ import (
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/atc/db/lock/lockfakes"
@@ -84,7 +84,7 @@ var _ = Describe("Fetcher", func() {
 			fakeResource,
 			db.NewBuildStepContainerOwner(0, "some-plan-id", 0),
 			worker.ImageFetcherSpec{
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 				fakeBuildStepDelegate,
 			},
 			fakeUsedResourceCache,

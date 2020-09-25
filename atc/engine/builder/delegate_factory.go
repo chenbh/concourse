@@ -2,6 +2,7 @@ package builder
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"strings"
 	"time"
@@ -214,7 +215,7 @@ func (d *putDelegate) Finished(logger lager.Logger, exitStatus exec.ExitStatus, 
 	logger.Info("finished", lager.Data{"exit-status": exitStatus, "version-info": info})
 }
 
-func (d *putDelegate) SaveOutput(log lager.Logger, plan atc.PutPlan, source atc.Source, resourceTypes atc.VersionedResourceTypes, info runtime.VersionResult) {
+func (d *putDelegate) SaveOutput(log lager.Logger, plan atc.PutPlan, source types.Source, resourceTypes types.VersionedResourceTypes, info runtime.VersionResult) {
 	logger := log.WithData(lager.Data{
 		"step":          plan.Name,
 		"resource":      plan.Resource,
@@ -248,12 +249,12 @@ func NewTaskDelegate(build db.Build, planID atc.PlanID, buildVars *vars.BuildVar
 
 type taskDelegate struct {
 	exec.BuildStepDelegate
-	config      atc.TaskConfig
+	config      types.TaskConfig
 	build       db.Build
 	eventOrigin event.Origin
 }
 
-func (d *taskDelegate) SetTaskConfig(config atc.TaskConfig) {
+func (d *taskDelegate) SetTaskConfig(config types.TaskConfig) {
 	d.config = config
 }
 
@@ -321,7 +322,7 @@ type checkDelegate struct {
 	clock       clock.Clock
 }
 
-func (d *checkDelegate) SaveVersions(spanContext db.SpanContext, versions []atc.Version) error {
+func (d *checkDelegate) SaveVersions(spanContext db.SpanContext, versions []types.Version) error {
 	return d.check.SaveVersions(spanContext, versions)
 }
 
@@ -431,13 +432,13 @@ func (delegate *buildStepDelegate) buildOutputFilter(str string) string {
 	return it.line
 }
 
-func (delegate *buildStepDelegate) RedactImageSource(source atc.Source) (atc.Source, error) {
+func (delegate *buildStepDelegate) RedactImageSource(source types.Source) (types.Source, error) {
 	b, err := json.Marshal(&source)
 	if err != nil {
 		return source, err
 	}
 	s := delegate.buildOutputFilter(string(b))
-	newSource := atc.Source{}
+	newSource := types.Source{}
 	err = json.Unmarshal([]byte(s), &newSource)
 	if err != nil {
 		return source, err

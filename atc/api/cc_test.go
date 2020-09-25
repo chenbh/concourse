@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -22,14 +23,14 @@ var _ = Describe("cc.xml", func() {
 	)
 
 	BeforeEach(func() {
-		requestGenerator = rata.NewRequestGenerator(server.URL, atc.Routes)
+		requestGenerator = rata.NewRequestGenerator(server.URL, types.Routes)
 	})
 
 	Describe("GET /api/v1/teams/:team_name/cc.xml", func() {
 		var response *http.Response
 
 		JustBeforeEach(func() {
-			req, err := requestGenerator.CreateRequest(atc.GetCC, rata.Params{
+			req, err := requestGenerator.CreateRequest(types.GetCC, rata.Params{
 				"team_name": "a-team",
 			}, nil)
 			Expect(err).NotTo(HaveOccurred())

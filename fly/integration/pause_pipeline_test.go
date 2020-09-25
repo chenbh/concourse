@@ -1,13 +1,13 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -22,7 +22,7 @@ var _ = Describe("Fly CLI", func() {
 				err  error
 			)
 			BeforeEach(func() {
-				path, err = atc.Routes.CreatePathForRoute(atc.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
+				path, err = types.Routes.CreatePathForRoute(types.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -88,7 +88,7 @@ var _ = Describe("Fly CLI", func() {
 				err  error
 			)
 			BeforeEach(func() {
-				path, err = atc.Routes.CreatePathForRoute(atc.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
+				path, err = types.Routes.CreatePathForRoute(types.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -97,7 +97,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+teamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: teamName,
 							}),
 						),
@@ -130,7 +130,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+teamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: teamName,
 							}),
 						),
@@ -217,16 +217,16 @@ var _ = Describe("Fly CLI", func() {
 			)
 
 			BeforeEach(func() {
-				somePath, err = atc.Routes.CreatePathForRoute(atc.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
+				somePath, err = types.Routes.CreatePathForRoute(types.PausePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 
-				someOtherPath, err = atc.Routes.CreatePathForRoute(atc.PausePipeline, rata.Params{"pipeline_name": "more-awesome-pipeline", "team_name": teamName})
+				someOtherPath, err = types.Routes.CreatePathForRoute(types.PausePipeline, rata.Params{"pipeline_name": "more-awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+						ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 							{Name: "awesome-pipeline", Paused: false, Public: false},
 							{Name: "more-awesome-pipeline", Paused: true, Public: false},
 						}),

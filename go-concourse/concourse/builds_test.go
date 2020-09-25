@@ -2,6 +2,7 @@ package concourse_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"github.com/concourse/concourse/atc"
@@ -16,7 +17,7 @@ var _ = Describe("ATC Handler Builds", func() {
 	Describe("CreateBuild", func() {
 		var (
 			plan          atc.Plan
-			expectedBuild atc.Build
+			expectedBuild types.Build
 		)
 
 		BeforeEach(func() {
@@ -30,13 +31,13 @@ var _ = Describe("ATC Handler Builds", func() {
 						Task: &atc.TaskPlan{
 							Name:       "one-off",
 							Privileged: true,
-							Config:     &atc.TaskConfig{},
+							Config:     &types.TaskConfig{},
 						},
 					},
 				},
 			}
 
-			expectedBuild = atc.Build{
+			expectedBuild = types.Build{
 				ID:      123,
 				Name:    "mybuild",
 				Status:  "succeeded",
@@ -66,13 +67,13 @@ var _ = Describe("ATC Handler Builds", func() {
 		var (
 			pipelineName  string
 			jobName       string
-			expectedBuild atc.Build
+			expectedBuild types.Build
 		)
 		BeforeEach(func() {
 			pipelineName = "mypipeline"
 			jobName = "myjob"
 
-			expectedBuild = atc.Build{
+			expectedBuild = types.Build{
 				ID:      123,
 				Name:    "mybuild",
 				Status:  "succeeded",
@@ -101,7 +102,7 @@ var _ = Describe("ATC Handler Builds", func() {
 			pipelineName  string
 			jobName       string
 			buildName     string
-			expectedBuild atc.Build
+			expectedBuild types.Build
 		)
 
 		BeforeEach(func() {
@@ -109,7 +110,7 @@ var _ = Describe("ATC Handler Builds", func() {
 			jobName = "myjob"
 			buildName = "mybuild"
 
-			expectedBuild = atc.Build{
+			expectedBuild = types.Build{
 				ID:      123,
 				Name:    "myrerunbuild",
 				Status:  "succeeded",
@@ -135,13 +136,13 @@ var _ = Describe("ATC Handler Builds", func() {
 
 	Describe("JobBuild", func() {
 		var (
-			expectedBuild atc.Build
+			expectedBuild types.Build
 			expectedURL   string
 		)
 
 		Context("when build exists", func() {
 			BeforeEach(func() {
-				expectedBuild = atc.Build{
+				expectedBuild = types.Build{
 					ID:      123,
 					Name:    "mybuild",
 					Status:  "succeeded",
@@ -189,7 +190,7 @@ var _ = Describe("ATC Handler Builds", func() {
 
 	Describe("Build", func() {
 		Context("when build exists", func() {
-			expectedBuild := atc.Build{
+			expectedBuild := types.Build{
 				ID:      123,
 				Name:    "mybuild",
 				Status:  "succeeded",
@@ -238,18 +239,18 @@ var _ = Describe("ATC Handler Builds", func() {
 	Describe("client.Builds", func() {
 		expectedURL := "/api/v1/builds"
 
-		var expectedBuilds []atc.Build
+		var expectedBuilds []types.Build
 
 		var page concourse.Page
 
-		var builds []atc.Build
+		var builds []types.Build
 		var pagination concourse.Pagination
 		var clientErr error
 
 		BeforeEach(func() {
 			page = concourse.Page{}
 
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					ID:      123,
 					Name:    "mybuild1",
@@ -463,18 +464,18 @@ var _ = Describe("ATC Handler Builds", func() {
 	Describe("team.Builds", func() {
 		expectedURL := "/api/v1/teams/some-team/builds"
 
-		var expectedBuilds []atc.Build
+		var expectedBuilds []types.Build
 
 		var page concourse.Page
 
-		var builds []atc.Build
+		var builds []types.Build
 		var pagination concourse.Pagination
 		var teamErr error
 
 		BeforeEach(func() {
 			page = concourse.Page{}
 
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					ID:       123,
 					Name:     "mybuild1",

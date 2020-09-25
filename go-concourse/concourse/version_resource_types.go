@@ -1,20 +1,20 @@
 package concourse
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) VersionedResourceTypes(pipelineName string) (atc.VersionedResourceTypes, bool, error) {
+func (team *team) VersionedResourceTypes(pipelineName string) (types.VersionedResourceTypes, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var versionedResourceTypes atc.VersionedResourceTypes
+	var versionedResourceTypes types.VersionedResourceTypes
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListResourceTypes,
+		RequestName: types.ListResourceTypes,
 		Params:      params,
 	}, &internal.Response{
 		Result: &versionedResourceTypes,

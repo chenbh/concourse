@@ -1,16 +1,16 @@
 package creds
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/vars"
 )
 
 type TaskEnvValidator struct {
 	variablesResolver vars.Variables
-	rawTaskEnv        atc.TaskEnv
+	rawTaskEnv        types.TaskEnv
 }
 
-func NewTaskEnvValidator(variables vars.Variables, params atc.TaskEnv) TaskEnvValidator {
+func NewTaskEnvValidator(variables vars.Variables, params types.TaskEnv) TaskEnvValidator {
 	return TaskEnvValidator{
 		variablesResolver: variables,
 		rawTaskEnv:        params,
@@ -18,16 +18,16 @@ func NewTaskEnvValidator(variables vars.Variables, params atc.TaskEnv) TaskEnvVa
 }
 
 func (s TaskEnvValidator) Validate() error {
-	var params atc.TaskEnv
+	var params types.TaskEnv
 	return evaluate(s.variablesResolver, s.rawTaskEnv, &params)
 }
 
 type TaskVarsValidator struct {
 	variablesResolver vars.Variables
-	rawTaskVars       atc.Params
+	rawTaskVars       types.Params
 }
 
-func NewTaskVarsValidator(variables vars.Variables, taskVars atc.Params) TaskVarsValidator {
+func NewTaskVarsValidator(variables vars.Variables, taskVars types.Params) TaskVarsValidator {
 	return TaskVarsValidator{
 		variablesResolver: variables,
 		rawTaskVars:       taskVars,
@@ -35,6 +35,6 @@ func NewTaskVarsValidator(variables vars.Variables, taskVars atc.Params) TaskVar
 }
 
 func (s TaskVarsValidator) Validate() error {
-	var params atc.Params
+	var params types.Params
 	return evaluate(s.variablesResolver, s.rawTaskVars, &params)
 }

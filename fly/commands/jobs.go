@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -43,7 +43,7 @@ func (command *JobsCommand) Execute([]string) error {
 		team = target.Team()
 	}
 
-	var jobs []atc.Job
+	var jobs []types.Job
 	jobs, err = team.ListJobs(pipelineName)
 	if err != nil {
 		return err

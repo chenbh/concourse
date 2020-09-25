@@ -2,6 +2,7 @@
 package execfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"sync"
 
@@ -43,26 +44,26 @@ type FakePutDelegate struct {
 	initializingArgsForCall []struct {
 		arg1 lager.Logger
 	}
-	RedactImageSourceStub        func(atc.Source) (atc.Source, error)
+	RedactImageSourceStub        func(types.Source) (types.Source, error)
 	redactImageSourceMutex       sync.RWMutex
 	redactImageSourceArgsForCall []struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}
 	redactImageSourceReturns struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
 	redactImageSourceReturnsOnCall map[int]struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}
-	SaveOutputStub        func(lager.Logger, atc.PutPlan, atc.Source, atc.VersionedResourceTypes, runtime.VersionResult)
+	SaveOutputStub        func(lager.Logger, atc.PutPlan, types.Source, types.VersionedResourceTypes, runtime.VersionResult)
 	saveOutputMutex       sync.RWMutex
 	saveOutputArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 atc.PutPlan
-		arg3 atc.Source
-		arg4 atc.VersionedResourceTypes
+		arg3 types.Source
+		arg4 types.VersionedResourceTypes
 		arg5 runtime.VersionResult
 	}
 	SelectedWorkerStub        func(lager.Logger, string)
@@ -266,11 +267,11 @@ func (fake *FakePutDelegate) InitializingArgsForCall(i int) lager.Logger {
 	return argsForCall.arg1
 }
 
-func (fake *FakePutDelegate) RedactImageSource(arg1 atc.Source) (atc.Source, error) {
+func (fake *FakePutDelegate) RedactImageSource(arg1 types.Source) (types.Source, error) {
 	fake.redactImageSourceMutex.Lock()
 	ret, specificReturn := fake.redactImageSourceReturnsOnCall[len(fake.redactImageSourceArgsForCall)]
 	fake.redactImageSourceArgsForCall = append(fake.redactImageSourceArgsForCall, struct {
-		arg1 atc.Source
+		arg1 types.Source
 	}{arg1})
 	fake.recordInvocation("RedactImageSource", []interface{}{arg1})
 	fake.redactImageSourceMutex.Unlock()
@@ -290,52 +291,52 @@ func (fake *FakePutDelegate) RedactImageSourceCallCount() int {
 	return len(fake.redactImageSourceArgsForCall)
 }
 
-func (fake *FakePutDelegate) RedactImageSourceCalls(stub func(atc.Source) (atc.Source, error)) {
+func (fake *FakePutDelegate) RedactImageSourceCalls(stub func(types.Source) (types.Source, error)) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = stub
 }
 
-func (fake *FakePutDelegate) RedactImageSourceArgsForCall(i int) atc.Source {
+func (fake *FakePutDelegate) RedactImageSourceArgsForCall(i int) types.Source {
 	fake.redactImageSourceMutex.RLock()
 	defer fake.redactImageSourceMutex.RUnlock()
 	argsForCall := fake.redactImageSourceArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakePutDelegate) RedactImageSourceReturns(result1 atc.Source, result2 error) {
+func (fake *FakePutDelegate) RedactImageSourceReturns(result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	fake.redactImageSourceReturns = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakePutDelegate) RedactImageSourceReturnsOnCall(i int, result1 atc.Source, result2 error) {
+func (fake *FakePutDelegate) RedactImageSourceReturnsOnCall(i int, result1 types.Source, result2 error) {
 	fake.redactImageSourceMutex.Lock()
 	defer fake.redactImageSourceMutex.Unlock()
 	fake.RedactImageSourceStub = nil
 	if fake.redactImageSourceReturnsOnCall == nil {
 		fake.redactImageSourceReturnsOnCall = make(map[int]struct {
-			result1 atc.Source
+			result1 types.Source
 			result2 error
 		})
 	}
 	fake.redactImageSourceReturnsOnCall[i] = struct {
-		result1 atc.Source
+		result1 types.Source
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakePutDelegate) SaveOutput(arg1 lager.Logger, arg2 atc.PutPlan, arg3 atc.Source, arg4 atc.VersionedResourceTypes, arg5 runtime.VersionResult) {
+func (fake *FakePutDelegate) SaveOutput(arg1 lager.Logger, arg2 atc.PutPlan, arg3 types.Source, arg4 types.VersionedResourceTypes, arg5 runtime.VersionResult) {
 	fake.saveOutputMutex.Lock()
 	fake.saveOutputArgsForCall = append(fake.saveOutputArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 atc.PutPlan
-		arg3 atc.Source
-		arg4 atc.VersionedResourceTypes
+		arg3 types.Source
+		arg4 types.VersionedResourceTypes
 		arg5 runtime.VersionResult
 	}{arg1, arg2, arg3, arg4, arg5})
 	fake.recordInvocation("SaveOutput", []interface{}{arg1, arg2, arg3, arg4, arg5})
@@ -351,13 +352,13 @@ func (fake *FakePutDelegate) SaveOutputCallCount() int {
 	return len(fake.saveOutputArgsForCall)
 }
 
-func (fake *FakePutDelegate) SaveOutputCalls(stub func(lager.Logger, atc.PutPlan, atc.Source, atc.VersionedResourceTypes, runtime.VersionResult)) {
+func (fake *FakePutDelegate) SaveOutputCalls(stub func(lager.Logger, atc.PutPlan, types.Source, types.VersionedResourceTypes, runtime.VersionResult)) {
 	fake.saveOutputMutex.Lock()
 	defer fake.saveOutputMutex.Unlock()
 	fake.SaveOutputStub = stub
 }
 
-func (fake *FakePutDelegate) SaveOutputArgsForCall(i int) (lager.Logger, atc.PutPlan, atc.Source, atc.VersionedResourceTypes, runtime.VersionResult) {
+func (fake *FakePutDelegate) SaveOutputArgsForCall(i int) (lager.Logger, atc.PutPlan, types.Source, types.VersionedResourceTypes, runtime.VersionResult) {
 	fake.saveOutputMutex.RLock()
 	defer fake.saveOutputMutex.RUnlock()
 	argsForCall := fake.saveOutputArgsForCall[i]

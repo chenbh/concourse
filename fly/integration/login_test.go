@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/version"
 )
 
@@ -542,7 +542,7 @@ var _ = Describe("login Command", func() {
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
 								ghttp.VerifyHeaderKV("Authorization", "Bearer access-token"),
-								ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+								ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 									{Name: "pipeline-1"},
 								}),
 							),
@@ -587,7 +587,7 @@ var _ = Describe("login Command", func() {
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines"),
 								ghttp.VerifyHeaderKV("Authorization", "Bearer some-new-token"),
-								ghttp.RespondWithJSONEncoded(200, []atc.Pipeline{
+								ghttp.RespondWithJSONEncoded(200, []types.Pipeline{
 									{Name: "pipeline-2"},
 								}),
 							),
@@ -722,11 +722,11 @@ var _ = Describe("login Command", func() {
 					),
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Team{
+						ghttp.RespondWithJSONEncoded(200, []types.Team{
 							{
 								ID:   1,
 								Name: "any-team",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"owner": map[string][]string{
 										"groups": []string{},
 										"users":  []string{},
@@ -760,11 +760,11 @@ var _ = Describe("login Command", func() {
 					),
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Team{
+						ghttp.RespondWithJSONEncoded(200, []types.Team{
 							{
 								ID:   1,
 								Name: "main",
-								Auth: atc.TeamAuth{
+								Auth: types.TeamAuth{
 									"owner": map[string][]string{
 										"groups": []string{},
 										"users":  []string{},

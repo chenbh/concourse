@@ -1,6 +1,7 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
 	"github.com/concourse/concourse/atc"
@@ -15,7 +16,7 @@ func (client *client) BuildPlan(buildID int) (atc.PublicBuildPlan, bool, error) 
 
 	var buildPlan atc.PublicBuildPlan
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.GetBuildPlan,
+		RequestName: types.GetBuildPlan,
 		Params:      params,
 	}, &internal.Response{
 		Result: &buildPlan,

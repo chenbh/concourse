@@ -3,11 +3,11 @@ package configserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 
@@ -55,10 +55,10 @@ func (s *Server) GetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(atc.ConfigVersionHeader, fmt.Sprintf("%d", pipeline.ConfigVersion()))
+	w.Header().Set(types.ConfigVersionHeader, fmt.Sprintf("%d", pipeline.ConfigVersion()))
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(atc.ConfigResponse{
+	err = json.NewEncoder(w).Encode(types.ConfigResponse{
 		Config: config,
 	})
 	if err != nil {

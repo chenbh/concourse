@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
@@ -140,7 +141,7 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/builds"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Build{
+					ghttp.RespondWithJSONEncoded(200, []types.Build{
 						{ID: 4, Name: "1", Status: "started", JobName: "some-job"},
 						{ID: 3, Name: "3", Status: "started"},
 						{ID: 2, Name: "2", Status: "started"},
@@ -149,8 +150,8 @@ var _ = Describe("Hijacking", func() {
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers", "build_id=3&step_name=some-step"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{
-						{ID: "container-id-1", State: atc.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", User: user},
+					ghttp.RespondWithJSONEncoded(200, []types.Container{
+						{ID: "container-id-1", State: types.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", User: user},
 					}),
 				),
 				hijackHandler("container-id-1", didHijack, nil, "main"),
@@ -175,14 +176,14 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/builds"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Build{
+					ghttp.RespondWithJSONEncoded(200, []types.Build{
 						{ID: 3, Name: "3", Status: "started"},
 					}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers", "build_id=3&step_name=some-step"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{
-						{ID: "container-id-1", State: atc.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", WorkingDirectory: workingDirectory, User: user},
+					ghttp.RespondWithJSONEncoded(200, []types.Container{
+						{ID: "container-id-1", State: types.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", WorkingDirectory: workingDirectory, User: user},
 					}),
 				),
 				hijackHandler("container-id-1", didHijack, nil, "main"),
@@ -203,14 +204,14 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/builds"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Build{
+					ghttp.RespondWithJSONEncoded(200, []types.Build{
 						{ID: 3, Name: "3", Status: "started"},
 					}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers", "build_id=3&step_name=some-step"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{
-						{ID: "container-id-1", State: atc.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", User: "amelia"},
+					ghttp.RespondWithJSONEncoded(200, []types.Container{
+						{ID: "container-id-1", State: types.ContainerStateCreated, BuildID: 3, Type: "task", StepName: "some-step", User: "amelia"},
 					}),
 				),
 				hijackHandler("container-id-1", didHijack, nil, "main"),
@@ -230,13 +231,13 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/builds"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Build{
+					ghttp.RespondWithJSONEncoded(200, []types.Build{
 						{ID: 1, Name: "1", Status: "finished"},
 					}),
 				),
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers", "build_id=1&step_name=some-step"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{}),
+					ghttp.RespondWithJSONEncoded(200, []types.Container{}),
 				),
 				hijackHandler("container-id-1", didHijack, nil, "main"),
 			)
@@ -292,7 +293,7 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers", "build_id=0"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{}),
+					ghttp.RespondWithJSONEncoded(200, []types.Container{}),
 				),
 			)
 		})
@@ -318,14 +319,14 @@ var _ = Describe("Hijacking", func() {
 
 	Context("when multiple step containers are found", func() {
 		var (
-			containerList []atc.Container
+			containerList []types.Container
 			didHijack     chan struct{}
 		)
 
 		BeforeEach(func() {
 			didHijack = make(chan struct{})
 			hijacked = didHijack
-			containerList = []atc.Container{
+			containerList = []types.Container{
 				{
 					ID:           "container-id-1",
 					WorkerName:   "worker-name-1",
@@ -337,7 +338,7 @@ var _ = Describe("Hijacking", func() {
 					StepName:     "some-input",
 					Attempt:      "1.1.1",
 					User:         user,
-					State:        atc.ContainerStateCreated,
+					State:        types.ContainerStateCreated,
 				},
 				{
 					ID:           "container-id-2",
@@ -350,7 +351,7 @@ var _ = Describe("Hijacking", func() {
 					StepName:     "some-output",
 					Attempt:      "1.1.2",
 					User:         user,
-					State:        atc.ContainerStateCreated,
+					State:        types.ContainerStateCreated,
 				},
 				{
 					ID:           "container-id-3",
@@ -363,7 +364,7 @@ var _ = Describe("Hijacking", func() {
 					Type:         "task",
 					Attempt:      "1",
 					User:         user,
-					State:        atc.ContainerStateCreated,
+					State:        types.ContainerStateCreated,
 				},
 				{
 					ID:           "container-id-4",
@@ -372,7 +373,7 @@ var _ = Describe("Hijacking", func() {
 					ResourceName: "banana",
 					User:         user,
 					Type:         "check",
-					State:        atc.ContainerStateCreated,
+					State:        types.ContainerStateCreated,
 				},
 			}
 		})
@@ -422,7 +423,7 @@ var _ = Describe("Hijacking", func() {
 
 		Context("and no containers are in hijackable state", func() {
 			BeforeEach(func() {
-				containerList = []atc.Container{
+				containerList = []types.Container{
 					{
 						ID:           "container-id-2",
 						WorkerName:   "worker-name-1",
@@ -434,7 +435,7 @@ var _ = Describe("Hijacking", func() {
 						StepName:     "some-input",
 						Attempt:      "1.1.1",
 						User:         user,
-						State:        atc.ContainerStateCreating,
+						State:        types.ContainerStateCreating,
 					},
 				}
 			})
@@ -455,7 +456,7 @@ var _ = Describe("Hijacking", func() {
 
 		Context("and some containers are in a non-hijackable state", func() {
 			BeforeEach(func() {
-				containerList = []atc.Container{
+				containerList = []types.Container{
 					{
 						ID:           "container-id-1",
 						WorkerName:   "worker-name-1",
@@ -467,7 +468,7 @@ var _ = Describe("Hijacking", func() {
 						StepName:     "some-input",
 						Attempt:      "1.1.1",
 						User:         user,
-						State:        atc.ContainerStateCreating,
+						State:        types.ContainerStateCreating,
 					},
 					{
 						ID:           "container-id-2",
@@ -480,7 +481,7 @@ var _ = Describe("Hijacking", func() {
 						StepName:     "some-output",
 						Attempt:      "1.1.2",
 						User:         user,
-						State:        atc.ContainerStateCreated,
+						State:        types.ContainerStateCreated,
 					},
 					{
 						ID:           "container-id-3",
@@ -493,7 +494,7 @@ var _ = Describe("Hijacking", func() {
 						Type:         "task",
 						Attempt:      "1",
 						User:         user,
-						State:        atc.ContainerStateFailed,
+						State:        types.ContainerStateFailed,
 					},
 					{
 						ID:           "container-id-4",
@@ -502,7 +503,7 @@ var _ = Describe("Hijacking", func() {
 						ResourceName: "banana",
 						User:         user,
 						Type:         "check",
-						State:        atc.ContainerStateDestroying,
+						State:        types.ContainerStateDestroying,
 					},
 				}
 			})
@@ -541,7 +542,7 @@ var _ = Describe("Hijacking", func() {
 
 		Context("and only one container is in hijackable state", func() {
 			BeforeEach(func() {
-				containerList = []atc.Container{
+				containerList = []types.Container{
 					{
 						ID:           "container-id-1",
 						WorkerName:   "worker-name-1",
@@ -553,7 +554,7 @@ var _ = Describe("Hijacking", func() {
 						StepName:     "some-input",
 						Attempt:      "1.1.1",
 						User:         user,
-						State:        atc.ContainerStateDestroying,
+						State:        types.ContainerStateDestroying,
 					},
 					{
 						ID:           "container-id-2",
@@ -566,7 +567,7 @@ var _ = Describe("Hijacking", func() {
 						StepName:     "some-output",
 						Attempt:      "1.1.2",
 						User:         user,
-						State:        atc.ContainerStateCreated,
+						State:        types.ContainerStateCreated,
 					},
 				}
 			})
@@ -633,8 +634,8 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName+"/containers", containerArguments),
-					ghttp.RespondWithJSONEncoded(200, []atc.Container{
-						{ID: "container-id-1", State: atc.ContainerStateCreated, WorkerName: "some-worker", PipelineName: pipelineName, JobName: jobName, BuildName: buildName, BuildID: buildID, Type: stepType, StepName: stepName, ResourceName: resourceName, Attempt: attempt, User: user},
+					ghttp.RespondWithJSONEncoded(200, []types.Container{
+						{ID: "container-id-1", State: types.ContainerStateCreated, WorkerName: "some-worker", PipelineName: pipelineName, JobName: jobName, BuildName: buildName, BuildID: buildID, Type: stepType, StepName: stepName, ResourceName: resourceName, Attempt: attempt, User: user},
 					}),
 				),
 				hijackHandler("container-id-1", didHijack, hijackHandlerError, hijackTeamName),
@@ -671,7 +672,7 @@ var _ = Describe("Hijacking", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 					)
 				})
 
@@ -713,7 +714,7 @@ var _ = Describe("Hijacking", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 					)
 				})
 
@@ -754,7 +755,7 @@ var _ = Describe("Hijacking", func() {
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-								ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+								ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 						)
 					})
 					It("hijacks the job's next build with 'pipelineName/jobName'", func() {
@@ -792,7 +793,7 @@ var _ = Describe("Hijacking", func() {
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-								ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+								ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 						)
 					})
 					It("hijacks the given build", func() {
@@ -833,7 +834,7 @@ var _ = Describe("Hijacking", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 					)
 				})
 				It("hijacks the job's next build", func() {
@@ -926,7 +927,7 @@ var _ = Describe("Hijacking", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName+"/containers/container-id"),
-					ghttp.RespondWithJSONEncoded(statusCode, atc.Container{
+					ghttp.RespondWithJSONEncoded(statusCode, types.Container{
 						ID:   id,
 						User: user,
 					}),
@@ -964,7 +965,7 @@ var _ = Describe("Hijacking", func() {
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/"+hijackTeamName),
-								ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{Name: hijackTeamName})),
+								ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{Name: hijackTeamName})),
 						)
 					})
 					It("should hijack container with associated handle to 'other' team", func() {

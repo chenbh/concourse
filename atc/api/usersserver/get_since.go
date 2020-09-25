@@ -2,10 +2,10 @@ package usersserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -55,7 +55,7 @@ func (s *Server) GetUsersSince(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	presentedUsers := make([]atc.User, len(users))
+	presentedUsers := make([]types.User, len(users))
 	for idx, user := range users {
 		presentedUsers[idx] = present.User(user)
 	}

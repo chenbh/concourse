@@ -2,6 +2,7 @@ package tsa
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"net/http/httputil"
@@ -10,7 +11,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 
@@ -19,13 +19,13 @@ type Deleter struct {
 	HTTPClient  *http.Client
 }
 
-func (l *Deleter) Delete(ctx context.Context, worker atc.Worker) error {
+func (l *Deleter) Delete(ctx context.Context, worker types.Worker) error {
 	logger := lagerctx.FromContext(ctx)
 
 	logger.Info("start")
 	defer logger.Info("end")
 
-	request, err := l.ATCEndpoint.CreateRequest(atc.DeleteWorker, rata.Params{
+	request, err := l.ATCEndpoint.CreateRequest(types.DeleteWorker, rata.Params{
 		"worker_name": worker.Name,
 	}, nil)
 	if err != nil {

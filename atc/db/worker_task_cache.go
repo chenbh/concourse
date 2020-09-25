@@ -2,9 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 )
 
 type WorkerTaskCache struct {
@@ -79,11 +79,11 @@ func (workerTaskCache WorkerTaskCache) find(runner sq.Runner) (*UsedWorkerTaskCa
 	}, true, nil
 }
 
-func removeUnusedWorkerTaskCaches(tx Tx, pipelineID int, jobConfigs []atc.JobConfig) error {
+func removeUnusedWorkerTaskCaches(tx Tx, pipelineID int, jobConfigs []types.JobConfig) error {
 	steps := make(map[string][]string)
 	for _, jobConfig := range jobConfigs {
-		_ = jobConfig.StepConfig().Visit(atc.StepRecursor{
-			OnTask: func(step *atc.TaskStep) error {
+		_ = jobConfig.StepConfig().Visit(types.StepRecursor{
+			OnTask: func(step *types.TaskStep) error {
 				steps[jobConfig.Name] = append(steps[jobConfig.Name], step.Name)
 				return nil
 			},

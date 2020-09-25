@@ -1,9 +1,9 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 
 	. "github.com/onsi/ginkgo"
@@ -14,13 +14,13 @@ import (
 var _ = Describe("ATC Handler Workers", func() {
 	Describe("ListWorkers", func() {
 		var (
-			expectedWorkers []atc.Worker
+			expectedWorkers []types.Worker
 		)
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/workers"
 
-			expectedWorkers = []atc.Worker{
+			expectedWorkers = []types.Worker{
 				{
 					Name:     "myname-1",
 					Platform: "linux",
@@ -47,9 +47,9 @@ var _ = Describe("ATC Handler Workers", func() {
 	})
 
 	Describe("SaveWorker", func() {
-		var worker atc.Worker
+		var worker types.Worker
 		BeforeEach(func() {
-			worker = atc.Worker{
+			worker = types.Worker{
 				Name:     "worker-name",
 				Tags:     []string{"some-tag"},
 				Platform: "linux",
@@ -90,7 +90,7 @@ var _ = Describe("ATC Handler Workers", func() {
 
 		Context("failing to prune worker due to bad request", func() {
 			BeforeEach(func() {
-				atcResponse := atc.PruneWorkerResponseBody{
+				atcResponse := types.PruneWorkerResponseBody{
 					Stderr: "failure message",
 				}
 

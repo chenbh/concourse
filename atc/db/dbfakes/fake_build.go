@@ -3,6 +3,7 @@ package dbfakes
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
@@ -440,10 +441,10 @@ type FakeBuild struct {
 		result1 bool
 		result2 error
 	}
-	SaveEventStub        func(atc.Event) error
+	SaveEventStub        func(types.Event) error
 	saveEventMutex       sync.RWMutex
 	saveEventArgsForCall []struct {
-		arg1 atc.Event
+		arg1 types.Event
 	}
 	saveEventReturns struct {
 		result1 error
@@ -462,13 +463,13 @@ type FakeBuild struct {
 	saveImageResourceVersionReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SaveOutputStub        func(string, atc.Source, atc.VersionedResourceTypes, atc.Version, db.ResourceConfigMetadataFields, string, string) error
+	SaveOutputStub        func(string, types.Source, types.VersionedResourceTypes, types.Version, db.ResourceConfigMetadataFields, string, string) error
 	saveOutputMutex       sync.RWMutex
 	saveOutputArgsForCall []struct {
 		arg1 string
-		arg2 atc.Source
-		arg3 atc.VersionedResourceTypes
-		arg4 atc.Version
+		arg2 types.Source
+		arg3 types.VersionedResourceTypes
+		arg4 types.Version
 		arg5 db.ResourceConfigMetadataFields
 		arg6 string
 		arg7 string
@@ -479,12 +480,12 @@ type FakeBuild struct {
 	saveOutputReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SavePipelineStub        func(string, int, atc.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)
+	SavePipelineStub        func(string, int, types.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)
 	savePipelineMutex       sync.RWMutex
 	savePipelineArgsForCall []struct {
 		arg1 string
 		arg2 int
-		arg3 atc.Config
+		arg3 types.Config
 		arg4 db.ConfigVersion
 		arg5 bool
 	}
@@ -2674,11 +2675,11 @@ func (fake *FakeBuild) ResourcesCheckedReturnsOnCall(i int, result1 bool, result
 	}{result1, result2}
 }
 
-func (fake *FakeBuild) SaveEvent(arg1 atc.Event) error {
+func (fake *FakeBuild) SaveEvent(arg1 types.Event) error {
 	fake.saveEventMutex.Lock()
 	ret, specificReturn := fake.saveEventReturnsOnCall[len(fake.saveEventArgsForCall)]
 	fake.saveEventArgsForCall = append(fake.saveEventArgsForCall, struct {
-		arg1 atc.Event
+		arg1 types.Event
 	}{arg1})
 	fake.recordInvocation("SaveEvent", []interface{}{arg1})
 	fake.saveEventMutex.Unlock()
@@ -2698,13 +2699,13 @@ func (fake *FakeBuild) SaveEventCallCount() int {
 	return len(fake.saveEventArgsForCall)
 }
 
-func (fake *FakeBuild) SaveEventCalls(stub func(atc.Event) error) {
+func (fake *FakeBuild) SaveEventCalls(stub func(types.Event) error) {
 	fake.saveEventMutex.Lock()
 	defer fake.saveEventMutex.Unlock()
 	fake.SaveEventStub = stub
 }
 
-func (fake *FakeBuild) SaveEventArgsForCall(i int) atc.Event {
+func (fake *FakeBuild) SaveEventArgsForCall(i int) types.Event {
 	fake.saveEventMutex.RLock()
 	defer fake.saveEventMutex.RUnlock()
 	argsForCall := fake.saveEventArgsForCall[i]
@@ -2794,14 +2795,14 @@ func (fake *FakeBuild) SaveImageResourceVersionReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeBuild) SaveOutput(arg1 string, arg2 atc.Source, arg3 atc.VersionedResourceTypes, arg4 atc.Version, arg5 db.ResourceConfigMetadataFields, arg6 string, arg7 string) error {
+func (fake *FakeBuild) SaveOutput(arg1 string, arg2 types.Source, arg3 types.VersionedResourceTypes, arg4 types.Version, arg5 db.ResourceConfigMetadataFields, arg6 string, arg7 string) error {
 	fake.saveOutputMutex.Lock()
 	ret, specificReturn := fake.saveOutputReturnsOnCall[len(fake.saveOutputArgsForCall)]
 	fake.saveOutputArgsForCall = append(fake.saveOutputArgsForCall, struct {
 		arg1 string
-		arg2 atc.Source
-		arg3 atc.VersionedResourceTypes
-		arg4 atc.Version
+		arg2 types.Source
+		arg3 types.VersionedResourceTypes
+		arg4 types.Version
 		arg5 db.ResourceConfigMetadataFields
 		arg6 string
 		arg7 string
@@ -2824,13 +2825,13 @@ func (fake *FakeBuild) SaveOutputCallCount() int {
 	return len(fake.saveOutputArgsForCall)
 }
 
-func (fake *FakeBuild) SaveOutputCalls(stub func(string, atc.Source, atc.VersionedResourceTypes, atc.Version, db.ResourceConfigMetadataFields, string, string) error) {
+func (fake *FakeBuild) SaveOutputCalls(stub func(string, types.Source, types.VersionedResourceTypes, types.Version, db.ResourceConfigMetadataFields, string, string) error) {
 	fake.saveOutputMutex.Lock()
 	defer fake.saveOutputMutex.Unlock()
 	fake.SaveOutputStub = stub
 }
 
-func (fake *FakeBuild) SaveOutputArgsForCall(i int) (string, atc.Source, atc.VersionedResourceTypes, atc.Version, db.ResourceConfigMetadataFields, string, string) {
+func (fake *FakeBuild) SaveOutputArgsForCall(i int) (string, types.Source, types.VersionedResourceTypes, types.Version, db.ResourceConfigMetadataFields, string, string) {
 	fake.saveOutputMutex.RLock()
 	defer fake.saveOutputMutex.RUnlock()
 	argsForCall := fake.saveOutputArgsForCall[i]
@@ -2860,13 +2861,13 @@ func (fake *FakeBuild) SaveOutputReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeBuild) SavePipeline(arg1 string, arg2 int, arg3 atc.Config, arg4 db.ConfigVersion, arg5 bool) (db.Pipeline, bool, error) {
+func (fake *FakeBuild) SavePipeline(arg1 string, arg2 int, arg3 types.Config, arg4 db.ConfigVersion, arg5 bool) (db.Pipeline, bool, error) {
 	fake.savePipelineMutex.Lock()
 	ret, specificReturn := fake.savePipelineReturnsOnCall[len(fake.savePipelineArgsForCall)]
 	fake.savePipelineArgsForCall = append(fake.savePipelineArgsForCall, struct {
 		arg1 string
 		arg2 int
-		arg3 atc.Config
+		arg3 types.Config
 		arg4 db.ConfigVersion
 		arg5 bool
 	}{arg1, arg2, arg3, arg4, arg5})
@@ -2888,13 +2889,13 @@ func (fake *FakeBuild) SavePipelineCallCount() int {
 	return len(fake.savePipelineArgsForCall)
 }
 
-func (fake *FakeBuild) SavePipelineCalls(stub func(string, int, atc.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)) {
+func (fake *FakeBuild) SavePipelineCalls(stub func(string, int, types.Config, db.ConfigVersion, bool) (db.Pipeline, bool, error)) {
 	fake.savePipelineMutex.Lock()
 	defer fake.savePipelineMutex.Unlock()
 	fake.SavePipelineStub = stub
 }
 
-func (fake *FakeBuild) SavePipelineArgsForCall(i int) (string, int, atc.Config, db.ConfigVersion, bool) {
+func (fake *FakeBuild) SavePipelineArgsForCall(i int) (string, int, types.Config, db.ConfigVersion, bool) {
 	fake.savePipelineMutex.RLock()
 	defer fake.savePipelineMutex.RUnlock()
 	argsForCall := fake.savePipelineArgsForCall[i]

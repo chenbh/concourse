@@ -1,10 +1,10 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -41,7 +41,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/workers"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Worker{
+						ghttp.RespondWithJSONEncoded(200, []types.Worker{
 							{
 								Name:             "worker-2",
 								GardenAddr:       "1.2.3.4:7777",
@@ -49,7 +49,7 @@ var _ = Describe("Fly CLI", func() {
 								ActiveTasks:      1,
 								Platform:         "platform2",
 								Tags:             []string{"tag2", "tag3"},
-								ResourceTypes: []atc.WorkerResourceType{
+								ResourceTypes: []types.WorkerResourceType{
 									{Type: "resource-1", Image: "/images/resource-1"},
 								},
 								Team:      "team-1",
@@ -90,7 +90,7 @@ var _ = Describe("Fly CLI", func() {
 								ActiveTasks:      1,
 								Platform:         "platform1",
 								Tags:             []string{"tag1"},
-								ResourceTypes: []atc.WorkerResourceType{
+								ResourceTypes: []types.WorkerResourceType{
 									{Type: "resource-1", Image: "/images/resource-1"},
 									{Type: "resource-2", Image: "/images/resource-2"},
 								},
@@ -395,7 +395,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/workers"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Worker{
+						ghttp.RespondWithJSONEncoded(200, []types.Worker{
 							{
 								Name:             "worker-2",
 								GardenAddr:       "1.2.3.4:7777",

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/lib/pq"
 )
 
@@ -16,8 +16,8 @@ import (
 
 type WorkerFactory interface {
 	GetWorker(name string) (Worker, bool, error)
-	SaveWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, error)
-	HeartbeatWorker(worker atc.Worker, ttl time.Duration) (Worker, error)
+	SaveWorker(atcWorker types.Worker, ttl time.Duration) (Worker, error)
+	HeartbeatWorker(worker types.Worker, ttl time.Duration) (Worker, error)
 	Workers() ([]Worker, error)
 	VisibleWorkers([]string) ([]Worker, error)
 
@@ -223,7 +223,7 @@ func scanWorker(worker *worker, row scannable) error {
 	return json.Unmarshal(tags, &worker.tags)
 }
 
-func (f *workerFactory) HeartbeatWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, error) {
+func (f *workerFactory) HeartbeatWorker(atcWorker types.Worker, ttl time.Duration) (Worker, error) {
 	// In order to be able to calculate the ttl that we return to the caller
 	// we must compare time.Now() to the worker.expires column
 	// However, workers.expires column is a "timestamp (without timezone)"
@@ -288,7 +288,7 @@ func (f *workerFactory) HeartbeatWorker(atcWorker atc.Worker, ttl time.Duration)
 
 }
 
-func (f *workerFactory) SaveWorker(atcWorker atc.Worker, ttl time.Duration) (Worker, error) {
+func (f *workerFactory) SaveWorker(atcWorker types.Worker, ttl time.Duration) (Worker, error) {
 	tx, err := f.conn.Begin()
 	if err != nil {
 		return nil, err
@@ -364,7 +364,7 @@ func (f *workerFactory) BuildContainersCountPerWorker() (map[string]int, error) 
 	return countByWorker, nil
 }
 
-func saveWorker(tx Tx, atcWorker atc.Worker, teamID *int, ttl time.Duration, conn Conn) (Worker, error) {
+func saveWorker(tx Tx, atcWorker types.Worker, teamID *int, ttl time.Duration, conn Conn) (Worker, error) {
 	resourceTypes, err := json.Marshal(atcWorker.ResourceTypes)
 	if err != nil {
 		return nil, err

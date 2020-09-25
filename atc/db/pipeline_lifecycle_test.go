@@ -2,8 +2,8 @@ package db_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 
 	. "github.com/onsi/ginkgo"
@@ -61,7 +61,7 @@ var _ = Describe("PipelineLifecycle", func() {
 
 			Context("job is removed from the parent pipeline", func() {
 				BeforeEach(func() {
-					defaultPipelineConfig.Jobs = atc.JobConfigs{
+					defaultPipelineConfig.Jobs = types.JobConfigs{
 						{
 							Name: "a-different-job",
 						},

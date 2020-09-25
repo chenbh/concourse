@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"math/rand"
 	"net"
@@ -55,7 +56,7 @@ type Client struct {
 
 	PrivateKey *rsa.PrivateKey
 
-	Worker atc.Worker
+	Worker types.Worker
 }
 
 // RegisterOptions contains required configuration for the registration.

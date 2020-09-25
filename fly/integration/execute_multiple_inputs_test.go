@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -27,12 +28,12 @@ var _ = Describe("Fly CLI", func() {
 	var otherInputDir string
 
 	var streaming chan struct{}
-	var events chan atc.Event
+	var events chan types.Event
 	var uploading chan struct{}
 	var uploadingTwo chan struct{}
 
 	var expectedPlan atc.Plan
-	var workerArtifact = atc.WorkerArtifact{
+	var workerArtifact = types.WorkerArtifact{
 		ID:   125,
 		Name: "some-dir",
 	}
@@ -81,7 +82,7 @@ run:
 		Expect(err).NotTo(HaveOccurred())
 
 		streaming = make(chan struct{})
-		events = make(chan atc.Event)
+		events = make(chan types.Event)
 
 		planFactory := atc.NewPlanFactory(0)
 
@@ -98,15 +99,15 @@ run:
 			}),
 			planFactory.NewPlan(atc.TaskPlan{
 				Name: "one-off",
-				Config: &atc.TaskConfig{
+				Config: &types.TaskConfig{
 					Platform: "some-platform",
-					ImageResource: &atc.ImageResource{
+					ImageResource: &types.ImageResource{
 						Type: "registry-image",
-						Source: atc.Source{
+						Source: types.Source{
 							"repository": "ubuntu",
 						},
 					},
-					Inputs: []atc.TaskInputConfig{
+					Inputs: []types.TaskInputConfig{
 						{Name: "some-input"},
 						{Name: "some-other-input"},
 					},
@@ -115,7 +116,7 @@ run:
 						"BAZ": "buzz",
 						"X":   "1",
 					},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "find",
 						Args: []string{"."},
 					},
@@ -216,7 +217,7 @@ run:
 			),
 		)
 		atcServer.RouteToHandler("GET", "/api/v1/builds/128/artifacts",
-			ghttp.RespondWithJSONEncoded(200, []atc.WorkerArtifact{workerArtifact}),
+			ghttp.RespondWithJSONEncoded(200, []types.WorkerArtifact{workerArtifact}),
 		)
 
 	})

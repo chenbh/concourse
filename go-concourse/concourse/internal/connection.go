@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	"log"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 	"github.com/vito/go-sse/sse"
 )
@@ -66,7 +66,7 @@ func NewConnection(apiURL string, httpClient *http.Client, tracing bool) Connect
 		httpClient: httpClient,
 		tracing:    tracing,
 
-		requestGenerator: rata.NewRequestGenerator(apiURL, atc.Routes),
+		requestGenerator: rata.NewRequestGenerator(apiURL, types.Routes),
 	}
 }
 

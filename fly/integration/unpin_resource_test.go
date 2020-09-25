@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -27,7 +27,7 @@ var _ = Describe("Fly CLI", func() {
 		)
 
 		BeforeEach(func() {
-			path, err = atc.Routes.CreatePathForRoute(atc.UnpinResource, rata.Params{
+			path, err = types.Routes.CreatePathForRoute(types.UnpinResource, rata.Params{
 				"pipeline_name": pipelineName,
 				"team_name":     teamName,
 				"resource_name": resourceName,

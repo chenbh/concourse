@@ -3,6 +3,7 @@ package exec_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
@@ -41,7 +42,7 @@ var _ = Describe("TaskStep", func() {
 		fakeDelegate *execfakes.FakeTaskDelegate
 		taskPlan     *atc.TaskPlan
 
-		interpolatedResourceTypes atc.VersionedResourceTypes
+		interpolatedResourceTypes types.VersionedResourceTypes
 
 		repo  *build.Repository
 		state *execfakes.FakeRunState
@@ -89,27 +90,27 @@ var _ = Describe("TaskStep", func() {
 		state = new(execfakes.FakeRunState)
 		state.ArtifactRepositoryReturns(repo)
 
-		uninterpolatedResourceTypes := atc.VersionedResourceTypes{
+		uninterpolatedResourceTypes := types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "((source-param))"},
-					Params: atc.Params{"some-custom": "param"},
+					Source: types.Source{"some-custom": "((source-param))"},
+					Params: types.Params{"some-custom": "param"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
-		interpolatedResourceTypes = atc.VersionedResourceTypes{
+		interpolatedResourceTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "super-secret-source"},
-					Params: atc.Params{"some-custom": "param"},
+					Source: types.Source{"some-custom": "super-secret-source"},
+					Params: types.Params{"some-custom": "param"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
@@ -131,7 +132,7 @@ var _ = Describe("TaskStep", func() {
 		taskStep = exec.NewTaskStep(
 			plan.ID,
 			*plan.Task,
-			atc.ContainerLimits{},
+			types.ContainerLimits{},
 			stepMetadata,
 			containerMetadata,
 			fakeStrategy,
@@ -149,22 +150,22 @@ var _ = Describe("TaskStep", func() {
 			cpu := uint64(1024)
 			memory := uint64(1024)
 
-			taskPlan.Config = &atc.TaskConfig{
+			taskPlan.Config = &types.TaskConfig{
 				Platform: "some-platform",
-				ImageResource: &atc.ImageResource{
+				ImageResource: &types.ImageResource{
 					Type:    "docker",
-					Source:  atc.Source{"some": "secret-source-param"},
-					Params:  atc.Params{"some": "params"},
-					Version: atc.Version{"some": "version"},
+					Source:  types.Source{"some": "secret-source-param"},
+					Params:  types.Params{"some": "params"},
+					Version: types.Version{"some": "version"},
 				},
-				Limits: &atc.ContainerLimits{
+				Limits: &types.ContainerLimits{
 					CPU:    &cpu,
 					Memory: &memory,
 				},
-				Params: atc.TaskEnv{
+				Params: types.TaskEnv{
 					"SECURE": "secret-task-param",
 				},
-				Run: atc.TaskRunConfig{
+				Run: types.TaskRunConfig{
 					Path: "ls",
 					Args: []string{"some", "args"},
 				},
@@ -185,11 +186,11 @@ var _ = Describe("TaskStep", func() {
 
 			Context("when rootfs uri is set instead of image resource", func() {
 				BeforeEach(func() {
-					taskPlan.Config = &atc.TaskConfig{
+					taskPlan.Config = &types.TaskConfig{
 						Platform:  "some-platform",
 						RootfsURI: "some-image",
 						Params:    map[string]string{"SOME": "params"},
-						Run: atc.TaskRunConfig{
+						Run: types.TaskRunConfig{
 							Path: "ls",
 							Args: []string{"some", "args"},
 						},
@@ -297,15 +298,15 @@ var _ = Describe("TaskStep", func() {
 				inputArtifact = new(runtimefakes.FakeArtifact)
 				otherInputArtifact = new(runtimefakes.FakeArtifact)
 
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
 					Params:    map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
-					Inputs: []atc.TaskInputConfig{
+					Inputs: []types.TaskInputConfig{
 						{Name: "some-input", Path: "some-input-configured-path"},
 						{Name: "some-other-input"},
 					},
@@ -345,13 +346,13 @@ var _ = Describe("TaskStep", func() {
 			BeforeEach(func() {
 				remappedInputArtifact = new(runtimefakes.FakeArtifact)
 				taskPlan.InputMapping = map[string]string{"remapped-input": "remapped-input-src"}
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform: "some-platform",
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
-					Inputs: []atc.TaskInputConfig{
+					Inputs: []types.TaskInputConfig{
 						{Name: "remapped-input"},
 					},
 				}
@@ -388,12 +389,12 @@ var _ = Describe("TaskStep", func() {
 				optionalInputArtifact = new(runtimefakes.FakeArtifact)
 				optionalInput2Artifact = new(runtimefakes.FakeArtifact)
 				requiredInputArtifact = new(runtimefakes.FakeArtifact)
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform: "some-platform",
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 					},
-					Inputs: []atc.TaskInputConfig{
+					Inputs: []types.TaskInputConfig{
 						{Name: "optional-input", Optional: true},
 						{Name: "optional-input-2", Optional: true},
 						{Name: "required-input"},
@@ -437,13 +438,13 @@ var _ = Describe("TaskStep", func() {
 			)
 
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 					},
-					Caches: []atc.TaskCacheConfig{
+					Caches: []types.TaskCacheConfig{
 						{Path: "some-path-1"},
 						{Path: "some-path-2"},
 					},
@@ -513,15 +514,15 @@ var _ = Describe("TaskStep", func() {
 
 		Context("when the configuration specifies paths for outputs", func() {
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
 					Params:    map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
-					Outputs: []atc.TaskOutputConfig{
+					Outputs: []types.TaskOutputConfig{
 						{Name: "some-output", Path: "some-output-configured-path"},
 						{Name: "some-other-output"},
 						{Name: "some-trailing-slash-output", Path: "some-output-configured-path-with-trailing-slash/"},
@@ -600,11 +601,11 @@ var _ = Describe("TaskStep", func() {
 
 						Context("when the task config also specifies image", func() {
 							BeforeEach(func() {
-								taskPlan.Config = &atc.TaskConfig{
+								taskPlan.Config = &types.TaskConfig{
 									Platform:  "some-platform",
 									RootfsURI: "some-image",
 									Params:    map[string]string{"SOME": "params"},
-									Run: atc.TaskRunConfig{
+									Run: types.TaskRunConfig{
 										Path: "ls",
 										Args: []string{"some", "args"},
 									},
@@ -623,16 +624,16 @@ var _ = Describe("TaskStep", func() {
 
 						Context("when the task config also specifies image_resource", func() {
 							BeforeEach(func() {
-								taskPlan.Config = &atc.TaskConfig{
+								taskPlan.Config = &types.TaskConfig{
 									Platform: "some-platform",
-									ImageResource: &atc.ImageResource{
+									ImageResource: &types.ImageResource{
 										Type:    "docker",
-										Source:  atc.Source{"some": "super-secret-source"},
-										Params:  atc.Params{"some": "params"},
-										Version: atc.Version{"some": "version"},
+										Source:  types.Source{"some": "super-secret-source"},
+										Params:  types.Params{"some": "params"},
+										Version: types.Version{"some": "version"},
 									},
 									Params: map[string]string{"SOME": "params"},
-									Run: atc.TaskRunConfig{
+									Run: types.TaskRunConfig{
 										Path: "ls",
 										Args: []string{"some", "args"},
 									},
@@ -651,17 +652,17 @@ var _ = Describe("TaskStep", func() {
 
 						Context("when the task config also specifies image and image_resource", func() {
 							BeforeEach(func() {
-								taskPlan.Config = &atc.TaskConfig{
+								taskPlan.Config = &types.TaskConfig{
 									Platform:  "some-platform",
 									RootfsURI: "some-image",
-									ImageResource: &atc.ImageResource{
+									ImageResource: &types.ImageResource{
 										Type:    "docker",
-										Source:  atc.Source{"some": "super-secret-source"},
-										Params:  atc.Params{"some": "params"},
-										Version: atc.Version{"some": "version"},
+										Source:  types.Source{"some": "super-secret-source"},
+										Params:  types.Params{"some": "params"},
+										Version: types.Version{"some": "version"},
 									},
 									Params: map[string]string{"SOME": "params"},
-									Run: atc.TaskRunConfig{
+									Run: types.TaskRunConfig{
 										Path: "ls",
 										Args: []string{"some", "args"},
 									},
@@ -693,17 +694,17 @@ var _ = Describe("TaskStep", func() {
 
 		Context("when the image_resource is specified (even if RootfsURI is configured)", func() {
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
-					ImageResource: &atc.ImageResource{
+					ImageResource: &types.ImageResource{
 						Type:    "docker",
-						Source:  atc.Source{"some": "super-secret-source"},
-						Params:  atc.Params{"some": "params"},
-						Version: atc.Version{"some": "version"},
+						Source:  types.Source{"some": "super-secret-source"},
+						Params:  types.Params{"some": "params"},
+						Version: types.Version{"some": "version"},
 					},
 					Params: map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
@@ -714,9 +715,9 @@ var _ = Describe("TaskStep", func() {
 				_, _, _, containerSpec, workerSpec, _, _, _, _, _, _ := fakeClient.RunTaskStepArgsForCall(0)
 				Expect(containerSpec.ImageSpec.ImageResource).To(Equal(&worker.ImageResource{
 					Type:    "docker",
-					Source:  atc.Source{"some": "super-secret-source"},
-					Params:  atc.Params{"some": "params"},
-					Version: atc.Version{"some": "version"},
+					Source:  types.Source{"some": "super-secret-source"},
+					Params:  types.Params{"some": "params"},
+					Version: types.Version{"some": "version"},
 				}))
 
 				Expect(workerSpec).To(Equal(worker.WorkerSpec{
@@ -731,11 +732,11 @@ var _ = Describe("TaskStep", func() {
 
 		Context("when the RootfsURI is configured", func() {
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
 					Params:    map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
@@ -787,15 +788,15 @@ var _ = Describe("TaskStep", func() {
 		Context("when running the task succeeds", func() {
 			var taskStepStatus int
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
 					Params:    map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
-					Outputs: []atc.TaskOutputConfig{
+					Outputs: []types.TaskOutputConfig{
 						{Name: "some-output", Path: "some-output-configured-path"},
 						{Name: "some-other-output"},
 						{Name: "some-trailing-slash-output", Path: "some-output-configured-path-with-trailing-slash/"},
@@ -978,15 +979,15 @@ var _ = Describe("TaskStep", func() {
 			)
 
 			BeforeEach(func() {
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform:  "some-platform",
 					RootfsURI: "some-image",
 					Params:    map[string]string{"SOME": "params"},
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 						Args: []string{"some", "args"},
 					},
-					Outputs: []atc.TaskOutputConfig{
+					Outputs: []types.TaskOutputConfig{
 						{Name: "some-output", Path: "some-output-configured-path"},
 						{Name: "some-other-output"},
 						{Name: "some-trailing-slash-output", Path: "some-output-configured-path-with-trailing-slash/"},
@@ -1079,12 +1080,12 @@ var _ = Describe("TaskStep", func() {
 
 			BeforeEach(func() {
 				taskPlan.OutputMapping = map[string]string{"generic-remapped-output": "specific-remapped-output"}
-				taskPlan.Config = &atc.TaskConfig{
+				taskPlan.Config = &types.TaskConfig{
 					Platform: "some-platform",
-					Run: atc.TaskRunConfig{
+					Run: types.TaskRunConfig{
 						Path: "ls",
 					},
-					Outputs: []atc.TaskOutputConfig{
+					Outputs: []types.TaskOutputConfig{
 						{Name: "generic-remapped-output"},
 					},
 				}

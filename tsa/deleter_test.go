@@ -2,12 +2,12 @@ package tsa_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/tsa"
 
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -20,20 +20,20 @@ var _ = Describe("Deleter", func() {
 		deleter *tsa.Deleter
 
 		ctx     context.Context
-		worker  atc.Worker
+		worker  types.Worker
 		fakeATC *ghttp.Server
 	)
 
 	BeforeEach(func() {
 		ctx = lagerctx.NewContext(context.Background(), lagertest.NewTestLogger("test"))
 
-		worker = atc.Worker{
+		worker = types.Worker{
 			Name: "some-worker",
 		}
 
 		fakeATC = ghttp.NewServer()
 
-		atcEndpoint := rata.NewRequestGenerator(fakeATC.URL(), atc.Routes)
+		atcEndpoint := rata.NewRequestGenerator(fakeATC.URL(), types.Routes)
 
 		token := &oauth2.Token{TokenType: "Bearer", AccessToken: "yo"}
 		httpClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(token))

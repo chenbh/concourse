@@ -1,10 +1,10 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 
@@ -14,12 +14,12 @@ import (
 
 var _ = Describe("WorkerFactory", func() {
 	var (
-		atcWorker atc.Worker
+		atcWorker types.Worker
 		worker    db.Worker
 	)
 
 	BeforeEach(func() {
-		atcWorker = atc.Worker{
+		atcWorker = types.Worker{
 			GardenAddr:       "some-garden-addr",
 			BaggageclaimURL:  "some-bc-url",
 			HTTPProxyURL:     "some-http-proxy-url",
@@ -28,7 +28,7 @@ var _ = Describe("WorkerFactory", func() {
 			Ephemeral:        true,
 			ActiveContainers: 140,
 			ActiveVolumes:    550,
-			ResourceTypes: []atc.WorkerResourceType{
+			ResourceTypes: []types.WorkerResourceType{
 				{
 					Type:       "some-resource-type",
 					Image:      "some-image",
@@ -43,7 +43,7 @@ var _ = Describe("WorkerFactory", func() {
 				},
 			},
 			Platform:  "some-platform",
-			Tags:      atc.Tags{"some", "tags"},
+			Tags:      types.Tags{"some", "tags"},
 			Name:      "some-name",
 			StartTime: 1565367209,
 		}
@@ -85,7 +85,7 @@ var _ = Describe("WorkerFactory", func() {
 			})
 
 			It("removes old worker resource type", func() {
-				atcWorker.ResourceTypes = []atc.WorkerResourceType{
+				atcWorker.ResourceTypes = []types.WorkerResourceType{
 					{
 						Type:       "other-resource-type",
 						Image:      "other-image",
@@ -227,7 +227,7 @@ var _ = Describe("WorkerFactory", func() {
 				Expect(foundWorker.Ephemeral()).To(Equal(true))
 				Expect(foundWorker.ActiveContainers()).To(Equal(140))
 				Expect(foundWorker.ActiveVolumes()).To(Equal(550))
-				Expect(foundWorker.ResourceTypes()).To(Equal([]atc.WorkerResourceType{
+				Expect(foundWorker.ResourceTypes()).To(Equal([]types.WorkerResourceType{
 					{
 						Type:       "some-resource-type",
 						Image:      "some-image",
@@ -274,11 +274,11 @@ var _ = Describe("WorkerFactory", func() {
 
 		Context("when there are public and private workers on multiple teams", func() {
 			BeforeEach(func() {
-				team1, err := teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+				team1, err := teamFactory.CreateTeam(types.Team{Name: "some-team"})
 				Expect(err).NotTo(HaveOccurred())
-				team2, err := teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+				team2, err := teamFactory.CreateTeam(types.Team{Name: "some-other-team"})
 				Expect(err).NotTo(HaveOccurred())
-				team3, err := teamFactory.CreateTeam(atc.Team{Name: "not-this-team"})
+				team3, err := teamFactory.CreateTeam(types.Team{Name: "not-this-team"})
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = workerFactory.SaveWorker(atcWorker, 0)
@@ -570,12 +570,12 @@ var _ = Describe("WorkerFactory", func() {
 					}
 
 					var err error
-					otherPipeline, _, err := defaultTeam.SavePipeline("other-pipeline", atc.Config{
-						Resources: atc.ResourceConfigs{
+					otherPipeline, _, err := defaultTeam.SavePipeline("other-pipeline", types.Config{
+						Resources: types.ResourceConfigs{
 							{
 								Name: "some-resource",
 								Type: "some-base-resource-type",
-								Source: atc.Source{
+								Source: types.Source{
 									"some": "source",
 								},
 							},
@@ -583,8 +583,8 @@ var _ = Describe("WorkerFactory", func() {
 					}, db.ConfigVersion(0), false)
 					Expect(err).NotTo(HaveOccurred())
 
-					taggedWorkerSpec := atc.Worker{
-						ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+					taggedWorkerSpec := types.Worker{
+						ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 						GardenAddr:      "some-tagged-garden-addr",
 						BaggageclaimURL: "some-tagged-bc-url",
 						Name:            "some-tagged-name",
@@ -594,8 +594,8 @@ var _ = Describe("WorkerFactory", func() {
 					taggedWorker, err = workerFactory.SaveWorker(taggedWorkerSpec, 5*time.Minute)
 					Expect(err).NotTo(HaveOccurred())
 
-					teamWorkerSpec := atc.Worker{
-						ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+					teamWorkerSpec := types.Worker{
+						ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 						GardenAddr:      "some-team-garden-addr",
 						BaggageclaimURL: "some-team-bc-url",
 						Name:            "some-team-name",
@@ -605,8 +605,8 @@ var _ = Describe("WorkerFactory", func() {
 					teamWorker, err = defaultTeam.SaveWorker(teamWorkerSpec, 5*time.Minute)
 					Expect(err).NotTo(HaveOccurred())
 
-					otherWorkerSpec := atc.Worker{
-						ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+					otherWorkerSpec := types.Worker{
+						ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 						GardenAddr:      "some-other-garden-addr",
 						BaggageclaimURL: "some-other-bc-url",
 						Name:            "some-other-name",
@@ -623,7 +623,7 @@ var _ = Describe("WorkerFactory", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(found).To(BeTrue())
 
-					rcs, err := otherResource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+					rcs, err := otherResource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 					Expect(err).NotTo(HaveOccurred())
 
 					owner = db.NewResourceConfigCheckSessionContainerOwner(

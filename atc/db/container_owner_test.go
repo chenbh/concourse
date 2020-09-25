@@ -1,10 +1,10 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 
 	. "github.com/onsi/ginkgo"
@@ -29,8 +29,8 @@ var _ = Describe("ContainerOwner", func() {
 		}
 
 		BeforeEach(func() {
-			workerPayload := atc.Worker{
-				ResourceTypes:   []atc.WorkerResourceType{defaultWorkerResourceType},
+			workerPayload := types.Worker{
+				ResourceTypes:   []types.WorkerResourceType{defaultWorkerResourceType},
 				Name:            "resource-config-check-session-worker",
 				GardenAddr:      "1.2.3.4:7778",
 				BaggageclaimURL: "5.6.7.8:7879",
@@ -42,10 +42,10 @@ var _ = Describe("ContainerOwner", func() {
 
 			resourceConfig, err = resourceConfigFactory.FindOrCreateResourceConfig(
 				defaultWorkerResourceType.Type,
-				atc.Source{
+				types.Source{
 					"some-type": "source",
 				},
-				atc.VersionedResourceTypes{},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).ToNot(HaveOccurred())
 		})

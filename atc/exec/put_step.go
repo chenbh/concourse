@@ -2,6 +2,7 @@ package exec
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 
 	"code.cloudfoundry.org/lager"
@@ -20,7 +21,7 @@ import (
 
 type PutDelegate interface {
 	ImageVersionDetermined(db.UsedResourceCache) error
-	RedactImageSource(source atc.Source) (atc.Source, error)
+	RedactImageSource(source types.Source) (types.Source, error)
 
 	Stdout() io.Writer
 	Stderr() io.Writer
@@ -33,7 +34,7 @@ type PutDelegate interface {
 	SelectedWorker(lager.Logger, string)
 	Errored(lager.Logger, string)
 
-	SaveOutput(lager.Logger, atc.PutPlan, atc.Source, atc.VersionedResourceTypes, runtime.VersionResult)
+	SaveOutput(lager.Logger, atc.PutPlan, types.Source, types.VersionedResourceTypes, runtime.VersionResult)
 }
 
 // PutStep produces a resource version using preconfigured params and any data

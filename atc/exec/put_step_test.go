@@ -3,6 +3,7 @@ package exec_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/tracing"
 	. "github.com/onsi/ginkgo"
@@ -44,7 +45,7 @@ var _ = Describe("PutStep", func() {
 		fakeOtherArtifact   *runtimefakes.FakeArtifact
 		fakeMountedArtifact *runtimefakes.FakeArtifact
 
-		interpolatedResourceTypes atc.VersionedResourceTypes
+		interpolatedResourceTypes types.VersionedResourceTypes
 
 		containerMetadata = db.ContainerMetadata{
 			WorkingDirectory: resource.ResourcesDir("put"),
@@ -101,8 +102,8 @@ var _ = Describe("PutStep", func() {
 		fakeDelegate.VariablesReturns(vars.NewBuildVariables(buildVars, false))
 
 		versionResult = runtime.VersionResult{
-			Version:  atc.Version{"some": "version"},
-			Metadata: []atc.MetadataField{{Name: "some", Value: "metadata"}},
+			Version:  types.Version{"some": "version"},
+			Metadata: []types.MetadataField{{Name: "some", Value: "metadata"}},
 		}
 
 		fakeResource = new(resourcefakes.FakeResource)
@@ -112,25 +113,25 @@ var _ = Describe("PutStep", func() {
 		state = new(execfakes.FakeRunState)
 		state.ArtifactRepositoryReturns(repo)
 
-		uninterpolatedResourceTypes := atc.VersionedResourceTypes{
+		uninterpolatedResourceTypes := types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "((custom-param))"},
+					Source: types.Source{"some-custom": "((custom-param))"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
-		interpolatedResourceTypes = atc.VersionedResourceTypes{
+		interpolatedResourceTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Name:   "custom-resource",
 					Type:   "custom-type",
-					Source: atc.Source{"some-custom": "source"},
+					Source: types.Source{"some-custom": "source"},
 				},
-				Version: atc.Version{"some-custom": "version"},
+				Version: types.Version{"some-custom": "version"},
 			},
 		}
 
@@ -138,8 +139,8 @@ var _ = Describe("PutStep", func() {
 			Name:                   "some-name",
 			Resource:               "some-resource",
 			Type:                   "some-resource-type",
-			Source:                 atc.Source{"some": "((source-param))"},
-			Params:                 atc.Params{"some-param": "some-value"},
+			Source:                 types.Source{"some": "((source-param))"},
+			Params:                 types.Params{"some-param": "some-value"},
 			Tags:                   []string{"some", "tags"},
 			VersionedResourceTypes: uninterpolatedResourceTypes,
 		}
@@ -191,7 +192,7 @@ var _ = Describe("PutStep", func() {
 	Context("inputs", func() {
 		Context("when inputs are specified with 'all' keyword", func() {
 			BeforeEach(func() {
-				putPlan.Inputs = &atc.InputsConfig{
+				putPlan.Inputs = &types.InputsConfig{
 					All: true,
 				}
 			})
@@ -217,7 +218,7 @@ var _ = Describe("PutStep", func() {
 
 		Context("when only some inputs are specified ", func() {
 			BeforeEach(func() {
-				putPlan.Inputs = &atc.InputsConfig{
+				putPlan.Inputs = &types.InputsConfig{
 					Specified: []string{"some-source", "some-other-source"},
 				}
 			})
@@ -232,14 +233,14 @@ var _ = Describe("PutStep", func() {
 
 		Context("when the inputs are detected", func() {
 			BeforeEach(func() {
-				putPlan.Inputs = &atc.InputsConfig{
+				putPlan.Inputs = &types.InputsConfig{
 					Detect: true,
 				}
 			})
 
 			Context("when the params are only strings", func() {
 				BeforeEach(func() {
-					putPlan.Params = atc.Params{
+					putPlan.Params = types.Params{
 						"some-param":    "some-source/source",
 						"another-param": "does-not-exist",
 						"number-param":  123,
@@ -255,7 +256,7 @@ var _ = Describe("PutStep", func() {
 
 			Context("when the params have maps and slices", func() {
 				BeforeEach(func() {
-					putPlan.Params = atc.Params{
+					putPlan.Params = types.Params{
 						"some-slice": []interface{}{
 							[]interface{}{"some-source/source", "does-not-exist", 123},
 							[]interface{}{"does not exist-2"},
@@ -367,8 +368,8 @@ var _ = Describe("PutStep", func() {
 
 		It("creates a resource with the correct source and params", func() {
 			actualSource, actualParams, _ := fakeResourceFactory.NewResourceArgsForCall(0)
-			Expect(actualSource).To(Equal(atc.Source{"some": "super-secret-source"}))
-			Expect(actualParams).To(Equal(atc.Params{"some-param": "some-value"}))
+			Expect(actualSource).To(Equal(types.Source{"some": "super-secret-source"}))
+			Expect(actualParams).To(Equal(types.Params{"some-param": "some-value"}))
 
 			_, _, _, _, _, _, _, _, _, _, actualResource := fakeClient.RunPutStepArgsForCall(0)
 			Expect(actualResource).To(Equal(fakeResource))
@@ -383,10 +384,10 @@ var _ = Describe("PutStep", func() {
 		Expect(plan.Name).To(Equal("some-name"))
 		Expect(plan.Type).To(Equal("some-resource-type"))
 		Expect(plan.Resource).To(Equal("some-resource"))
-		Expect(actualSource).To(Equal(atc.Source{"some": "super-secret-source"}))
+		Expect(actualSource).To(Equal(types.Source{"some": "super-secret-source"}))
 		Expect(actualResourceTypes).To(Equal(interpolatedResourceTypes))
-		Expect(info.Version).To(Equal(atc.Version{"some": "version"}))
-		Expect(info.Metadata).To(Equal([]atc.MetadataField{{"some", "metadata"}}))
+		Expect(info.Version).To(Equal(types.Version{"some": "version"}))
+		Expect(info.Metadata).To(Equal([]types.MetadataField{{"some", "metadata"}}))
 	})
 
 	Context("when the step.Plan.Resource is blank", func() {
@@ -408,8 +409,8 @@ var _ = Describe("PutStep", func() {
 			Expect(fakeDelegate.FinishedCallCount()).To(Equal(1))
 			_, status, info := fakeDelegate.FinishedArgsForCall(0)
 			Expect(status).To(Equal(exec.ExitStatus(0)))
-			Expect(info.Version).To(Equal(atc.Version{"some": "version"}))
-			Expect(info.Metadata).To(Equal([]atc.MetadataField{{Name: "some", Value: "metadata"}}))
+			Expect(info.Version).To(Equal(types.Version{"some": "version"}))
+			Expect(info.Metadata).To(Equal([]types.MetadataField{{Name: "some", Value: "metadata"}}))
 		})
 
 		It("stores the version result as the step result", func() {

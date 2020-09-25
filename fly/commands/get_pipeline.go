@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
@@ -57,7 +57,7 @@ func (command *GetPipelineCommand) Execute(args []string) error {
 	return dump(config, asJSON)
 }
 
-func dump(config atc.Config, asJSON bool) error {
+func dump(config types.Config, asJSON bool) error {
 	var payload []byte
 	var err error
 	if asJSON {

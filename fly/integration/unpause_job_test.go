@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -61,7 +61,7 @@ var _ = Describe("Fly CLI", func() {
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", "/api/v1/teams/other-team"),
-								ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+								ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 									Name: "other-team",
 								}),
 							),

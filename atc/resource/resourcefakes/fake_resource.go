@@ -3,15 +3,15 @@ package resourcefakes
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/resource"
 	"github.com/concourse/concourse/atc/runtime"
 )
 
 type FakeResource struct {
-	CheckStub        func(context.Context, runtime.ProcessSpec, runtime.Runner) ([]atc.Version, error)
+	CheckStub        func(context.Context, runtime.ProcessSpec, runtime.Runner) ([]types.Version, error)
 	checkMutex       sync.RWMutex
 	checkArgsForCall []struct {
 		arg1 context.Context
@@ -19,11 +19,11 @@ type FakeResource struct {
 		arg3 runtime.Runner
 	}
 	checkReturns struct {
-		result1 []atc.Version
+		result1 []types.Version
 		result2 error
 	}
 	checkReturnsOnCall map[int]struct {
-		result1 []atc.Version
+		result1 []types.Version
 		result2 error
 	}
 	GetStub        func(context.Context, runtime.ProcessSpec, runtime.Runner) (runtime.VersionResult, error)
@@ -72,7 +72,7 @@ type FakeResource struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeResource) Check(arg1 context.Context, arg2 runtime.ProcessSpec, arg3 runtime.Runner) ([]atc.Version, error) {
+func (fake *FakeResource) Check(arg1 context.Context, arg2 runtime.ProcessSpec, arg3 runtime.Runner) ([]types.Version, error) {
 	fake.checkMutex.Lock()
 	ret, specificReturn := fake.checkReturnsOnCall[len(fake.checkArgsForCall)]
 	fake.checkArgsForCall = append(fake.checkArgsForCall, struct {
@@ -98,7 +98,7 @@ func (fake *FakeResource) CheckCallCount() int {
 	return len(fake.checkArgsForCall)
 }
 
-func (fake *FakeResource) CheckCalls(stub func(context.Context, runtime.ProcessSpec, runtime.Runner) ([]atc.Version, error)) {
+func (fake *FakeResource) CheckCalls(stub func(context.Context, runtime.ProcessSpec, runtime.Runner) ([]types.Version, error)) {
 	fake.checkMutex.Lock()
 	defer fake.checkMutex.Unlock()
 	fake.CheckStub = stub
@@ -111,28 +111,28 @@ func (fake *FakeResource) CheckArgsForCall(i int) (context.Context, runtime.Proc
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeResource) CheckReturns(result1 []atc.Version, result2 error) {
+func (fake *FakeResource) CheckReturns(result1 []types.Version, result2 error) {
 	fake.checkMutex.Lock()
 	defer fake.checkMutex.Unlock()
 	fake.CheckStub = nil
 	fake.checkReturns = struct {
-		result1 []atc.Version
+		result1 []types.Version
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeResource) CheckReturnsOnCall(i int, result1 []atc.Version, result2 error) {
+func (fake *FakeResource) CheckReturnsOnCall(i int, result1 []types.Version, result2 error) {
 	fake.checkMutex.Lock()
 	defer fake.checkMutex.Unlock()
 	fake.CheckStub = nil
 	if fake.checkReturnsOnCall == nil {
 		fake.checkReturnsOnCall = make(map[int]struct {
-			result1 []atc.Version
+			result1 []types.Version
 			result2 error
 		})
 	}
 	fake.checkReturnsOnCall[i] = struct {
-		result1 []atc.Version
+		result1 []types.Version
 		result2 error
 	}{result1, result2}
 }

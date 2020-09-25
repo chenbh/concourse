@@ -3,6 +3,7 @@ package integration_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
@@ -13,17 +14,16 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"github.com/vito/go-sse/sse"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 )
 
 var _ = Describe("Watching", func() {
 	var streaming chan struct{}
-	var events chan atc.Event
+	var events chan types.Event
 
 	BeforeEach(func() {
 		streaming = make(chan struct{})
-		events = make(chan atc.Event)
+		events = make(chan types.Event)
 	})
 
 	eventsHandler := func() http.HandlerFunc {
@@ -95,7 +95,7 @@ var _ = Describe("Watching", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/api/v1/builds"),
-					ghttp.RespondWithJSONEncoded(200, []atc.Build{
+					ghttp.RespondWithJSONEncoded(200, []types.Build{
 						{ID: 4, Name: "1", Status: "started", JobName: "some-job"},
 						{ID: 3, Name: "3", Status: "started"},
 						{ID: 2, Name: "2", Status: "started"},
@@ -133,7 +133,7 @@ var _ = Describe("Watching", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job"),
-						ghttp.RespondWithJSONEncoded(200, atc.Job{}),
+						ghttp.RespondWithJSONEncoded(200, types.Job{}),
 					),
 					eventsHandler(),
 				)
@@ -158,14 +158,14 @@ var _ = Describe("Watching", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job"),
-						ghttp.RespondWithJSONEncoded(200, atc.Job{
-							NextBuild: &atc.Build{
+						ghttp.RespondWithJSONEncoded(200, types.Job{
+							NextBuild: &types.Build{
 								ID:      3,
 								Name:    "3",
 								Status:  "started",
 								JobName: "some-job",
 							},
-							FinishedBuild: &atc.Build{
+							FinishedBuild: &types.Build{
 								ID:      2,
 								Name:    "2",
 								Status:  "failed",
@@ -191,9 +191,9 @@ var _ = Describe("Watching", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/main/jobs/some-job"),
-						ghttp.RespondWithJSONEncoded(200, atc.Job{
+						ghttp.RespondWithJSONEncoded(200, types.Job{
 							NextBuild: nil,
-							FinishedBuild: &atc.Build{
+							FinishedBuild: &types.Build{
 								ID:      3,
 								Name:    "3",
 								Status:  "failed",
@@ -219,7 +219,7 @@ var _ = Describe("Watching", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/main/jobs/some-job/builds/3"),
-						ghttp.RespondWithJSONEncoded(200, atc.Build{
+						ghttp.RespondWithJSONEncoded(200, types.Build{
 							ID:      3,
 							Name:    "3",
 							Status:  "failed",

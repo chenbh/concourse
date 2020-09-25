@@ -3,14 +3,14 @@ package concourse
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) CheckResourceType(pipelineName string, resourceTypeName string, version atc.Version) (atc.Check, bool, error) {
+func (team *team) CheckResourceType(pipelineName string, resourceTypeName string, version types.Version) (types.Check, bool, error) {
 
 	params := rata.Params{
 		"pipeline_name":      pipelineName,
@@ -18,15 +18,15 @@ func (team *team) CheckResourceType(pipelineName string, resourceTypeName string
 		"team_name":          team.name,
 	}
 
-	var check atc.Check
+	var check types.Check
 
-	jsonBytes, err := json.Marshal(atc.CheckRequestBody{From: version})
+	jsonBytes, err := json.Marshal(types.CheckRequestBody{From: version})
 	if err != nil {
 		return check, false, err
 	}
 
 	err = team.connection.Send(internal.Request{
-		RequestName: atc.CheckResourceType,
+		RequestName: types.CheckResourceType,
 		Params:      params,
 		Body:        bytes.NewBuffer(jsonBytes),
 		Header:      http.Header{"Content-Type": []string{"application/json"}},

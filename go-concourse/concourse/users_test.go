@@ -1,10 +1,10 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -18,7 +18,7 @@ var _ = Describe("ATC Users Handler", func() {
 
 		expectedURL := "/api/v1/users"
 		expectedTime := time.Now().AddDate(0, -2, 0)
-		expectedUsers := []atc.User{
+		expectedUsers := []types.User{
 			{ID: 1, Username: "test", Connector: "github", LastLogin: time.Now().AddDate(0, -1, 0).UTC().Unix()},
 		}
 		Context("users exist", func() {

@@ -3,13 +3,13 @@ package tsa_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/tsa"
 	"golang.org/x/oauth2"
 
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -21,7 +21,7 @@ var _ = Describe("Worker Status Test", func() {
 		workerStatus *tsa.WorkerStatus
 
 		ctx     context.Context
-		worker  atc.Worker
+		worker  types.Worker
 		fakeATC *ghttp.Server
 		data    []byte
 	)
@@ -29,14 +29,14 @@ var _ = Describe("Worker Status Test", func() {
 	BeforeEach(func() {
 		var err error
 		ctx = lagerctx.NewContext(context.Background(), lagertest.NewTestLogger("test"))
-		worker = atc.Worker{
+		worker = types.Worker{
 			Name: "some-worker",
 			Team: "some-team",
 		}
 
 		fakeATC = ghttp.NewServer()
 
-		atcEndpoint := rata.NewRequestGenerator(fakeATC.URL(), atc.Routes)
+		atcEndpoint := rata.NewRequestGenerator(fakeATC.URL(), types.Routes)
 
 		token := &oauth2.Token{TokenType: "Bearer", AccessToken: "yo"}
 		httpClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(token))

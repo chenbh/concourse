@@ -3,16 +3,15 @@ package resource
 import (
 	"context"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"path/filepath"
 
 	"github.com/concourse/concourse/atc/runtime"
-
-	"github.com/concourse/concourse/atc"
 )
 
 //go:generate counterfeiter . ResourceFactory
 type ResourceFactory interface {
-	NewResource(source atc.Source, params atc.Params, version atc.Version) Resource
+	NewResource(source types.Source, params types.Params, version types.Version) Resource
 }
 
 type resourceFactory struct {
@@ -22,7 +21,7 @@ func NewResourceFactory() ResourceFactory {
 	return resourceFactory{}
 
 }
-func (rf resourceFactory) NewResource(source atc.Source, params atc.Params, version atc.Version) Resource {
+func (rf resourceFactory) NewResource(source types.Source, params types.Params, version types.Version) Resource {
 	return &resource{
 		Source:  source,
 		Params:  params,
@@ -35,7 +34,7 @@ func (rf resourceFactory) NewResource(source atc.Source, params atc.Params, vers
 type Resource interface {
 	Get(context.Context, runtime.ProcessSpec, runtime.Runner) (runtime.VersionResult, error)
 	Put(context.Context, runtime.ProcessSpec, runtime.Runner) (runtime.VersionResult, error)
-	Check(context.Context, runtime.ProcessSpec, runtime.Runner) ([]atc.Version, error)
+	Check(context.Context, runtime.ProcessSpec, runtime.Runner) ([]types.Version, error)
 	Signature() ([]byte, error)
 }
 
@@ -50,9 +49,9 @@ func ResourcesDir(suffix string) string {
 }
 
 type resource struct {
-	Source  atc.Source  `json:"source"`
-	Params  atc.Params  `json:"params,omitempty"`
-	Version atc.Version `json:"version,omitempty"`
+	Source  types.Source  `json:"source"`
+	Params  types.Params  `json:"params,omitempty"`
+	Version types.Version `json:"version,omitempty"`
 }
 
 func (resource *resource) Signature() ([]byte, error) {

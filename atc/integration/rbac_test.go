@@ -2,12 +2,12 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/flag"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("RBAC", func() {
 
-	var team atc.Team
+	var team types.Team
 	var pipelineData = []byte(`
 ---
 jobs:
@@ -23,9 +23,9 @@ jobs:
 `)
 
 	JustBeforeEach(func() {
-		team = atc.Team{
+		team = types.Team{
 			Name: "some-team",
-			Auth: atc.TeamAuth{
+			Auth: types.TeamAuth{
 				"viewer": map[string][]string{
 					"users":  []string{"local:v-user"},
 					"groups": []string{},
@@ -122,7 +122,7 @@ jobs:
 				})
 
 				It("can update the auth for a team", func() {
-					team.Auth = atc.TeamAuth{
+					team.Auth = types.TeamAuth{
 						"viewer": map[string][]string{
 							"users":  []string{"local:v-user"},
 							"groups": []string{},

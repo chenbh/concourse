@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 
 	"code.cloudfoundry.org/garden"
@@ -13,7 +14,6 @@ import (
 	"github.com/concourse/baggageclaim/baggageclaimfakes"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/worker"
@@ -26,22 +26,22 @@ import (
 
 var _ = Describe("Worker", func() {
 	var (
-		logger                    *lagertest.TestLogger
-		fakeVolumeClient          *workerfakes.FakeVolumeClient
-		activeContainers          int
-		resourceTypes             []atc.WorkerResourceType
-		platform                  string
-		tags                      atc.Tags
-		teamID                    int
-		ephemeral                 bool
-		workerName                string
-		gardenWorker              Worker
-		workerVersion             string
-		fakeGardenClient          *gclientfakes.FakeClient
-		fakeImageFactory          *workerfakes.FakeImageFactory
-		fakeImage                 *workerfakes.FakeImage
-		fakeDBWorker              *dbfakes.FakeWorker
-		fakeDBVolumeRepository    *dbfakes.FakeVolumeRepository
+		logger                 *lagertest.TestLogger
+		fakeVolumeClient       *workerfakes.FakeVolumeClient
+		activeContainers       int
+		resourceTypes          []types.WorkerResourceType
+		platform               string
+		tags                   types.Tags
+		teamID                 int
+		ephemeral              bool
+		workerName             string
+		gardenWorker           Worker
+		workerVersion          string
+		fakeGardenClient       *gclientfakes.FakeClient
+		fakeImageFactory       *workerfakes.FakeImageFactory
+		fakeImage              *workerfakes.FakeImage
+		fakeDBWorker           *dbfakes.FakeWorker
+		fakeDBVolumeRepository *dbfakes.FakeVolumeRepository
 		fakeResourceCacheFactory  *dbfakes.FakeResourceCacheFactory
 		fakeDBTeamFactory         *dbfakes.FakeTeamFactory
 		fakeDBTeam                *dbfakes.FakeTeam
@@ -70,7 +70,7 @@ var _ = Describe("Worker", func() {
 
 		stubbedVolumes   map[string]*workerfakes.FakeVolume
 		volumeSpecs      map[string]VolumeSpec
-		atcResourceTypes atc.VersionedResourceTypes
+		atcResourceTypes types.VersionedResourceTypes
 
 		findOrCreateErr       error
 		findOrCreateContainer Container
@@ -80,7 +80,7 @@ var _ = Describe("Worker", func() {
 		logger = lagertest.NewTestLogger("test")
 		fakeVolumeClient = new(workerfakes.FakeVolumeClient)
 		activeContainers = 42
-		resourceTypes = []atc.WorkerResourceType{
+		resourceTypes = []types.WorkerResourceType{
 			{
 				Type:    "some-resource",
 				Image:   "some-resource-image",
@@ -88,7 +88,7 @@ var _ = Describe("Worker", func() {
 			},
 		}
 		platform = "some-platform"
-		tags = atc.Tags{"some", "tags"}
+		tags = types.Tags{"some", "tags"}
 		teamID = 17
 		ephemeral = true
 		workerName = "some-worker"
@@ -211,7 +211,7 @@ var _ = Describe("Worker", func() {
 			ImageSpec: ImageSpec{
 				ImageResource: &ImageResource{
 					Type:   "registry-image",
-					Source: atc.Source{"some": "super-secret-image"},
+					Source: types.Source{"some": "super-secret-image"},
 				},
 			},
 
@@ -237,13 +237,13 @@ var _ = Describe("Worker", func() {
 			},
 		}
 
-		atcResourceTypes = atc.VersionedResourceTypes{
+		atcResourceTypes = types.VersionedResourceTypes{
 			{
-				ResourceType: atc.ResourceType{
+				ResourceType: types.ResourceType{
 					Type:   "some-type",
-					Source: atc.Source{"some": "super-secret-source"},
+					Source: types.Source{"some": "super-secret-source"},
 				},
-				Version: atc.Version{"some": "version"},
+				Version: types.Version{"some": "version"},
 			},
 		}
 
@@ -586,51 +586,51 @@ var _ = Describe("Worker", func() {
 
 			satisfies bool
 
-			customTypes atc.VersionedResourceTypes
+			customTypes types.VersionedResourceTypes
 		)
 
 		BeforeEach(func() {
 
-			customTypes = atc.VersionedResourceTypes{
+			customTypes = types.VersionedResourceTypes{
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "custom-type-b",
 						Type:   "custom-type-a",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "custom-type-a",
 						Type:   "some-resource",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "custom-type-c",
 						Type:   "custom-type-b",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "custom-type-d",
 						Type:   "custom-type-b",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 				{
-					ResourceType: atc.ResourceType{
+					ResourceType: types.ResourceType{
 						Name:   "unknown-custom-type",
 						Type:   "unknown-base-type",
-						Source: atc.Source{"some": "source"},
+						Source: types.Source{"some": "source"},
 					},
-					Version: atc.Version{"some": "version"},
+					Version: types.Version{"some": "version"},
 				},
 			}
 
@@ -761,14 +761,14 @@ var _ = Describe("Worker", func() {
 		Context("when the resource type is a custom type that overrides one supported by the worker", func() {
 			BeforeEach(func() {
 
-				customTypes = atc.VersionedResourceTypes{
+				customTypes = types.VersionedResourceTypes{
 					{
-						ResourceType: atc.ResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "some-resource",
 							Type:   "some-resource",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
-						Version: atc.Version{"some": "version"},
+						Version: types.Version{"some": "version"},
 					},
 				}
 
@@ -783,28 +783,28 @@ var _ = Describe("Worker", func() {
 		Context("when the resource type is a custom type that results in a circular dependency", func() {
 			BeforeEach(func() {
 
-				customTypes = atc.VersionedResourceTypes{
-					atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+				customTypes = types.VersionedResourceTypes{
+					types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "circle-a",
 							Type:   "circle-b",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
-						Version: atc.Version{"some": "version"},
-					}, atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+						Version: types.Version{"some": "version"},
+					}, types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "circle-b",
 							Type:   "circle-c",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
-						Version: atc.Version{"some": "version"},
-					}, atc.VersionedResourceType{
-						ResourceType: atc.ResourceType{
+						Version: types.Version{"some": "version"},
+					}, types.VersionedResourceType{
+						ResourceType: types.ResourceType{
 							Name:   "circle-c",
 							Type:   "circle-a",
-							Source: atc.Source{"some": "source"},
+							Source: types.Source{"some": "source"},
 						},
-						Version: atc.Version{"some": "version"},
+						Version: types.Version{"some": "version"},
 					},
 				}
 

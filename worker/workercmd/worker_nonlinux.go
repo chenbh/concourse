@@ -3,11 +3,11 @@
 package workercmd
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"runtime"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 )
@@ -29,18 +29,18 @@ func (cmd WorkerCommand) LessenRequirements(prefix string, command *flags.Comman
 	command.FindOptionByLongName(prefix + "baggageclaim-volumes").Required = false
 }
 
-func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (atc.Worker, ifrit.Runner, error) {
+func (cmd *WorkerCommand) gardenServerRunner(logger lager.Logger) (types.Worker, ifrit.Runner, error) {
 	worker := cmd.Worker.Worker()
 	worker.Platform = runtime.GOOS
 	var err error
 	worker.Name, err = cmd.workerName()
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	runner, err := cmd.houdiniRunner(logger)
 	if err != nil {
-		return atc.Worker{}, nil, err
+		return types.Worker{}, nil, err
 	}
 
 	return worker, runner, nil

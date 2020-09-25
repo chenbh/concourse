@@ -2,10 +2,10 @@ package buildserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -21,17 +21,17 @@ func (s *Server) BuildResources(build db.Build) http.Handler {
 			return
 		}
 
-		atcInputs := make([]atc.PublicBuildInput, 0, len(inputs))
+		atcInputs := make([]types.PublicBuildInput, 0, len(inputs))
 		for _, input := range inputs {
 			atcInputs = append(atcInputs, present.PublicBuildInput(input, build.PipelineID()))
 		}
 
-		atcOutputs := make([]atc.PublicBuildOutput, 0, len(outputs))
+		atcOutputs := make([]types.PublicBuildOutput, 0, len(outputs))
 		for _, output := range outputs {
 			atcOutputs = append(atcOutputs, present.PublicBuildOutput(output))
 		}
 
-		output := atc.BuildInputsOutputs{
+		output := types.BuildInputsOutputs{
 			Inputs:  atcInputs,
 			Outputs: atcOutputs,
 		}

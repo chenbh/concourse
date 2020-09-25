@@ -1,13 +1,13 @@
 package lock_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/concourse/concourse/atc/db/lock/lockfakes"
@@ -47,7 +47,7 @@ var _ = Describe("Locks", func() {
 		teamFactory = db.NewTeamFactory(dbConn, lockFactory)
 
 		var err error
-		team, err = teamFactory.CreateTeam(atc.Team{Name: "team-name"})
+		team, err = teamFactory.CreateTeam(types.Team{Name: "team-name"})
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -2,9 +2,9 @@ package usersserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 )
 
@@ -16,7 +16,7 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	claims := acc.Claims()
 
-	user := atc.UserInfo{
+	user := types.UserInfo{
 		Sub:      claims.Sub,
 		Name:     claims.Name,
 		UserId:   claims.UserID,

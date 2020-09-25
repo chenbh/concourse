@@ -3,27 +3,26 @@ package event
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"reflect"
 	"strings"
-
-	"github.com/concourse/concourse/atc"
 )
 
-type eventTable map[atc.EventType]eventVersions
-type eventVersions map[atc.EventVersion]eventParser
-type eventParser func([]byte) (atc.Event, error)
+type eventTable map[types.EventType]eventVersions
+type eventVersions map[types.EventVersion]eventParser
+type eventParser func([]byte) (types.Event, error)
 
 var events = eventTable{}
 
-func unmarshaler(e atc.Event) func([]byte) (atc.Event, error) {
-	return func(payload []byte) (atc.Event, error) {
+func unmarshaler(e types.Event) func([]byte) (types.Event, error) {
+	return func(payload []byte) (types.Event, error) {
 		val := reflect.New(reflect.TypeOf(e))
 		err := json.Unmarshal(payload, val.Interface())
-		return val.Elem().Interface().(atc.Event), err
+		return val.Elem().Interface().(types.Event), err
 	}
 }
 
-func RegisterEvent(e atc.Event) {
+func RegisterEvent(e types.Event) {
 	versions, found := events[e.EventType()]
 	if !found {
 		versions = eventVersions{}
@@ -87,13 +86,13 @@ func init() {
 }
 
 type Message struct {
-	Event atc.Event
+	Event types.Event
 }
 
 type Envelope struct {
-	Data    *json.RawMessage `json:"data"`
-	Event   atc.EventType    `json:"event"`
-	Version atc.EventVersion `json:"version"`
+	Data    *json.RawMessage   `json:"data"`
+	Event   types.EventType    `json:"event"`
+	Version types.EventVersion `json:"version"`
 }
 
 func (m Message) MarshalJSON() ([]byte, error) {
@@ -130,7 +129,7 @@ func (m *Message) UnmarshalJSON(bytes []byte) error {
 }
 
 type UnknownEventTypeError struct {
-	Type atc.EventType
+	Type types.EventType
 }
 
 func (err UnknownEventTypeError) Error() string {
@@ -138,8 +137,8 @@ func (err UnknownEventTypeError) Error() string {
 }
 
 type UnknownEventVersionError struct {
-	Type          atc.EventType
-	Version       atc.EventVersion
+	Type          types.EventType
+	Version       types.EventVersion
 	KnownVersions []string
 }
 
@@ -152,7 +151,7 @@ func (err UnknownEventVersionError) Error() string {
 	)
 }
 
-func ParseEvent(version atc.EventVersion, typ atc.EventType, payload []byte) (atc.Event, error) {
+func ParseEvent(version types.EventVersion, typ types.EventType, payload []byte) (types.Event, error) {
 	versions, found := events[typ]
 	if !found {
 		return nil, UnknownEventTypeError{typ}

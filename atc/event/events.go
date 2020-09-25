@@ -1,7 +1,7 @@
 package event
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 )
 
 type Error struct {
@@ -10,8 +10,8 @@ type Error struct {
 	Time    int64  `json:"time"`
 }
 
-func (Error) EventType() atc.EventType  { return EventTypeError }
-func (Error) Version() atc.EventVersion { return "4.1" }
+func (Error) EventType() types.EventType  { return EventTypeError }
+func (Error) Version() types.EventVersion { return "4.1" }
 
 type FinishTask struct {
 	Time       int64  `json:"time"`
@@ -19,8 +19,8 @@ type FinishTask struct {
 	Origin     Origin `json:"origin"`
 }
 
-func (FinishTask) EventType() atc.EventType  { return EventTypeFinishTask }
-func (FinishTask) Version() atc.EventVersion { return "4.0" }
+func (FinishTask) EventType() types.EventType  { return EventTypeFinishTask }
+func (FinishTask) Version() types.EventVersion { return "4.0" }
 
 type InitializeTask struct {
 	Time       int64      `json:"time"`
@@ -28,8 +28,8 @@ type InitializeTask struct {
 	TaskConfig TaskConfig `json:"config"`
 }
 
-func (InitializeTask) EventType() atc.EventType  { return EventTypeInitializeTask }
-func (InitializeTask) Version() atc.EventVersion { return "4.0" }
+func (InitializeTask) EventType() types.EventType  { return EventTypeInitializeTask }
+func (InitializeTask) Version() types.EventVersion { return "4.0" }
 
 // shadow the real atc.TaskConfig
 type TaskConfig struct {
@@ -51,7 +51,7 @@ type TaskInputConfig struct {
 	Path string `json:"path"`
 }
 
-func ShadowTaskConfig(config atc.TaskConfig) TaskConfig {
+func ShadowTaskConfig(config types.TaskConfig) TaskConfig {
 	var inputConfigs []TaskInputConfig
 
 	for _, input := range config.Inputs {
@@ -79,16 +79,16 @@ type StartTask struct {
 	TaskConfig TaskConfig `json:"config"`
 }
 
-func (StartTask) EventType() atc.EventType  { return EventTypeStartTask }
-func (StartTask) Version() atc.EventVersion { return "5.0" }
+func (StartTask) EventType() types.EventType  { return EventTypeStartTask }
+func (StartTask) Version() types.EventVersion { return "5.0" }
 
 type Status struct {
-	Status atc.BuildStatus `json:"status"`
-	Time   int64           `json:"time"`
+	Status types.BuildStatus `json:"status"`
+	Time   int64             `json:"time"`
 }
 
-func (Status) EventType() atc.EventType  { return EventTypeStatus }
-func (Status) Version() atc.EventVersion { return "1.0" }
+func (Status) EventType() types.EventType  { return EventTypeStatus }
+func (Status) Version() types.EventVersion { return "1.0" }
 
 type SelectedWorker struct {
 	Time       int64  `json:"time"`
@@ -96,8 +96,8 @@ type SelectedWorker struct {
 	WorkerName string `json:"selected_worker"`
 }
 
-func (SelectedWorker) EventType() atc.EventType  { return EventTypeSelectedWorker }
-func (SelectedWorker) Version() atc.EventVersion { return "1.0" }
+func (SelectedWorker) EventType() types.EventType  { return EventTypeSelectedWorker }
+func (SelectedWorker) Version() types.EventVersion { return "1.0" }
 
 type Log struct {
 	Time    int64  `json:"time"`
@@ -105,8 +105,8 @@ type Log struct {
 	Payload string `json:"payload"`
 }
 
-func (Log) EventType() atc.EventType  { return EventTypeLog }
-func (Log) Version() atc.EventVersion { return "5.1" }
+func (Log) EventType() types.EventType  { return EventTypeLog }
+func (Log) Version() types.EventVersion { return "5.1" }
 
 type Origin struct {
 	ID     OriginID     `json:"id,omitempty"`
@@ -127,78 +127,78 @@ type InitializeGet struct {
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (InitializeGet) EventType() atc.EventType  { return EventTypeInitializeGet }
-func (InitializeGet) Version() atc.EventVersion { return "2.0" }
+func (InitializeGet) EventType() types.EventType  { return EventTypeInitializeGet }
+func (InitializeGet) Version() types.EventVersion { return "2.0" }
 
 type StartGet struct {
 	Origin Origin `json:"origin"`
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (StartGet) EventType() atc.EventType  { return EventTypeStartGet }
-func (StartGet) Version() atc.EventVersion { return "1.0" }
+func (StartGet) EventType() types.EventType  { return EventTypeStartGet }
+func (StartGet) Version() types.EventVersion { return "1.0" }
 
 type FinishGet struct {
-	Origin          Origin              `json:"origin"`
-	Time            int64               `json:"time"`
-	ExitStatus      int                 `json:"exit_status"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          Origin                `json:"origin"`
+	Time            int64                 `json:"time"`
+	ExitStatus      int                   `json:"exit_status"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishGet) EventType() atc.EventType  { return EventTypeFinishGet }
-func (FinishGet) Version() atc.EventVersion { return "5.1" }
+func (FinishGet) EventType() types.EventType  { return EventTypeFinishGet }
+func (FinishGet) Version() types.EventVersion { return "5.1" }
 
 type InitializePut struct {
 	Origin Origin `json:"origin"`
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (InitializePut) EventType() atc.EventType  { return EventTypeInitializePut }
-func (InitializePut) Version() atc.EventVersion { return "2.0" }
+func (InitializePut) EventType() types.EventType  { return EventTypeInitializePut }
+func (InitializePut) Version() types.EventVersion { return "2.0" }
 
 type StartPut struct {
 	Origin Origin `json:"origin"`
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (StartPut) EventType() atc.EventType  { return EventTypeStartPut }
-func (StartPut) Version() atc.EventVersion { return "1.0" }
+func (StartPut) EventType() types.EventType  { return EventTypeStartPut }
+func (StartPut) Version() types.EventVersion { return "1.0" }
 
 type FinishPut struct {
-	Origin          Origin              `json:"origin"`
-	Time            int64               `json:"time"`
-	ExitStatus      int                 `json:"exit_status"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          Origin                `json:"origin"`
+	Time            int64                 `json:"time"`
+	ExitStatus      int                   `json:"exit_status"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishPut) EventType() atc.EventType  { return EventTypeFinishPut }
-func (FinishPut) Version() atc.EventVersion { return "5.1" }
+func (FinishPut) EventType() types.EventType  { return EventTypeFinishPut }
+func (FinishPut) Version() types.EventVersion { return "5.1" }
 
 type SetPipelineChanged struct {
 	Origin  Origin `json:"origin"`
 	Changed bool   `json:"changed"`
 }
 
-func (SetPipelineChanged) EventType() atc.EventType  { return EventTypeSetPipelineChanged }
-func (SetPipelineChanged) Version() atc.EventVersion { return "1.0" }
+func (SetPipelineChanged) EventType() types.EventType  { return EventTypeSetPipelineChanged }
+func (SetPipelineChanged) Version() types.EventVersion { return "1.0" }
 
 type Initialize struct {
 	Origin Origin `json:"origin"`
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (Initialize) EventType() atc.EventType  { return EventTypeInitialize }
-func (Initialize) Version() atc.EventVersion { return "1.0" }
+func (Initialize) EventType() types.EventType  { return EventTypeInitialize }
+func (Initialize) Version() types.EventVersion { return "1.0" }
 
 type Start struct {
 	Origin Origin `json:"origin"`
 	Time   int64  `json:"time,omitempty"`
 }
 
-func (Start) EventType() atc.EventType  { return EventTypeStart }
-func (Start) Version() atc.EventVersion { return "1.0" }
+func (Start) EventType() types.EventType  { return EventTypeStart }
+func (Start) Version() types.EventVersion { return "1.0" }
 
 type Finish struct {
 	Origin    Origin `json:"origin"`
@@ -206,5 +206,5 @@ type Finish struct {
 	Succeeded bool   `json:"succeeded"`
 }
 
-func (Finish) EventType() atc.EventType  { return EventTypeFinish }
-func (Finish) Version() atc.EventVersion { return "1.0" }
+func (Finish) EventType() types.EventType  { return EventTypeFinish }
+func (Finish) Version() types.EventVersion { return "1.0" }

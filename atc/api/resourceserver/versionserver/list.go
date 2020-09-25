@@ -3,6 +3,7 @@ package versionserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,7 +33,7 @@ func (s *Server) ListResourceVersions(pipeline db.Pipeline) http.Handler {
 		}
 
 		fields := r.Form["filter"]
-		versionFilter := make(atc.Version)
+		versionFilter := make(types.Version)
 		for _, field := range fields {
 			vs := strings.SplitN(field, ":", 2)
 			if len(vs) == 2 {

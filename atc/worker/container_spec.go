@@ -2,10 +2,10 @@ package worker
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
 	"code.cloudfoundry.org/garden"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/runtime"
 )
@@ -15,7 +15,7 @@ type WorkerSpec struct {
 	ResourceType  string
 	Tags          []string
 	TeamID        int
-	ResourceTypes atc.VersionedResourceTypes
+	ResourceTypes types.VersionedResourceTypes
 }
 
 type ContainerSpec struct {
@@ -103,9 +103,9 @@ type ImageSpec struct {
 
 type ImageResource struct {
 	Type    string
-	Source  atc.Source
-	Params  atc.Params
-	Version atc.Version
+	Source  types.Source
+	Params  types.Params
+	Version types.Version
 }
 
 type ContainerLimits struct {

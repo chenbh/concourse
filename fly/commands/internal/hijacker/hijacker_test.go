@@ -3,6 +3,7 @@ package hijacker_test
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
@@ -80,7 +81,7 @@ var _ = Describe("Hijacker", func() {
 				InsecureSkipVerify: true,
 			}
 
-			reqGenerator := rata.NewRequestGenerator(server.URL(), atc.Routes)
+			reqGenerator := rata.NewRequestGenerator(server.URL(), types.Routes)
 
 			stdin := gbytes.NewBuffer()
 			stdout := gbytes.NewBuffer()

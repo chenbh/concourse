@@ -2,13 +2,13 @@ package setpipelinehelpers
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/url"
 	"os"
 	"sigs.k8s.io/yaml"
 
 	"github.com/vito/go-interact/interact"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/configvalidate"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/templatehelpers"
@@ -52,7 +52,7 @@ func (atcConfig ATCConfig) Set(yamlTemplateWithParams templatehelpers.YamlTempla
 		return err
 	}
 
-	var newConfig atc.Config
+	var newConfig types.Config
 	err = yaml.Unmarshal([]byte(evaluatedTemplate), &newConfig)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (atcConfig ATCConfig) showPipelineUpdateResult(created bool, updated bool, 
 	}
 }
 
-func diff(existingConfig atc.Config, newConfig atc.Config) bool {
+func diff(existingConfig types.Config, newConfig types.Config) bool {
 	stdout, _ := ui.ForTTY(os.Stdout)
 	return existingConfig.Diff(stdout, newConfig)
 }

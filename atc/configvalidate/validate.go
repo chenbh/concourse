@@ -6,8 +6,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/concourse/concourse/atc/types"
+
 	"github.com/concourse/concourse/atc"
-	. "github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds"
 )
 
@@ -22,8 +23,8 @@ func formatErr(groupName string, err error) string {
 	return fmt.Sprintf("invalid %s:\n%s\n", groupName, strings.Join(indented, "\n"))
 }
 
-func Validate(c Config) ([]ConfigWarning, []string) {
-	warnings := []ConfigWarning{}
+func Validate(c types.Config) ([]types.ConfigWarning, []string) {
+	warnings := []types.ConfigWarning{}
 	errorMessages := []string{}
 
 	groupsWarnings, groupsErr := validateGroups(c)
@@ -65,8 +66,8 @@ func Validate(c Config) ([]ConfigWarning, []string) {
 	return warnings, errorMessages
 }
 
-func validateGroups(c Config) ([]ConfigWarning, error) {
-	var warnings []ConfigWarning
+func validateGroups(c types.Config) ([]types.ConfigWarning, error) {
+	var warnings []types.ConfigWarning
 	var errorMessages []string
 
 	jobsGrouped := make(map[string]bool)
@@ -84,7 +85,7 @@ func validateGroups(c Config) ([]ConfigWarning, error) {
 			identifier = fmt.Sprintf("groups.%s", group.Name)
 		}
 
-		warning := ValidateIdentifier(group.Name, identifier)
+		warning := types.ValidateIdentifier(group.Name, identifier)
 		if warning != nil {
 			warnings = append(warnings, *warning)
 		}
@@ -133,8 +134,8 @@ func validateGroups(c Config) ([]ConfigWarning, error) {
 	return warnings, compositeErr(errorMessages)
 }
 
-func validateResources(c Config) ([]ConfigWarning, error) {
-	var warnings []ConfigWarning
+func validateResources(c types.Config) ([]types.ConfigWarning, error) {
+	var warnings []types.ConfigWarning
 	var errorMessages []string
 
 	names := map[string]int{}
@@ -147,7 +148,7 @@ func validateResources(c Config) ([]ConfigWarning, error) {
 			identifier = fmt.Sprintf("resources.%s", resource.Name)
 		}
 
-		warning := ValidateIdentifier(resource.Name, identifier)
+		warning := types.ValidateIdentifier(resource.Name, identifier)
 		if warning != nil {
 			warnings = append(warnings, *warning)
 		}
@@ -175,8 +176,8 @@ func validateResources(c Config) ([]ConfigWarning, error) {
 	return warnings, compositeErr(errorMessages)
 }
 
-func validateResourceTypes(c Config) ([]ConfigWarning, error) {
-	var warnings []ConfigWarning
+func validateResourceTypes(c types.Config) ([]types.ConfigWarning, error) {
+	var warnings []types.ConfigWarning
 	var errorMessages []string
 
 	names := map[string]int{}
@@ -189,7 +190,7 @@ func validateResourceTypes(c Config) ([]ConfigWarning, error) {
 			identifier = fmt.Sprintf("resource_types.%s", resourceType.Name)
 		}
 
-		warning := ValidateIdentifier(resourceType.Name, identifier)
+		warning := types.ValidateIdentifier(resourceType.Name, identifier)
 		if warning != nil {
 			warnings = append(warnings, *warning)
 		}
@@ -215,7 +216,7 @@ func validateResourceTypes(c Config) ([]ConfigWarning, error) {
 	return warnings, compositeErr(errorMessages)
 }
 
-func validateResourcesUnused(c Config) []string {
+func validateResourcesUnused(c types.Config) []string {
 	usedResources := usedResources(c)
 
 	var errorMessages []string
@@ -229,16 +230,16 @@ func validateResourcesUnused(c Config) []string {
 	return errorMessages
 }
 
-func usedResources(c Config) map[string]bool {
+func usedResources(c types.Config) map[string]bool {
 	usedResources := make(map[string]bool)
 
 	for _, job := range c.Jobs {
-		_ = job.StepConfig().Visit(atc.StepRecursor{
-			OnGet: func(step *GetStep) error {
+		_ = job.StepConfig().Visit(types.StepRecursor{
+			OnGet: func(step *types.GetStep) error {
 				usedResources[step.ResourceName()] = true
 				return nil
 			},
-			OnPut: func(step *PutStep) error {
+			OnPut: func(step *types.PutStep) error {
 				usedResources[step.ResourceName()] = true
 				return nil
 			},
@@ -248,9 +249,9 @@ func usedResources(c Config) map[string]bool {
 	return usedResources
 }
 
-func validateJobs(c Config) ([]ConfigWarning, error) {
+func validateJobs(c types.Config) ([]types.ConfigWarning, error) {
 	var errorMessages []string
-	var warnings []ConfigWarning
+	var warnings []types.ConfigWarning
 
 	names := map[string]int{}
 
@@ -262,7 +263,7 @@ func validateJobs(c Config) ([]ConfigWarning, error) {
 			identifier = fmt.Sprintf("jobs.%s", job.Name)
 		}
 
-		warning := ValidateIdentifier(job.Name, identifier)
+		warning := types.ValidateIdentifier(job.Name, identifier)
 		if warning != nil {
 			warnings = append(warnings, *warning)
 		}
@@ -341,8 +342,8 @@ func compositeErr(errorMessages []string) error {
 	return errors.New(strings.Join(errorMessages, "\n"))
 }
 
-func validateVarSources(c Config) ([]ConfigWarning, error) {
-	var warnings []ConfigWarning
+func validateVarSources(c types.Config) ([]types.ConfigWarning, error) {
+	var warnings []types.ConfigWarning
 	var errorMessages []string
 
 	names := map[string]interface{}{}
@@ -355,7 +356,7 @@ func validateVarSources(c Config) ([]ConfigWarning, error) {
 			identifier = fmt.Sprintf("var_sources.%s", cm.Name)
 		}
 
-		warning := ValidateIdentifier(cm.Name, identifier)
+		warning := types.ValidateIdentifier(cm.Name, identifier)
 		if warning != nil {
 			warnings = append(warnings, *warning)
 		}
@@ -387,15 +388,15 @@ func validateVarSources(c Config) ([]ConfigWarning, error) {
 		}
 	}
 
-	if _, err := c.VarSources.OrderByDependency(); err != nil {
+	if _, err := atc.OrderByDependency(c.VarSources); err != nil {
 		errorMessages = append(errorMessages, fmt.Sprintf("failed to order by dependency: %s", err.Error()))
 	}
 
 	return warnings, compositeErr(errorMessages)
 }
 
-func validateDisplay(c Config) ([]ConfigWarning, error) {
-	var warnings []ConfigWarning
+func validateDisplay(c types.Config) ([]types.ConfigWarning, error) {
+	var warnings []types.ConfigWarning
 
 	if c.Display == nil {
 		return warnings, nil

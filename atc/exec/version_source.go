@@ -2,6 +2,7 @@ package exec
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/runtime"
@@ -22,14 +23,14 @@ func NewVersionSourceFromPlan(getPlan *atc.GetPlan) VersionSource {
 }
 
 type VersionSource interface {
-	Version(RunState) (atc.Version, error)
+	Version(RunState) (types.Version, error)
 }
 
 type StaticVersionSource struct {
-	version atc.Version
+	version types.Version
 }
 
-func (p *StaticVersionSource) Version(RunState) (atc.Version, error) {
+func (p *StaticVersionSource) Version(RunState) (types.Version, error) {
 	return p.version, nil
 }
 
@@ -39,10 +40,10 @@ type PutStepVersionSource struct {
 	planID atc.PlanID
 }
 
-func (p *PutStepVersionSource) Version(state RunState) (atc.Version, error) {
+func (p *PutStepVersionSource) Version(state RunState) (types.Version, error) {
 	var info runtime.VersionResult
 	if !state.Result(p.planID, &info) {
-		return atc.Version{}, ErrPutStepVersionMissing
+		return types.Version{}, ErrPutStepVersionMissing
 	}
 
 	return info.Version, nil
@@ -50,6 +51,6 @@ func (p *PutStepVersionSource) Version(state RunState) (atc.Version, error) {
 
 type EmptyVersionSource struct{}
 
-func (p *EmptyVersionSource) Version(RunState) (atc.Version, error) {
-	return atc.Version{}, nil
+func (p *EmptyVersionSource) Version(RunState) (types.Version, error) {
+	return types.Version{}, nil
 }

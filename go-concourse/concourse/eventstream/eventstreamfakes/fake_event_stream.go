@@ -2,9 +2,9 @@
 package eventstreamfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/eventstream"
 )
 
@@ -19,16 +19,16 @@ type FakeEventStream struct {
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	NextEventStub        func() (atc.Event, error)
+	NextEventStub        func() (types.Event, error)
 	nextEventMutex       sync.RWMutex
 	nextEventArgsForCall []struct {
 	}
 	nextEventReturns struct {
-		result1 atc.Event
+		result1 types.Event
 		result2 error
 	}
 	nextEventReturnsOnCall map[int]struct {
-		result1 atc.Event
+		result1 types.Event
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -87,7 +87,7 @@ func (fake *FakeEventStream) CloseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeEventStream) NextEvent() (atc.Event, error) {
+func (fake *FakeEventStream) NextEvent() (types.Event, error) {
 	fake.nextEventMutex.Lock()
 	ret, specificReturn := fake.nextEventReturnsOnCall[len(fake.nextEventArgsForCall)]
 	fake.nextEventArgsForCall = append(fake.nextEventArgsForCall, struct {
@@ -110,34 +110,34 @@ func (fake *FakeEventStream) NextEventCallCount() int {
 	return len(fake.nextEventArgsForCall)
 }
 
-func (fake *FakeEventStream) NextEventCalls(stub func() (atc.Event, error)) {
+func (fake *FakeEventStream) NextEventCalls(stub func() (types.Event, error)) {
 	fake.nextEventMutex.Lock()
 	defer fake.nextEventMutex.Unlock()
 	fake.NextEventStub = stub
 }
 
-func (fake *FakeEventStream) NextEventReturns(result1 atc.Event, result2 error) {
+func (fake *FakeEventStream) NextEventReturns(result1 types.Event, result2 error) {
 	fake.nextEventMutex.Lock()
 	defer fake.nextEventMutex.Unlock()
 	fake.NextEventStub = nil
 	fake.nextEventReturns = struct {
-		result1 atc.Event
+		result1 types.Event
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeEventStream) NextEventReturnsOnCall(i int, result1 atc.Event, result2 error) {
+func (fake *FakeEventStream) NextEventReturnsOnCall(i int, result1 types.Event, result2 error) {
 	fake.nextEventMutex.Lock()
 	defer fake.nextEventMutex.Unlock()
 	fake.NextEventStub = nil
 	if fake.nextEventReturnsOnCall == nil {
 		fake.nextEventReturnsOnCall = make(map[int]struct {
-			result1 atc.Event
+			result1 types.Event
 			result2 error
 		})
 	}
 	fake.nextEventReturnsOnCall[i] = struct {
-		result1 atc.Event
+		result1 types.Event
 		result2 error
 	}{result1, result2}
 }

@@ -1,11 +1,11 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func Worker(workerInfo db.Worker) atc.Worker {
+func Worker(workerInfo db.Worker) types.Worker {
 	gardenAddr := ""
 	if workerInfo.GardenAddr() != nil {
 		gardenAddr = *workerInfo.GardenAddr()
@@ -23,7 +23,7 @@ func Worker(workerInfo db.Worker) atc.Worker {
 		activeTasks = 0
 	}
 
-	atcWorker := atc.Worker{
+	atcWorker := types.Worker{
 		GardenAddr:       gardenAddr,
 		BaggageclaimURL:  baggageclaimURL,
 		HTTPProxyURL:     workerInfo.HTTPProxyURL(),

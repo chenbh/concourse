@@ -1,22 +1,22 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (client *client) Check(checkID string) (atc.Check, bool, error) {
+func (client *client) Check(checkID string) (types.Check, bool, error) {
 
 	params := rata.Params{
 		"check_id": checkID,
 	}
 
-	var check atc.Check
+	var check types.Check
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.GetCheck,
+		RequestName: types.GetCheck,
 		Params:      params,
 	}, &internal.Response{
 		Result: &check,

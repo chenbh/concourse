@@ -1,13 +1,13 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func Check(check db.Check) atc.Check {
+func Check(check db.Check) types.Check {
 
-	atcCheck := atc.Check{
+	atcCheck := types.Check{
 		ID:     check.ID(),
 		Status: string(check.Status()),
 	}

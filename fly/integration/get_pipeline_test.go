@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
@@ -13,19 +14,17 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"github.com/tedsuo/rata"
 	"sigs.k8s.io/yaml"
-
-	"github.com/concourse/concourse/atc"
 )
 
 var _ = Describe("Fly CLI", func() {
 	Describe("get-pipeline", func() {
 		var (
-			config atc.Config
+			config types.Config
 		)
 
 		BeforeEach(func() {
-			config = atc.Config{
-				Groups: atc.GroupConfigs{
+			config = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"job-1", "job-2"},
@@ -38,41 +37,41 @@ var _ = Describe("Fly CLI", func() {
 					},
 				},
 
-				Resources: atc.ResourceConfigs{
+				Resources: types.ResourceConfigs{
 					{
 						Name: "some-resource",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 					{
 						Name: "some-other-resource",
 						Type: "some-other-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				ResourceTypes: atc.ResourceTypes{
+				ResourceTypes: types.ResourceTypes{
 					{
 						Name: "some-resource-type",
 						Type: "some-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 					{
 						Name: "some-other-resource-type",
 						Type: "some-other-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"source-config": "some-value",
 						},
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name:   "some-job",
 						Public: true,
@@ -118,7 +117,7 @@ var _ = Describe("Fly CLI", func() {
 				var path string
 				BeforeEach(func() {
 					var err error
-					path, err = atc.Routes.CreatePathForRoute(atc.GetConfig, rata.Params{"pipeline_name": "some-pipeline", "team_name": "main"})
+					path, err = types.Routes.CreatePathForRoute(types.GetConfig, rata.Params{"pipeline_name": "some-pipeline", "team_name": "main"})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -150,7 +149,7 @@ var _ = Describe("Fly CLI", func() {
 						atcServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("GET", path),
-								ghttp.RespondWithJSONEncoded(200, atc.ConfigResponse{Config: config}, http.Header{atc.ConfigVersionHeader: {"42"}}),
+								ghttp.RespondWithJSONEncoded(200, types.ConfigResponse{Config: config}, http.Header{types.ConfigVersionHeader: {"42"}}),
 							),
 						)
 					})
@@ -164,7 +163,7 @@ var _ = Describe("Fly CLI", func() {
 						<-sess.Exited
 						Expect(sess.ExitCode()).To(Equal(0))
 
-						var printedConfig atc.Config
+						var printedConfig types.Config
 						err = yaml.Unmarshal(sess.Out.Contents(), &printedConfig)
 						Expect(err).NotTo(HaveOccurred())
 
@@ -181,7 +180,7 @@ var _ = Describe("Fly CLI", func() {
 							<-sess.Exited
 							Expect(sess.ExitCode()).To(Equal(0))
 
-							var printedConfig atc.Config
+							var printedConfig types.Config
 							err = json.Unmarshal(sess.Out.Contents(), &printedConfig)
 							Expect(err).NotTo(HaveOccurred())
 

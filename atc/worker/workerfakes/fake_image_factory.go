@@ -2,15 +2,15 @@
 package workerfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/worker"
 )
 
 type FakeImageFactory struct {
-	GetImageStub        func(lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, atc.VersionedResourceTypes) (worker.Image, error)
+	GetImageStub        func(lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, types.VersionedResourceTypes) (worker.Image, error)
 	getImageMutex       sync.RWMutex
 	getImageArgsForCall []struct {
 		arg1 lager.Logger
@@ -19,7 +19,7 @@ type FakeImageFactory struct {
 		arg4 worker.ImageSpec
 		arg5 int
 		arg6 worker.ImageFetchingDelegate
-		arg7 atc.VersionedResourceTypes
+		arg7 types.VersionedResourceTypes
 	}
 	getImageReturns struct {
 		result1 worker.Image
@@ -33,7 +33,7 @@ type FakeImageFactory struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImageFactory) GetImage(arg1 lager.Logger, arg2 worker.Worker, arg3 worker.VolumeClient, arg4 worker.ImageSpec, arg5 int, arg6 worker.ImageFetchingDelegate, arg7 atc.VersionedResourceTypes) (worker.Image, error) {
+func (fake *FakeImageFactory) GetImage(arg1 lager.Logger, arg2 worker.Worker, arg3 worker.VolumeClient, arg4 worker.ImageSpec, arg5 int, arg6 worker.ImageFetchingDelegate, arg7 types.VersionedResourceTypes) (worker.Image, error) {
 	fake.getImageMutex.Lock()
 	ret, specificReturn := fake.getImageReturnsOnCall[len(fake.getImageArgsForCall)]
 	fake.getImageArgsForCall = append(fake.getImageArgsForCall, struct {
@@ -43,7 +43,7 @@ func (fake *FakeImageFactory) GetImage(arg1 lager.Logger, arg2 worker.Worker, ar
 		arg4 worker.ImageSpec
 		arg5 int
 		arg6 worker.ImageFetchingDelegate
-		arg7 atc.VersionedResourceTypes
+		arg7 types.VersionedResourceTypes
 	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.recordInvocation("GetImage", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.getImageMutex.Unlock()
@@ -63,13 +63,13 @@ func (fake *FakeImageFactory) GetImageCallCount() int {
 	return len(fake.getImageArgsForCall)
 }
 
-func (fake *FakeImageFactory) GetImageCalls(stub func(lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, atc.VersionedResourceTypes) (worker.Image, error)) {
+func (fake *FakeImageFactory) GetImageCalls(stub func(lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, types.VersionedResourceTypes) (worker.Image, error)) {
 	fake.getImageMutex.Lock()
 	defer fake.getImageMutex.Unlock()
 	fake.GetImageStub = stub
 }
 
-func (fake *FakeImageFactory) GetImageArgsForCall(i int) (lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, atc.VersionedResourceTypes) {
+func (fake *FakeImageFactory) GetImageArgsForCall(i int) (lager.Logger, worker.Worker, worker.VolumeClient, worker.ImageSpec, int, worker.ImageFetchingDelegate, types.VersionedResourceTypes) {
 	fake.getImageMutex.RLock()
 	defer fake.getImageMutex.RUnlock()
 	argsForCall := fake.getImageArgsForCall[i]

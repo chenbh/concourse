@@ -3,9 +3,9 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
 )
 
@@ -151,8 +151,8 @@ func (source *buildEventSource) collectEvents(cursor uint) {
 
 			ev := event.Envelope{
 				Data:    &data,
-				Event:   atc.EventType(t),
-				Version: atc.EventVersion(v),
+				Event:   types.EventType(t),
+				Version: types.EventVersion(v),
 			}
 
 			select {

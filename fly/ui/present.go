@@ -1,13 +1,12 @@
 package ui
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 	"strings"
-
-	"github.com/concourse/concourse/atc"
 )
 
-func PresentVersion(version atc.Version) string {
+func PresentVersion(version types.Version) string {
 	pairs := []string{}
 	for k, v := range version {
 		pairs = append(pairs, k+":"+v)

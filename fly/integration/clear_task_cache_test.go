@@ -2,11 +2,11 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -109,7 +109,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("DELETE", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/tasks/some-step-name/cache"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ClearTaskCacheResponse{CachesRemoved: 1}),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.ClearTaskCacheResponse{CachesRemoved: 1}),
 						),
 					)
 				})
@@ -150,7 +150,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("DELETE", "/api/v1/teams/main/pipelines/some-pipeline/jobs/some-job/tasks/some-step-name/cache"),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.ClearTaskCacheResponse{CachesRemoved: 0}),
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.ClearTaskCacheResponse{CachesRemoved: 0}),
 						),
 					)
 				})

@@ -1,9 +1,9 @@
 package db_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 	. "github.com/onsi/ginkgo"
@@ -27,22 +27,22 @@ var _ = Describe("Resource Config Scope", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(setupTx.Commit()).To(Succeed())
 
-		pipeline, _, err = defaultTeam.SavePipeline("scope-pipeline", atc.Config{
-			Resources: atc.ResourceConfigs{
+		pipeline, _, err = defaultTeam.SavePipeline("scope-pipeline", types.Config{
+			Resources: types.ResourceConfigs{
 				{
 					Name: "some-resource",
 					Type: "some-type",
-					Source: atc.Source{
+					Source: types.Source{
 						"some": "source",
 					},
 				},
 			},
-			Jobs: atc.JobConfigs{
+			Jobs: types.JobConfigs{
 				{
 					Name: "some-job",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name: "some-resource",
 							},
 						},
@@ -50,9 +50,9 @@ var _ = Describe("Resource Config Scope", func() {
 				},
 				{
 					Name: "downstream-job",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:   "some-resource",
 								Passed: []string{"some-job"},
 							},
@@ -71,17 +71,17 @@ var _ = Describe("Resource Config Scope", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(found).To(BeTrue())
 
-		resourceScope, err = resource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+		resourceScope, err = resource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("SaveVersions", func() {
 		var (
-			originalVersionSlice []atc.Version
+			originalVersionSlice []types.Version
 		)
 
 		BeforeEach(func() {
-			originalVersionSlice = []atc.Version{
+			originalVersionSlice = []types.Version{
 				{"ref": "v1"},
 				{"ref": "v3"},
 			}
@@ -99,7 +99,7 @@ var _ = Describe("Resource Config Scope", func() {
 			Expect(latestVR.Version()).To(Equal(db.Version{"ref": "v3"}))
 			Expect(latestVR.CheckOrder()).To(Equal(2))
 
-			pretendCheckResults := []atc.Version{
+			pretendCheckResults := []types.Version{
 				{"ref": "v2"},
 				{"ref": "v3"},
 			}
@@ -116,10 +116,10 @@ var _ = Describe("Resource Config Scope", func() {
 		})
 
 		Context("when the versions already exists", func() {
-			var newVersionSlice []atc.Version
+			var newVersionSlice []types.Version
 
 			BeforeEach(func() {
-				newVersionSlice = []atc.Version{
+				newVersionSlice = []types.Version{
 					{"ref": "v1"},
 					{"ref": "v3"},
 				}
@@ -158,7 +158,7 @@ var _ = Describe("Resource Config Scope", func() {
 
 					requestedSchedule := job.ScheduleRequestedTime()
 
-					newVersions := []atc.Version{
+					newVersions := []types.Version{
 						{"ref": "v0"},
 						{"ref": "v3"},
 					}
@@ -182,7 +182,7 @@ var _ = Describe("Resource Config Scope", func() {
 
 					requestedSchedule := job.ScheduleRequestedTime()
 
-					newVersions := []atc.Version{
+					newVersions := []types.Version{
 						{"ref": "v0"},
 						{"ref": "v3"},
 					}
@@ -206,7 +206,7 @@ var _ = Describe("Resource Config Scope", func() {
 
 					requestedSchedule := job.ScheduleRequestedTime()
 
-					newVersions := []atc.Version{
+					newVersions := []types.Version{
 						{"ref": "v0"},
 						{"ref": "v3"},
 					}
@@ -228,7 +228,7 @@ var _ = Describe("Resource Config Scope", func() {
 			var latestCV db.ResourceConfigVersion
 
 			BeforeEach(func() {
-				originalVersionSlice := []atc.Version{
+				originalVersionSlice := []types.Version{
 					{"ref": "v1"},
 					{"ref": "v3"},
 				}
@@ -248,7 +248,7 @@ var _ = Describe("Resource Config Scope", func() {
 			})
 
 			It("disabled versions do not affect fetching the latest version", func() {
-				err := resourceScope.SaveVersions(nil, []atc.Version{{"version": "1"}})
+				err := resourceScope.SaveVersions(nil, []types.Version{{"version": "1"}})
 				Expect(err).ToNot(HaveOccurred())
 
 				savedRCV, found, err := resourceScope.LatestVersion()
@@ -275,7 +275,7 @@ var _ = Describe("Resource Config Scope", func() {
 			})
 
 			It("saving versioned resources updates the latest versioned resource", func() {
-				err := resourceScope.SaveVersions(nil, []atc.Version{{"ref": "4"}, {"ref": "5"}})
+				err := resourceScope.SaveVersions(nil, []types.Version{{"ref": "4"}, {"ref": "5"}})
 				Expect(err).ToNot(HaveOccurred())
 
 				savedVR, found, err := resourceScope.LatestVersion()
@@ -289,7 +289,7 @@ var _ = Describe("Resource Config Scope", func() {
 
 	Describe("FindVersion", func() {
 		BeforeEach(func() {
-			originalVersionSlice := []atc.Version{
+			originalVersionSlice := []types.Version{
 				{"ref": "v1"},
 				{"ref": "v3"},
 			}
@@ -304,7 +304,7 @@ var _ = Describe("Resource Config Scope", func() {
 			BeforeEach(func() {
 				var err error
 				var found bool
-				latestCV, found, err = resourceScope.FindVersion(atc.Version{"ref": "v1"})
+				latestCV, found, err = resourceScope.FindVersion(types.Version{"ref": "v1"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(found).To(BeTrue())
 			})
@@ -322,7 +322,7 @@ var _ = Describe("Resource Config Scope", func() {
 
 			BeforeEach(func() {
 				var err error
-				latestCV, found, err = resourceScope.FindVersion(atc.Version{"ref": "v2"})
+				latestCV, found, err = resourceScope.FindVersion(types.Version{"ref": "v2"})
 				Expect(err).ToNot(HaveOccurred())
 			})
 

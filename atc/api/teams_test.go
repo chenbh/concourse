@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/testhelpers"
@@ -61,7 +61,7 @@ var _ = Describe("Teams API", func() {
 
 			fakeTeamOne.IDReturns(5)
 			fakeTeamOne.NameReturns(teamNames[0])
-			fakeTeamOne.AuthReturns(atc.TeamAuth{
+			fakeTeamOne.AuthReturns(types.TeamAuth{
 				"owner": map[string][]string{
 					"groups": []string{}, "users": []string{"local:username"},
 				},
@@ -69,7 +69,7 @@ var _ = Describe("Teams API", func() {
 
 			fakeTeamTwo.IDReturns(9)
 			fakeTeamTwo.NameReturns(teamNames[1])
-			fakeTeamTwo.AuthReturns(atc.TeamAuth{
+			fakeTeamTwo.AuthReturns(types.TeamAuth{
 				"owner": map[string][]string{
 					"groups": []string{}, "users": []string{"local:username"},
 				},
@@ -77,7 +77,7 @@ var _ = Describe("Teams API", func() {
 
 			fakeTeamThree.IDReturns(22)
 			fakeTeamThree.NameReturns(teamNames[2])
-			fakeTeamThree.AuthReturns(atc.TeamAuth{
+			fakeTeamThree.AuthReturns(types.TeamAuth{
 				"owner": map[string][]string{
 					"groups": []string{}, "users": []string{"local:username"},
 				},
@@ -134,7 +134,7 @@ var _ = Describe("Teams API", func() {
 			fakeTeam = new(dbfakes.FakeTeam)
 			fakeTeam.IDReturns(1)
 			fakeTeam.NameReturns("a-team")
-			fakeTeam.AuthReturns(atc.TeamAuth{
+			fakeTeam.AuthReturns(types.TeamAuth{
 				"owner": map[string][]string{
 					"groups": {}, "users": {"local:username"},
 				},
@@ -254,8 +254,8 @@ var _ = Describe("Teams API", func() {
 	Describe("PUT /api/v1/teams/:team_name", func() {
 		var (
 			response *http.Response
-			teamAuth atc.TeamAuth
-			atcTeam  atc.Team
+			teamAuth types.TeamAuth
+			atcTeam  types.Team
 			path     string
 		)
 
@@ -263,12 +263,12 @@ var _ = Describe("Teams API", func() {
 			fakeTeam.IDReturns(5)
 			fakeTeam.NameReturns("some-team")
 
-			teamAuth = atc.TeamAuth{
+			teamAuth = types.TeamAuth{
 				"owner": map[string][]string{
 					"groups": {}, "users": {"local:username"},
 				},
 			}
-			atcTeam = atc.Team{Auth: teamAuth}
+			atcTeam = types.Team{Auth: teamAuth}
 			path = fmt.Sprintf("%s/api/v1/teams/some-team", server.URL)
 		})
 
@@ -284,8 +284,8 @@ var _ = Describe("Teams API", func() {
 		authorizedTeamTests := func() {
 			Context("when the team exists", func() {
 				BeforeEach(func() {
-					atcTeam = atc.Team{
-						Auth: atc.TeamAuth{
+					atcTeam = types.Team{
+						Auth: types.TeamAuth{
 							"owner": map[string][]string{
 								"users": []string{"local:username"},
 							},
@@ -313,7 +313,7 @@ var _ = Describe("Teams API", func() {
 				})
 				Context("when provider auth is empty", func() {
 					BeforeEach(func() {
-						atcTeam = atc.Team{}
+						atcTeam = types.Team{}
 						dbTeamFactory.FindTeamReturns(fakeTeam, true, nil)
 					})
 
@@ -325,8 +325,8 @@ var _ = Describe("Teams API", func() {
 
 				Context("when provider auth is invalid", func() {
 					BeforeEach(func() {
-						atcTeam = atc.Team{
-							Auth: atc.TeamAuth{
+						atcTeam = types.Team{
+							Auth: types.TeamAuth{
 								"owner": {
 									//"users": []string{},
 									//"groups": []string{},
@@ -364,7 +364,7 @@ var _ = Describe("Teams API", func() {
 					Expect(dbTeamFactory.CreateTeamCallCount()).To(Equal(1))
 
 					createdTeam := dbTeamFactory.CreateTeamArgsForCall(0)
-					Expect(createdTeam).To(Equal(atc.Team{
+					Expect(createdTeam).To(Equal(types.Team{
 						Name: "some-team",
 						Auth: teamAuth,
 					}))
@@ -495,7 +495,7 @@ var _ = Describe("Teams API", func() {
 
 				Context("when trying to delete the admin team", func() {
 					BeforeEach(func() {
-						teamName = atc.DefaultTeamName
+						teamName = types.DefaultTeamName
 						fakeTeam.AdminReturns(true)
 						dbTeamFactory.FindTeamReturns(fakeTeam, true, nil)
 						dbTeamFactory.GetTeamsReturns([]db.Team{fakeTeam}, nil)

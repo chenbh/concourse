@@ -2,9 +2,9 @@ package exec
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/exec/build"
 	"github.com/concourse/concourse/atc/resource"
 	"github.com/concourse/concourse/atc/runtime"
@@ -104,7 +104,7 @@ func detectInputsFromParam(value interface{}) []build.ArtifactName {
 	}
 }
 
-func NewDetectInputs(params atc.Params) PutInputs {
+func NewDetectInputs(params types.Params) PutInputs {
 	return &detectInputs{
 		guessedNames: detectInputsFromParam(map[string]interface{}(params)),
 	}

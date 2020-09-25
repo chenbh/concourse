@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/skymarshal/token"
@@ -34,12 +34,12 @@ const teamName = "main"
 const atcVersion = "4.0.0"
 const workerVersion = "4.5.6"
 
-var teams = []atc.Team{
-	atc.Team{
+var teams = []types.Team{
+	types.Team{
 		ID:   1,
 		Name: "main",
 	},
-	atc.Team{
+	types.Team{
 		ID:   2,
 		Name: "other-team",
 	},
@@ -64,7 +64,7 @@ var _ = SynchronizedAfterSuite(func() {
 func infoHandler() http.HandlerFunc {
 	return ghttp.CombineHandlers(
 		ghttp.VerifyRequest("GET", "/api/v1/info"),
-		ghttp.RespondWithJSONEncoded(200, atc.Info{Version: atcVersion, WorkerVersion: workerVersion}),
+		ghttp.RespondWithJSONEncoded(200, types.Info{Version: atcVersion, WorkerVersion: workerVersion}),
 	)
 }
 

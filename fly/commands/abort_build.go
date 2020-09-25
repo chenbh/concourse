@@ -2,9 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
 )
@@ -25,7 +25,7 @@ func (command *AbortBuildCommand) Execute([]string) error {
 		return err
 	}
 
-	var build atc.Build
+	var build types.Build
 	var exists bool
 	if command.Job.PipelineName == "" && command.Job.JobName == "" {
 		build, exists, err = target.Client().Build(command.Build)

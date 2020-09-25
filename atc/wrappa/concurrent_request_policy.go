@@ -2,13 +2,12 @@ package wrappa
 
 import (
 	"fmt"
-
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 )
 
 type LimitedRoute string
 
-var supportedActions = []LimitedRoute{LimitedRoute(atc.ListAllJobs)}
+var supportedActions = []LimitedRoute{LimitedRoute(types.ListAllJobs)}
 
 func (lr *LimitedRoute) UnmarshalFlag(value string) error {
 	if !isValidAction(value) {
@@ -28,7 +27,7 @@ func (lr *LimitedRoute) UnmarshalFlag(value string) error {
 }
 
 func isValidAction(action string) bool {
-	for _, route := range atc.Routes {
+	for _, route := range types.Routes {
 		if route.Name == action {
 			return true
 		}

@@ -3,11 +3,11 @@ package db_test
 import (
 	"context"
 	"database/sql"
+	"github.com/concourse/concourse/atc/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	gocache "github.com/patrickmn/go-cache"
 )
@@ -731,13 +731,13 @@ var _ = Describe("VersionsDB", func() {
 
 	Describe("FindVersionOfResource", func() {
 		var (
-			queryVersion, dbVersion atc.Version
+			queryVersion, dbVersion types.Version
 			resourceVersion         db.ResourceVersion
 			found                   bool
 		)
 
 		BeforeEach(func() {
-			dbVersion = atc.Version{"tag": "v1", "commit": "v2"}
+			dbVersion = types.Version{"tag": "v1", "commit": "v2"}
 		})
 
 		JustBeforeEach(func() {
@@ -749,13 +749,13 @@ var _ = Describe("VersionsDB", func() {
 		Context("when trying to find version by providing a matched partial version", func() {
 
 			BeforeEach(func() {
-				resourceScope, err := defaultResource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+				resourceScope, err := defaultResource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 				Expect(err).NotTo(HaveOccurred())
 
-				err = resourceScope.SaveVersions(db.NewSpanContext(ctx), []atc.Version{dbVersion})
+				err = resourceScope.SaveVersions(db.NewSpanContext(ctx), []types.Version{dbVersion})
 				Expect(err).NotTo(HaveOccurred())
 
-				queryVersion = atc.Version{"tag": "v1"}
+				queryVersion = types.Version{"tag": "v1"}
 			})
 
 			It("return the version md5", func() {

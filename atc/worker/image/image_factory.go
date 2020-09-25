@@ -2,9 +2,9 @@ package image
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/compression"
 	"github.com/concourse/concourse/atc/worker"
 	w "github.com/concourse/concourse/atc/worker"
@@ -34,7 +34,7 @@ func (f *imageFactory) GetImage(
 	imageSpec worker.ImageSpec,
 	teamID int,
 	delegate worker.ImageFetchingDelegate,
-	resourceTypes atc.VersionedResourceTypes,
+	resourceTypes types.VersionedResourceTypes,
 ) (worker.Image, error) {
 	if imageSpec.ImageArtifactSource != nil {
 		artifactVolume, existsOnWorker, err := imageSpec.ImageArtifactSource.ExistsOn(logger, worker)
@@ -86,7 +86,7 @@ func (f *imageFactory) GetImage(
 	}
 
 	if imageSpec.ImageResource != nil {
-		var version atc.Version
+		var version types.Version
 		version = imageSpec.ImageResource.Version
 
 		imageResourceFetcher := f.imageResourceFetcherFactory.NewImageResourceFetcher(

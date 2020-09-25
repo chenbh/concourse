@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 )
 
@@ -23,8 +23,8 @@ var ErrResourceCacheDisappeared = errors.New("resource-cache-disappeared")
 // ResourceCaches are garbage-collected by gc.ResourceCacheCollector.
 type ResourceCacheDescriptor struct {
 	ResourceConfigDescriptor ResourceConfigDescriptor // The resource configuration.
-	Version                  atc.Version              // The version of the resource.
-	Params                   atc.Params               // The params used when fetching the version.
+	Version                  types.Version            // The version of the resource.
+	Params                   types.Params             // The params used when fetching the version.
 }
 
 func (cache *ResourceCacheDescriptor) find(tx Tx, lockFactory lock.LockFactory, conn Conn) (UsedResourceCache, bool, error) {
@@ -165,12 +165,12 @@ func (cache *ResourceCacheDescriptor) version() string {
 	return string(j)
 }
 
-func paramsHash(p atc.Params) string {
+func paramsHash(p types.Params) string {
 	if p != nil {
 		return mapHash(p)
 	}
 
-	return mapHash(atc.Params{})
+	return mapHash(types.Params{})
 }
 
 // UsedResourceCache is created whenever a ResourceCache is Created and/or
@@ -189,7 +189,7 @@ func paramsHash(p atc.Params) string {
 
 type UsedResourceCache interface {
 	ID() int
-	Version() atc.Version
+	Version() types.Version
 
 	ResourceConfig() ResourceConfig
 
@@ -200,7 +200,7 @@ type UsedResourceCache interface {
 type usedResourceCache struct {
 	id             int
 	resourceConfig ResourceConfig
-	version        atc.Version
+	version        types.Version
 
 	lockFactory lock.LockFactory
 	conn        Conn
@@ -208,7 +208,7 @@ type usedResourceCache struct {
 
 func (cache *usedResourceCache) ID() int                        { return cache.id }
 func (cache *usedResourceCache) ResourceConfig() ResourceConfig { return cache.resourceConfig }
-func (cache *usedResourceCache) Version() atc.Version           { return cache.version }
+func (cache *usedResourceCache) Version() types.Version         { return cache.version }
 
 func (cache *usedResourceCache) Destroy(tx Tx) (bool, error) {
 	rows, err := psql.Delete("resource_caches").

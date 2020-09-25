@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -38,14 +39,14 @@ var _ = Describe("Pipelines API", func() {
 		publicPipeline.PublicReturns(true)
 		publicPipeline.TeamNameReturns("main")
 		publicPipeline.NameReturns("public-pipeline")
-		publicPipeline.GroupsReturns(atc.GroupConfigs{
+		publicPipeline.GroupsReturns(types.GroupConfigs{
 			{
 				Name:      "group2",
 				Jobs:      []string{"job3", "job4"},
 				Resources: []string{"resource3", "resource4"},
 			},
 		})
-		publicPipeline.DisplayReturns(&atc.DisplayConfig{
+		publicPipeline.DisplayReturns(&types.DisplayConfig{
 			BackgroundImage: "background.jpg",
 		})
 		publicPipeline.LastUpdatedReturns(time.Unix(1, 0))
@@ -65,7 +66,7 @@ var _ = Describe("Pipelines API", func() {
 		privatePipeline.ArchivedReturns(true)
 		privatePipeline.TeamNameReturns("main")
 		privatePipeline.NameReturns("private-pipeline")
-		privatePipeline.GroupsReturns(atc.GroupConfigs{
+		privatePipeline.GroupsReturns(types.GroupConfigs{
 			{
 				Name:      "group1",
 				Jobs:      []string{"job1", "job2"},
@@ -217,7 +218,7 @@ var _ = Describe("Pipelines API", func() {
 					body, err := ioutil.ReadAll(response.Body)
 					Expect(err).NotTo(HaveOccurred())
 
-					var pipelinesResponse []atc.Pipeline
+					var pipelinesResponse []types.Pipeline
 					err = json.Unmarshal(body, &pipelinesResponse)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(len(pipelinesResponse)).To(Equal(4))
@@ -384,7 +385,7 @@ var _ = Describe("Pipelines API", func() {
 			fakePipeline.PausedReturns(false)
 			fakePipeline.PublicReturns(true)
 			fakePipeline.TeamNameReturns("a-team")
-			fakePipeline.GroupsReturns(atc.GroupConfigs{
+			fakePipeline.GroupsReturns(types.GroupConfigs{
 				{
 					Name:      "group1",
 					Jobs:      []string{"job1", "job2"},
@@ -396,7 +397,7 @@ var _ = Describe("Pipelines API", func() {
 					Resources: []string{"resource3", "resource4"},
 				},
 			})
-			fakePipeline.DisplayReturns(&atc.DisplayConfig{
+			fakePipeline.DisplayReturns(&types.DisplayConfig{
 				BackgroundImage: "background.jpg",
 			})
 			fakePipeline.LastUpdatedReturns(time.Unix(1, 0))
@@ -1840,8 +1841,8 @@ var _ = Describe("Pipelines API", func() {
 		BeforeEach(func() {
 			plan = atc.Plan{
 				Task: &atc.TaskPlan{
-					Config: &atc.TaskConfig{
-						Run: atc.TaskRunConfig{
+					Config: &types.TaskConfig{
+						Run: types.TaskRunConfig{
 							Path: "ls",
 						},
 					},

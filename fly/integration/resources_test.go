@@ -2,9 +2,9 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -35,8 +35,8 @@ var _ = Describe("Fly CLI", func() {
 		})
 
 		Context("when resources are returned from the API", func() {
-			createResource := func(num int, pinnedVersion atc.Version, resourceType string) atc.Resource {
-				return atc.Resource{
+			createResource := func(num int, pinnedVersion types.Version, resourceType string) types.Resource {
+				return types.Resource{
 					Name:          fmt.Sprintf("resource-%d", num),
 					PinnedVersion: pinnedVersion,
 					Type:          resourceType,
@@ -49,9 +49,9 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/pipeline/resources"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Resource{
+						ghttp.RespondWithJSONEncoded(200, []types.Resource{
 							createResource(1, nil, "time"),
-							createResource(2, atc.Version{"some": "version"}, "custom"),
+							createResource(2, types.Version{"some": "version"}, "custom"),
 						}),
 					),
 				)

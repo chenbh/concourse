@@ -1,8 +1,8 @@
 package db_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,19 +18,19 @@ var _ = Describe("Resource Factory", func() {
 		var publicPipeline db.Pipeline
 
 		BeforeEach(func() {
-			otherTeam, err := teamFactory.CreateTeam(atc.Team{Name: "other-team"})
+			otherTeam, err := teamFactory.CreateTeam(types.Team{Name: "other-team"})
 			Expect(err).NotTo(HaveOccurred())
 
-			publicPipeline, _, err = otherTeam.SavePipeline("public-pipeline", atc.Config{
-				Resources: atc.ResourceConfigs{
+			publicPipeline, _, err = otherTeam.SavePipeline("public-pipeline", types.Config{
+				Resources: types.ResourceConfigs{
 					{Name: "public-pipeline-resource"},
 				},
 			}, db.ConfigVersion(0), false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(publicPipeline.Expose()).To(Succeed())
 
-			_, _, err = otherTeam.SavePipeline("private-pipeline", atc.Config{
-				Resources: atc.ResourceConfigs{
+			_, _, err = otherTeam.SavePipeline("private-pipeline", types.Config{
+				Resources: types.ResourceConfigs{
 					{Name: "private-pipeline-resource"},
 				},
 			}, db.ConfigVersion(0), false)

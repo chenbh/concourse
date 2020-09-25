@@ -1,8 +1,8 @@
 package gc_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/atc/gc"
+	"github.com/concourse/concourse/atc/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -65,9 +65,9 @@ var _ = Describe("BuildLogRetentionCalculator", func() {
 	})
 })
 
-func makeJob(retainAmount int, retainMinSuccessAmount, retainAmountDays int) atc.JobConfig {
-	return atc.JobConfig{
-		BuildLogRetention: &atc.BuildLogRetention{
+func makeJob(retainAmount int, retainMinSuccessAmount, retainAmountDays int) types.JobConfig {
+	return types.JobConfig{
+		BuildLogRetention: &types.BuildLogRetention{
 			Builds:                 retainAmount,
 			Days:                   retainAmountDays,
 			MinimumSucceededBuilds: retainMinSuccessAmount,

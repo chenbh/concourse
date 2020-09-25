@@ -2,8 +2,7 @@ package db
 
 import (
 	"fmt"
-
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 )
 
 type ResolutionFailure string
@@ -15,7 +14,7 @@ const (
 )
 
 type PinnedVersionNotFound struct {
-	PinnedVersion atc.Version
+	PinnedVersion types.Version
 }
 
 func (p PinnedVersionNotFound) String() ResolutionFailure {

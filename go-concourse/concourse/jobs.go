@@ -1,23 +1,23 @@
 package concourse
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/url"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/go-concourse/concourse/internal"
 	"github.com/tedsuo/rata"
 )
 
-func (team *team) ListJobs(pipelineName string) ([]atc.Job, error) {
+func (team *team) ListJobs(pipelineName string) ([]types.Job, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"team_name":     team.name,
 	}
 
-	var jobs []atc.Job
+	var jobs []types.Job
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListJobs,
+		RequestName: types.ListJobs,
 		Params:      params,
 	}, &internal.Response{
 		Result: &jobs,
@@ -26,10 +26,10 @@ func (team *team) ListJobs(pipelineName string) ([]atc.Job, error) {
 	return jobs, err
 }
 
-func (client *client) ListAllJobs() ([]atc.Job, error) {
-	var jobs []atc.Job
+func (client *client) ListAllJobs() ([]types.Job, error) {
+	var jobs []types.Job
 	err := client.connection.Send(internal.Request{
-		RequestName: atc.ListAllJobs,
+		RequestName: types.ListAllJobs,
 	}, &internal.Response{
 		Result: &jobs,
 	})
@@ -37,16 +37,16 @@ func (client *client) ListAllJobs() ([]atc.Job, error) {
 	return jobs, err
 }
 
-func (team *team) Job(pipelineName, jobName string) (atc.Job, bool, error) {
+func (team *team) Job(pipelineName, jobName string) (types.Job, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"job_name":      jobName,
 		"team_name":     team.name,
 	}
 
-	var job atc.Job
+	var job types.Job
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.GetJob,
+		RequestName: types.GetJob,
 		Params:      params,
 	}, &internal.Response{
 		Result: &job,
@@ -61,18 +61,18 @@ func (team *team) Job(pipelineName, jobName string) (atc.Job, bool, error) {
 	}
 }
 
-func (team *team) JobBuilds(pipelineName string, jobName string, page Page) ([]atc.Build, Pagination, bool, error) {
+func (team *team) JobBuilds(pipelineName string, jobName string, page Page) ([]types.Build, Pagination, bool, error) {
 	params := rata.Params{
 		"pipeline_name": pipelineName,
 		"job_name":      jobName,
 		"team_name":     team.name,
 	}
 
-	var builds []atc.Build
+	var builds []types.Build
 
 	headers := http.Header{}
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ListJobBuilds,
+		RequestName: types.ListJobBuilds,
 		Params:      params,
 		Query:       page.QueryParams(),
 	}, &internal.Response{
@@ -102,7 +102,7 @@ func (team *team) PauseJob(pipelineName string, jobName string) (bool, error) {
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.PauseJob,
+		RequestName: types.PauseJob,
 		Params:      params,
 	}, &internal.Response{})
 
@@ -124,7 +124,7 @@ func (team *team) UnpauseJob(pipelineName string, jobName string) (bool, error) 
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.UnpauseJob,
+		RequestName: types.UnpauseJob,
 		Params:      params,
 	}, &internal.Response{})
 
@@ -146,7 +146,7 @@ func (team *team) ScheduleJob(pipelineName string, jobName string) (bool, error)
 	}
 
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ScheduleJob,
+		RequestName: types.ScheduleJob,
 		Params:      params,
 	}, &internal.Response{})
 
@@ -170,17 +170,17 @@ func (team *team) ClearTaskCache(pipelineName string, jobName string, stepName s
 
 	queryParams := url.Values{}
 	if len(cachePath) > 0 {
-		queryParams.Add(atc.ClearTaskCacheQueryPath, cachePath)
+		queryParams.Add(types.ClearTaskCacheQueryPath, cachePath)
 	}
 
-	var ctcResponse atc.ClearTaskCacheResponse
+	var ctcResponse types.ClearTaskCacheResponse
 	responseHeaders := http.Header{}
 	response := internal.Response{
 		Headers: &responseHeaders,
 		Result:  &ctcResponse,
 	}
 	err := team.connection.Send(internal.Request{
-		RequestName: atc.ClearTaskCache,
+		RequestName: types.ClearTaskCache,
 		Params:      params,
 		Query:       queryParams,
 	}, &response)

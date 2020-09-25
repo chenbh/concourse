@@ -1,11 +1,11 @@
 package accessor_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -156,7 +156,7 @@ var _ = Describe("Accessor", func() {
 				BeforeEach(func() {
 					fakeTeam1.NameReturns("not-some-team")
 					fakeTeam1.AdminReturns(true)
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -184,7 +184,7 @@ var _ = Describe("Accessor", func() {
 
 			fakeTeam1.NameReturns("some-team")
 			fakeTeam1.AdminReturns(true)
-			fakeTeam1.AuthReturns(atc.TeamAuth{
+			fakeTeam1.AuthReturns(types.TeamAuth{
 				actualRole: map[string][]string{
 					"users": []string{"some-connector:some-user-id"},
 				},
@@ -231,7 +231,7 @@ var _ = Describe("Accessor", func() {
 
 			fakeTeam1.NameReturns("some-team")
 			fakeTeam1.AdminReturns(true)
-			fakeTeam1.AuthReturns(atc.TeamAuth{
+			fakeTeam1.AuthReturns(types.TeamAuth{
 				actualRole: map[string][]string{
 					"groups": []string{"some-connector:some-group"},
 				},
@@ -306,7 +306,7 @@ var _ = Describe("Accessor", func() {
 			Context("when the user is part of any admin team", func() {
 				BeforeEach(func() {
 					fakeTeam1.AdminReturns(true)
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -325,17 +325,17 @@ var _ = Describe("Accessor", func() {
 			Context("the team has the user configured", func() {
 
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam2.AuthReturns(atc.TeamAuth{
+					fakeTeam2.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam3.AuthReturns(atc.TeamAuth{
+					fakeTeam3.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -426,17 +426,17 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is a not on an admin team", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam2.AuthReturns(atc.TeamAuth{
+					fakeTeam2.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam3.AuthReturns(atc.TeamAuth{
+					fakeTeam3.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -451,7 +451,7 @@ var _ = Describe("Accessor", func() {
 			Context("when the user is a 'viewer' on an admin team", func() {
 				BeforeEach(func() {
 					fakeTeam1.AdminReturns(true)
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -466,7 +466,7 @@ var _ = Describe("Accessor", func() {
 			Context("when the user is a 'member' on an admin team", func() {
 				BeforeEach(func() {
 					fakeTeam1.AdminReturns(true)
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -481,7 +481,7 @@ var _ = Describe("Accessor", func() {
 			Context("when the user is a 'owner' on an admin team", func() {
 				BeforeEach(func() {
 					fakeTeam1.AdminReturns(true)
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -662,17 +662,17 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is granted a role from their user id", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam2.AuthReturns(atc.TeamAuth{
+					fakeTeam2.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
 					})
-					fakeTeam3.AuthReturns(atc.TeamAuth{
+					fakeTeam3.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -688,17 +688,17 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is granted a role from their user name", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-name"},
 						},
 					})
-					fakeTeam2.AuthReturns(atc.TeamAuth{
+					fakeTeam2.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"users": []string{"some-connector:some-user-name"},
 						},
 					})
-					fakeTeam3.AuthReturns(atc.TeamAuth{
+					fakeTeam3.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"users": []string{"some-connector:some-user-name"},
 						},
@@ -714,17 +714,17 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is granted a role from a group", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"groups": []string{"some-connector:some-group"},
 						},
 					})
-					fakeTeam2.AuthReturns(atc.TeamAuth{
+					fakeTeam2.AuthReturns(types.TeamAuth{
 						"member": map[string][]string{
 							"groups": []string{"some-connector:some-group"},
 						},
 					})
-					fakeTeam3.AuthReturns(atc.TeamAuth{
+					fakeTeam3.AuthReturns(types.TeamAuth{
 						"viewer": map[string][]string{
 							"groups": []string{"some-connector:some-group"},
 						},
@@ -740,7 +740,7 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is granted multiple roles on the same team", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users": []string{"some-connector:some-user-id"},
 						},
@@ -758,7 +758,7 @@ var _ = Describe("Accessor", func() {
 
 			Context("when the user is granted the same role multiple times", func() {
 				BeforeEach(func() {
-					fakeTeam1.AuthReturns(atc.TeamAuth{
+					fakeTeam1.AuthReturns(types.TeamAuth{
 						"owner": map[string][]string{
 							"users":  []string{"some-connector:some-user-id"},
 							"groups": []string{"some-connector:some-group"},

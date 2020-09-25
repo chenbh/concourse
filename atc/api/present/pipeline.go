@@ -1,12 +1,12 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func Pipeline(savedPipeline db.Pipeline) atc.Pipeline {
-	return atc.Pipeline{
+func Pipeline(savedPipeline db.Pipeline) types.Pipeline {
+	return types.Pipeline{
 		ID:          savedPipeline.ID(),
 		Name:        savedPipeline.Name(),
 		TeamName:    savedPipeline.TeamName(),

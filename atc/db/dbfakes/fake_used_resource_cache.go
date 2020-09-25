@@ -2,9 +2,9 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -52,15 +52,15 @@ type FakeUsedResourceCache struct {
 	resourceConfigReturnsOnCall map[int]struct {
 		result1 db.ResourceConfig
 	}
-	VersionStub        func() atc.Version
+	VersionStub        func() types.Version
 	versionMutex       sync.RWMutex
 	versionArgsForCall []struct {
 	}
 	versionReturns struct {
-		result1 atc.Version
+		result1 types.Version
 	}
 	versionReturnsOnCall map[int]struct {
-		result1 atc.Version
+		result1 types.Version
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -285,7 +285,7 @@ func (fake *FakeUsedResourceCache) ResourceConfigReturnsOnCall(i int, result1 db
 	}{result1}
 }
 
-func (fake *FakeUsedResourceCache) Version() atc.Version {
+func (fake *FakeUsedResourceCache) Version() types.Version {
 	fake.versionMutex.Lock()
 	ret, specificReturn := fake.versionReturnsOnCall[len(fake.versionArgsForCall)]
 	fake.versionArgsForCall = append(fake.versionArgsForCall, struct {
@@ -308,32 +308,32 @@ func (fake *FakeUsedResourceCache) VersionCallCount() int {
 	return len(fake.versionArgsForCall)
 }
 
-func (fake *FakeUsedResourceCache) VersionCalls(stub func() atc.Version) {
+func (fake *FakeUsedResourceCache) VersionCalls(stub func() types.Version) {
 	fake.versionMutex.Lock()
 	defer fake.versionMutex.Unlock()
 	fake.VersionStub = stub
 }
 
-func (fake *FakeUsedResourceCache) VersionReturns(result1 atc.Version) {
+func (fake *FakeUsedResourceCache) VersionReturns(result1 types.Version) {
 	fake.versionMutex.Lock()
 	defer fake.versionMutex.Unlock()
 	fake.VersionStub = nil
 	fake.versionReturns = struct {
-		result1 atc.Version
+		result1 types.Version
 	}{result1}
 }
 
-func (fake *FakeUsedResourceCache) VersionReturnsOnCall(i int, result1 atc.Version) {
+func (fake *FakeUsedResourceCache) VersionReturnsOnCall(i int, result1 types.Version) {
 	fake.versionMutex.Lock()
 	defer fake.versionMutex.Unlock()
 	fake.VersionStub = nil
 	if fake.versionReturnsOnCall == nil {
 		fake.versionReturnsOnCall = make(map[int]struct {
-			result1 atc.Version
+			result1 types.Version
 		})
 	}
 	fake.versionReturnsOnCall[i] = struct {
-		result1 atc.Version
+		result1 types.Version
 	}{result1}
 }
 

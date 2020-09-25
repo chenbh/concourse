@@ -2,8 +2,8 @@ package wrappa
 
 import (
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/metric"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/tedsuo/rata"
 )
 
@@ -22,7 +22,7 @@ func (wrappa APIMetricsWrappa) Wrap(handlers rata.Handlers) rata.Handlers {
 
 	for name, handler := range handlers {
 		switch name {
-		case atc.BuildEvents, atc.DownloadCLI, atc.HijackContainer:
+		case types.BuildEvents, types.DownloadCLI, types.HijackContainer:
 			wrapped[name] = handler
 		default:
 			wrapped[name] = metric.WrapHandler(

@@ -1,27 +1,27 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func Volume(volume db.CreatedVolume) (atc.Volume, error) {
+func Volume(volume db.CreatedVolume) (types.Volume, error) {
 	resourceType, err := volume.ResourceType()
 	if err != nil {
-		return atc.Volume{}, err
+		return types.Volume{}, err
 	}
 
 	baseResourceType, err := volume.BaseResourceType()
 	if err != nil {
-		return atc.Volume{}, err
+		return types.Volume{}, err
 	}
 
 	pipelineName, jobName, stepName, err := volume.TaskIdentifier()
 	if err != nil {
-		return atc.Volume{}, err
+		return types.Volume{}, err
 	}
 
-	return atc.Volume{
+	return types.Volume{
 		ID:               volume.Handle(),
 		Type:             string(volume.Type()),
 		WorkerName:       volume.WorkerName(),
@@ -36,13 +36,13 @@ func Volume(volume db.CreatedVolume) (atc.Volume, error) {
 	}, nil
 }
 
-func toVolumeResourceType(dbResourceType *db.VolumeResourceType) *atc.VolumeResourceType {
+func toVolumeResourceType(dbResourceType *db.VolumeResourceType) *types.VolumeResourceType {
 	if dbResourceType == nil {
 		return nil
 	}
 
 	if dbResourceType.WorkerBaseResourceType != nil {
-		return &atc.VolumeResourceType{
+		return &types.VolumeResourceType{
 			BaseResourceType: toVolumeBaseResourceType(dbResourceType.WorkerBaseResourceType),
 			Version:          dbResourceType.Version,
 		}
@@ -50,7 +50,7 @@ func toVolumeResourceType(dbResourceType *db.VolumeResourceType) *atc.VolumeReso
 
 	if dbResourceType.ResourceType != nil {
 		resourceType := toVolumeResourceType(dbResourceType.ResourceType)
-		return &atc.VolumeResourceType{
+		return &types.VolumeResourceType{
 			ResourceType: resourceType,
 			Version:      dbResourceType.Version,
 		}
@@ -59,12 +59,12 @@ func toVolumeResourceType(dbResourceType *db.VolumeResourceType) *atc.VolumeReso
 	return nil
 }
 
-func toVolumeBaseResourceType(dbResourceType *db.UsedWorkerBaseResourceType) *atc.VolumeBaseResourceType {
+func toVolumeBaseResourceType(dbResourceType *db.UsedWorkerBaseResourceType) *types.VolumeBaseResourceType {
 	if dbResourceType == nil {
 		return nil
 	}
 
-	return &atc.VolumeBaseResourceType{
+	return &types.VolumeBaseResourceType{
 		Name:    dbResourceType.Name,
 		Version: dbResourceType.Version,
 	}

@@ -1,11 +1,11 @@
 package gc
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 )
 
 type BuildLogRetentionCalculator interface {
-	BuildLogsToRetain(atc.JobConfig) atc.BuildLogRetention
+	BuildLogsToRetain(types.JobConfig) types.BuildLogRetention
 }
 
 type buildLogRetentionCalculator struct {
@@ -29,7 +29,7 @@ func NewBuildLogRetentionCalculator(
 	}
 }
 
-func (blrc *buildLogRetentionCalculator) BuildLogsToRetain(jobConfig atc.JobConfig) atc.BuildLogRetention {
+func (blrc *buildLogRetentionCalculator) BuildLogsToRetain(jobConfig types.JobConfig) types.BuildLogRetention {
 	// What does the job want?
 	var daysToRetainBuildLogs = 0
 	var buildLogsToRetain = 0
@@ -52,10 +52,10 @@ func (blrc *buildLogRetentionCalculator) BuildLogsToRetain(jobConfig atc.JobConf
 
 	// If we don't have a max set, then we're done
 	if blrc.maxBuildLogsToRetain == 0 && blrc.maxDaysToRetainBuildLogs == 0 {
-		return atc.BuildLogRetention{buildLogsToRetain, minSuccessBuildLogsToRetain, daysToRetainBuildLogs}
+		return types.BuildLogRetention{buildLogsToRetain, minSuccessBuildLogsToRetain, daysToRetainBuildLogs}
 	}
 
-	var logRetention atc.BuildLogRetention
+	var logRetention types.BuildLogRetention
 	// If we have a value set, and we're less than the max, then return
 	if buildLogsToRetain > 0 && buildLogsToRetain < int(blrc.maxBuildLogsToRetain) {
 		logRetention.Builds = buildLogsToRetain

@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 )
 
@@ -28,18 +28,18 @@ type Resource interface {
 	TeamID() int
 	TeamName() string
 	Type() string
-	Source() atc.Source
+	Source() types.Source
 	CheckEvery() string
 	CheckTimeout() string
 	LastCheckStartTime() time.Time
 	LastCheckEndTime() time.Time
-	Tags() atc.Tags
+	Tags() types.Tags
 	CheckSetupError() error
 	CheckError() error
 	WebhookToken() string
-	Config() atc.ResourceConfig
-	ConfigPinnedVersion() atc.Version
-	APIPinnedVersion() atc.Version
+	Config() types.ResourceConfig
+	ConfigPinnedVersion() types.Version
+	APIPinnedVersion() types.Version
 	PinComment() string
 	SetPinComment(string) error
 	ResourceConfigID() int
@@ -48,12 +48,12 @@ type Resource interface {
 
 	HasWebhook() bool
 
-	CurrentPinnedVersion() atc.Version
+	CurrentPinnedVersion() types.Version
 
-	ResourceConfigVersionID(atc.Version) (int, bool, error)
-	Versions(page Page, versionFilter atc.Version) ([]atc.ResourceVersion, Pagination, bool, error)
-	SaveUncheckedVersion(atc.Version, ResourceConfigMetadataFields, ResourceConfig, atc.VersionedResourceTypes) (bool, error)
-	UpdateMetadata(atc.Version, ResourceConfigMetadataFields) (bool, error)
+	ResourceConfigVersionID(types.Version) (int, bool, error)
+	Versions(page Page, versionFilter types.Version) ([]types.ResourceVersion, Pagination, bool, error)
+	SaveUncheckedVersion(types.Version, ResourceConfigMetadataFields, ResourceConfig, types.VersionedResourceTypes) (bool, error)
+	UpdateMetadata(types.Version, ResourceConfigMetadataFields) (bool, error)
 
 	EnableVersion(rcvID int) error
 	DisableVersion(rcvID int) error
@@ -61,7 +61,7 @@ type Resource interface {
 	PinVersion(rcvID int) (bool, error)
 	UnpinVersion() error
 
-	SetResourceConfig(atc.Source, atc.VersionedResourceTypes) (ResourceConfigScope, error)
+	SetResourceConfig(types.Source, types.VersionedResourceTypes) (ResourceConfigScope, error)
 	SetCheckSetupError(error) error
 	NotifyScan() error
 
@@ -107,9 +107,9 @@ type resource struct {
 	lastCheckEndTime      time.Time
 	checkSetupError       error
 	checkError            error
-	config                atc.ResourceConfig
-	configPinnedVersion   atc.Version
-	apiPinnedVersion      atc.Version
+	config                types.ResourceConfig
+	configPinnedVersion   types.Version
+	apiPinnedVersion      types.Version
 	pinComment            string
 	resourceConfigID      int
 	resourceConfigScopeID int
@@ -139,8 +139,8 @@ func (resources Resources) Lookup(name string) (Resource, bool) {
 	return nil, false
 }
 
-func (resources Resources) Configs() atc.ResourceConfigs {
-	var configs atc.ResourceConfigs
+func (resources Resources) Configs() types.ResourceConfigs {
+	var configs types.ResourceConfigs
 	for _, r := range resources {
 		configs = append(configs, r.Config())
 	}
@@ -152,20 +152,20 @@ func (r *resource) Name() string                     { return r.name }
 func (r *resource) Public() bool                     { return r.config.Public }
 func (r *resource) TeamID() int                      { return r.teamID }
 func (r *resource) TeamName() string                 { return r.teamName }
-func (r *resource) Type() string                     { return r.type_ }
-func (r *resource) Source() atc.Source               { return r.config.Source }
-func (r *resource) CheckEvery() string               { return r.config.CheckEvery }
+func (r *resource) Type() string                       { return r.type_ }
+func (r *resource) Source() types.Source               { return r.config.Source }
+func (r *resource) CheckEvery() string                 { return r.config.CheckEvery }
 func (r *resource) CheckTimeout() string             { return r.config.CheckTimeout }
 func (r *resource) LastCheckStartTime() time.Time    { return r.lastCheckStartTime }
 func (r *resource) LastCheckEndTime() time.Time      { return r.lastCheckEndTime }
-func (r *resource) Tags() atc.Tags                   { return r.config.Tags }
+func (r *resource) Tags() types.Tags                 { return r.config.Tags }
 func (r *resource) CheckSetupError() error           { return r.checkSetupError }
 func (r *resource) CheckError() error                { return r.checkError }
 func (r *resource) WebhookToken() string             { return r.config.WebhookToken }
-func (r *resource) Config() atc.ResourceConfig       { return r.config }
-func (r *resource) ConfigPinnedVersion() atc.Version { return r.configPinnedVersion }
-func (r *resource) APIPinnedVersion() atc.Version    { return r.apiPinnedVersion }
-func (r *resource) PinComment() string               { return r.pinComment }
+func (r *resource) Config() types.ResourceConfig       { return r.config }
+func (r *resource) ConfigPinnedVersion() types.Version { return r.configPinnedVersion }
+func (r *resource) APIPinnedVersion() types.Version    { return r.apiPinnedVersion }
+func (r *resource) PinComment() string                 { return r.pinComment }
 func (r *resource) ResourceConfigID() int            { return r.resourceConfigID }
 func (r *resource) ResourceConfigScopeID() int       { return r.resourceConfigScopeID }
 func (r *resource) Icon() string                     { return r.config.Icon }
@@ -188,7 +188,7 @@ func (r *resource) Reload() (bool, error) {
 	return true, nil
 }
 
-func (r *resource) SetResourceConfig(source atc.Source, resourceTypes atc.VersionedResourceTypes) (ResourceConfigScope, error) {
+func (r *resource) SetResourceConfig(source types.Source, resourceTypes types.VersionedResourceTypes) (ResourceConfigScope, error) {
 	resourceConfigDescriptor, err := constructResourceConfigDescriptor(r.type_, source, resourceTypes)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (r *resource) SetCheckSetupError(cause error) error {
 }
 
 // XXX: only used for tests
-func (r *resource) SaveUncheckedVersion(version atc.Version, metadata ResourceConfigMetadataFields, resourceConfig ResourceConfig, resourceTypes atc.VersionedResourceTypes) (bool, error) {
+func (r *resource) SaveUncheckedVersion(version types.Version, metadata ResourceConfigMetadataFields, resourceConfig ResourceConfig, resourceTypes types.VersionedResourceTypes) (bool, error) {
 	tx, err := r.conn.Begin()
 	if err != nil {
 		return false, err
@@ -302,7 +302,7 @@ func (r *resource) SaveUncheckedVersion(version atc.Version, metadata ResourceCo
 	return newVersion, tx.Commit()
 }
 
-func (r *resource) UpdateMetadata(version atc.Version, metadata ResourceConfigMetadataFields) (bool, error) {
+func (r *resource) UpdateMetadata(version types.Version, metadata ResourceConfigMetadataFields) (bool, error) {
 	versionJSON, err := json.Marshal(version)
 	if err != nil {
 		return false, err
@@ -333,7 +333,7 @@ func (r *resource) UpdateMetadata(version atc.Version, metadata ResourceConfigMe
 	return true, nil
 }
 
-func (r *resource) ResourceConfigVersionID(version atc.Version) (int, bool, error) {
+func (r *resource) ResourceConfigVersionID(version types.Version) (int, bool, error) {
 	requestedVersion, err := json.Marshal(version)
 	if err != nil {
 		return 0, false, err
@@ -372,7 +372,7 @@ func (r *resource) SetPinComment(comment string) error {
 	return err
 }
 
-func (r *resource) CurrentPinnedVersion() atc.Version {
+func (r *resource) CurrentPinnedVersion() types.Version {
 	if r.configPinnedVersion != nil {
 		return r.configPinnedVersion
 	} else if r.apiPinnedVersion != nil {
@@ -381,7 +381,7 @@ func (r *resource) CurrentPinnedVersion() atc.Version {
 	return nil
 }
 
-func (r *resource) Versions(page Page, versionFilter atc.Version) ([]atc.ResourceVersion, Pagination, bool, error) {
+func (r *resource) Versions(page Page, versionFilter types.Version) ([]types.ResourceVersion, Pagination, bool, error) {
 	tx, err := r.conn.Begin()
 	if err != nil {
 		return nil, Pagination{}, false, err
@@ -458,7 +458,7 @@ func (r *resource) Versions(page Page, versionFilter atc.Version) ([]atc.Resourc
 		CheckOrder              int
 	}
 
-	rvs := make([]atc.ResourceVersion, 0)
+	rvs := make([]types.ResourceVersion, 0)
 	checkOrderRVs := make([]rcvCheckOrder, 0)
 	for rows.Next() {
 		var (
@@ -467,7 +467,7 @@ func (r *resource) Versions(page Page, versionFilter atc.Version) ([]atc.Resourc
 			checkOrder    int
 		)
 
-		rv := atc.ResourceVersion{}
+		rv := types.ResourceVersion{}
 		err := rows.Scan(&rv.ID, &versionBytes, &metadataBytes, &checkOrder, &rv.Enabled)
 		if err != nil {
 			return nil, Pagination{}, false, err
@@ -732,11 +732,11 @@ func scanResource(r *resource, row scannable) error {
 			return err
 		}
 	} else {
-		r.config = atc.ResourceConfig{}
+		r.config = types.ResourceConfig{}
 	}
 
 	if pinnedVersion.Valid {
-		var version atc.Version
+		var version types.Version
 		err = json.Unmarshal([]byte(pinnedVersion.String), &version)
 		if err != nil {
 			return err

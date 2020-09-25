@@ -3,6 +3,7 @@ package hijacker
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 	"os"
@@ -84,7 +85,7 @@ func (h *Hijacker) Hijack(teamName, handle string, spec atc.HijackProcessSpec, p
 
 func (h *Hijacker) hijackRequestParts(teamName, handle string) (string, http.Header, error) {
 	hijackReq, err := h.requestGenerator.CreateRequest(
-		atc.HijackContainer,
+		types.HijackContainer,
 		rata.Params{"id": handle, "team_name": teamName},
 		nil,
 	)

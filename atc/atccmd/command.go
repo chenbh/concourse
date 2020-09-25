@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -1402,8 +1403,8 @@ func (cmd *RunCommand) tlsConfig(logger lager.Logger, dbConn db.Conn) (*tls.Conf
 	return tlsConfig, nil
 }
 
-func (cmd *RunCommand) parseDefaultLimits() (atc.ContainerLimits, error) {
-	return atc.ParseContainerLimits(map[string]interface{}{
+func (cmd *RunCommand) parseDefaultLimits() (types.ContainerLimits, error) {
+	return types.ParseContainerLimits(map[string]interface{}{
 		"cpu":    cmd.DefaultCpuLimit,
 		"memory": cmd.DefaultMemoryLimit,
 	})
@@ -1578,7 +1579,7 @@ func (cmd *RunCommand) chooseBuildContainerStrategy() (worker.ContainerPlacement
 }
 
 func (cmd *RunCommand) configureAuthForDefaultTeam(teamFactory db.TeamFactory) error {
-	team, found, err := teamFactory.FindTeam(atc.DefaultTeamName)
+	team, found, err := teamFactory.FindTeam(types.DefaultTeamName)
 	if err != nil {
 		return err
 	}
@@ -1609,7 +1610,7 @@ func (cmd *RunCommand) constructEngine(
 	resourceCacheFactory db.ResourceCacheFactory,
 	resourceConfigFactory db.ResourceConfigFactory,
 	secretManager creds.Secrets,
-	defaultLimits atc.ContainerLimits,
+	defaultLimits types.ContainerLimits,
 	strategy worker.ContainerPlacementStrategy,
 	lockFactory lock.LockFactory,
 ) engine.Engine {

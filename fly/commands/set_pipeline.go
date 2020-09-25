@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/commands/internal/setpipelinehelpers"
 	"github.com/concourse/concourse/fly/commands/internal/templatehelpers"
@@ -30,7 +31,7 @@ type SetPipelineCommand struct {
 func (command *SetPipelineCommand) Validate() ([]concourse.ConfigWarning, error) {
 	warnings, err := command.Pipeline.Validate()
 	if command.Team != "" {
-		if warning := atc.ValidateIdentifier(command.Team, "team"); warning != nil {
+		if warning := types.ValidateIdentifier(command.Team, "team"); warning != nil {
 			warnings = append(warnings, concourse.ConfigWarning{
 				Type:    warning.Type,
 				Message: warning.Message,

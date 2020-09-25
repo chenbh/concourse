@@ -3,10 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 	"github.com/lib/pq"
 )
@@ -24,8 +24,8 @@ func (e ErrCustomResourceTypeVersionNotFound) Error() string {
 type ResourceConfigFactory interface {
 	FindOrCreateResourceConfig(
 		resourceType string,
-		source atc.Source,
-		resourceTypes atc.VersionedResourceTypes,
+		source types.Source,
+		resourceTypes types.VersionedResourceTypes,
 	) (ResourceConfig, error)
 
 	FindResourceConfigByID(int) (ResourceConfig, bool, error)
@@ -71,8 +71,8 @@ func (f *resourceConfigFactory) FindResourceConfigByID(resourceConfigID int) (Re
 
 func (f *resourceConfigFactory) FindOrCreateResourceConfig(
 	resourceType string,
-	source atc.Source,
-	resourceTypes atc.VersionedResourceTypes,
+	source types.Source,
+	resourceTypes types.VersionedResourceTypes,
 ) (ResourceConfig, error) {
 
 	resourceConfigDescriptor, err := constructResourceConfigDescriptor(resourceType, source, resourceTypes)
@@ -104,8 +104,8 @@ func (f *resourceConfigFactory) FindOrCreateResourceConfig(
 // resource types, because that results in a circular dependency.
 func constructResourceConfigDescriptor(
 	resourceTypeName string,
-	source atc.Source,
-	resourceTypes atc.VersionedResourceTypes,
+	source types.Source,
+	resourceTypes types.VersionedResourceTypes,
 ) (ResourceConfigDescriptor, error) {
 	resourceConfigDescriptor := ResourceConfigDescriptor{
 		Source: source,

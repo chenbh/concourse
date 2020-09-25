@@ -2,6 +2,7 @@ package concourse_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"github.com/concourse/concourse/atc"
@@ -250,15 +251,15 @@ var _ = Describe("ATC Handler Pipelines", func() {
 	})
 
 	Describe("Pipeline", func() {
-		var expectedPipeline atc.Pipeline
+		var expectedPipeline types.Pipeline
 		pipelineName := "mypipeline"
 		expectedURL := "/api/v1/teams/some-team/pipelines/mypipeline"
 
 		BeforeEach(func() {
-			expectedPipeline = atc.Pipeline{
+			expectedPipeline = types.Pipeline{
 				Name:   "mypipeline",
 				Paused: true,
-				Groups: []atc.GroupConfig{
+				Groups: []types.GroupConfig{
 					{
 						Name:      "group1",
 						Jobs:      []string{"job1", "job2"},
@@ -305,16 +306,16 @@ var _ = Describe("ATC Handler Pipelines", func() {
 	})
 
 	Describe("team.ListPipelines", func() {
-		var expectedPipelines []atc.Pipeline
+		var expectedPipelines []types.Pipeline
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/teams/some-team/pipelines"
 
-			expectedPipelines = []atc.Pipeline{
+			expectedPipelines = []types.Pipeline{
 				{
 					Name:   "mypipeline-1",
 					Paused: true,
-					Groups: []atc.GroupConfig{
+					Groups: []types.GroupConfig{
 						{
 							Name:      "group1",
 							Jobs:      []string{"job1", "job2"},
@@ -325,7 +326,7 @@ var _ = Describe("ATC Handler Pipelines", func() {
 				{
 					Name:   "mypipeline-2",
 					Paused: false,
-					Groups: []atc.GroupConfig{
+					Groups: []types.GroupConfig{
 						{
 							Name:      "group2",
 							Jobs:      []string{"job3", "job4"},
@@ -351,16 +352,16 @@ var _ = Describe("ATC Handler Pipelines", func() {
 	})
 
 	Describe("client.ListPipelines", func() {
-		var expectedPipelines []atc.Pipeline
+		var expectedPipelines []types.Pipeline
 
 		BeforeEach(func() {
 			expectedURL := "/api/v1/pipelines"
 
-			expectedPipelines = []atc.Pipeline{
+			expectedPipelines = []types.Pipeline{
 				{
 					Name:   "mypipeline-1",
 					Paused: true,
-					Groups: []atc.GroupConfig{
+					Groups: []types.GroupConfig{
 						{
 							Name:      "group1",
 							Jobs:      []string{"job1", "job2"},
@@ -371,7 +372,7 @@ var _ = Describe("ATC Handler Pipelines", func() {
 				{
 					Name:   "mypipeline-2",
 					Paused: false,
-					Groups: []atc.GroupConfig{
+					Groups: []types.GroupConfig{
 						{
 							Name:      "group2",
 							Jobs:      []string{"job3", "job4"},
@@ -442,15 +443,15 @@ var _ = Describe("ATC Handler Pipelines", func() {
 		var (
 			expectedURL         string
 			expectedRequestBody string
-			expectedResponse    atc.SaveConfigResponse
+			expectedResponse    types.SaveConfigResponse
 		)
 
 		BeforeEach(func() {
 			expectedURL = "/api/v1/teams/some-team/pipelines/mypipeline/rename"
 			expectedRequestBody = `{"name":"newpipelinename"}`
-			expectedResponse = atc.SaveConfigResponse{
+			expectedResponse = types.SaveConfigResponse{
 				Errors:   nil,
-				Warnings: []atc.ConfigWarning{},
+				Warnings: []types.ConfigWarning{},
 			}
 		})
 
@@ -475,9 +476,9 @@ var _ = Describe("ATC Handler Pipelines", func() {
 
 				BeforeEach(func() {
 					expectedRequestBody = `{"name":"_newpipelinename"}`
-					expectedResponse = atc.SaveConfigResponse{
+					expectedResponse = types.SaveConfigResponse{
 						Errors: nil,
-						Warnings: []atc.ConfigWarning{
+						Warnings: []types.ConfigWarning{
 							{
 								Type:    "invalid_identifier",
 								Message: "pipeline: '_newpipelinename' is not a valid identifier",
@@ -530,7 +531,7 @@ var _ = Describe("ATC Handler Pipelines", func() {
 
 		var (
 			plan          atc.Plan
-			expectedBuild atc.Build
+			expectedBuild types.Build
 		)
 		Context("When the build is created", func() {
 			BeforeEach(func() {
@@ -544,13 +545,13 @@ var _ = Describe("ATC Handler Pipelines", func() {
 							Task: &atc.TaskPlan{
 								Name:       "one-off",
 								Privileged: true,
-								Config:     &atc.TaskConfig{},
+								Config:     &types.TaskConfig{},
 							},
 						},
 					},
 				}
 
-				expectedBuild = atc.Build{
+				expectedBuild = types.Build{
 					ID:           123,
 					Name:         "mybuild",
 					Status:       "succeeded",
@@ -575,13 +576,13 @@ var _ = Describe("ATC Handler Pipelines", func() {
 
 	Describe("PipelineBuilds", func() {
 		var (
-			expectedBuilds []atc.Build
+			expectedBuilds []types.Build
 			expectedURL    string
 			expectedQuery  string
 		)
 
 		BeforeEach(func() {
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					Name: "some-build",
 				},

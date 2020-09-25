@@ -1,6 +1,7 @@
 package present
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 
 	"github.com/concourse/concourse/atc"
@@ -10,8 +11,8 @@ import (
 func DashboardJob(
 	teamName string,
 	job atc.DashboardJob,
-) atc.Job {
-	var presentedNextBuild, presentedFinishedBuild, presentedTransitionBuild *atc.Build
+) types.Job {
+	var presentedNextBuild, presentedFinishedBuild, presentedTransitionBuild *types.Build
 
 	if job.NextBuild != nil {
 		presented := DashboardBuild(*job.NextBuild)
@@ -28,9 +29,9 @@ func DashboardJob(
 		presentedTransitionBuild = &presented
 	}
 
-	sanitizedInputs := []atc.JobInput{}
+	sanitizedInputs := []types.JobInput{}
 	for _, input := range job.Inputs {
-		sanitizedInputs = append(sanitizedInputs, atc.JobInput{
+		sanitizedInputs = append(sanitizedInputs, types.JobInput{
 			Name:     input.Name,
 			Resource: input.Resource,
 			Passed:   input.Passed,
@@ -38,7 +39,7 @@ func DashboardJob(
 		})
 	}
 
-	return atc.Job{
+	return types.Job{
 		ID: job.ID,
 
 		Name:         job.Name,
@@ -58,8 +59,8 @@ func DashboardJob(
 	}
 }
 
-func DashboardBuild(build atc.DashboardBuild) atc.Build {
-	apiURL, err := atc.Routes.CreatePathForRoute(atc.GetBuild, rata.Params{
+func DashboardBuild(build atc.DashboardBuild) types.Build {
+	apiURL, err := types.Routes.CreatePathForRoute(types.GetBuild, rata.Params{
 		"build_id":  strconv.Itoa(build.ID),
 		"team_name": build.TeamName,
 	})
@@ -67,7 +68,7 @@ func DashboardBuild(build atc.DashboardBuild) atc.Build {
 		panic("failed to generate url: " + err.Error())
 	}
 
-	atcBuild := atc.Build{
+	atcBuild := types.Build{
 		ID:           build.ID,
 		Name:         build.Name,
 		JobName:      build.JobName,

@@ -6,11 +6,11 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/scheduler/algorithm"
 	. "github.com/onsi/ginkgo"
@@ -59,22 +59,22 @@ var _ = Describe("Resolve", func() {
 		}
 
 		// setup team 1 and pipeline 1
-		team, err := teamFactory.CreateTeam(atc.Team{Name: "algorithm"})
+		team, err := teamFactory.CreateTeam(types.Team{Name: "algorithm"})
 		Expect(err).NotTo(HaveOccurred())
 
-		pipeline, _, err := team.SavePipeline("algorithm", atc.Config{
-			Resources: atc.ResourceConfigs{
+		pipeline, _, err := team.SavePipeline("algorithm", types.Config{
+			Resources: types.ResourceConfigs{
 				{
 					Name: "r1",
 					Type: "r1-type",
 				},
 			},
-			Jobs: atc.JobConfigs{
+			Jobs: types.JobConfigs{
 				{
 					Name: "j1",
-					PlanSequence: []atc.Step{
+					PlanSequence: []types.Step{
 						{
-							Config: &atc.GetStep{
+							Config: &types.GetStep{
 								Name:     "some-input",
 								Resource: "r1",
 							},
@@ -96,7 +96,7 @@ var _ = Describe("Resolve", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(setupTx.Commit()).To(Succeed())
 
-		resources := map[string]atc.ResourceConfig{}
+		resources := map[string]types.ResourceConfig{}
 
 		// insert two jobs
 		setup.insertJob("j1")
@@ -133,7 +133,7 @@ var _ = Describe("Resolve", func() {
 				Disabled:   false,
 			})
 
-			versionJSON, err := json.Marshal(atc.Version{"ver": buildOutput.Version})
+			versionJSON, err := json.Marshal(types.Version{"ver": buildOutput.Version})
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceID := setup.resourceIDs.ID(buildOutput.ResourceName)
@@ -170,7 +170,7 @@ var _ = Describe("Resolve", func() {
 				Disabled:   false,
 			})
 
-			versionJSON, err := json.Marshal(atc.Version{"ver": buildInput.Version})
+			versionJSON, err := json.Marshal(types.Version{"ver": buildInput.Version})
 			Expect(err).ToNot(HaveOccurred())
 
 			resourceID := setup.resourceIDs.ID(buildInput.ResourceName)
@@ -504,7 +504,7 @@ var _ = Describe("Resolve", func() {
 })
 
 func convertToMD5(version string) string {
-	versionJSON, err := json.Marshal(atc.Version{"ver": version})
+	versionJSON, err := json.Marshal(types.Version{"ver": version})
 	Expect(err).ToNot(HaveOccurred())
 
 	hasher := md5.New()

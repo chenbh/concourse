@@ -3,6 +3,7 @@ package db_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -32,7 +33,7 @@ var _ = Describe("CheckFactory", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(setupTx.Commit()).To(Succeed())
 
-		resourceConfigScope, err = defaultResource.SetResourceConfig(atc.Source{"some": "repository"}, atc.VersionedResourceTypes{})
+		resourceConfigScope, err = defaultResource.SetResourceConfig(types.Source{"some": "repository"}, types.VersionedResourceTypes{})
 		Expect(err).NotTo(HaveOccurred())
 
 		metadata = db.CheckMetadata{
@@ -83,17 +84,17 @@ var _ = Describe("CheckFactory", func() {
 			fakeResource      *dbfakes.FakeResource
 			fakeResourceType  *dbfakes.FakeResourceType
 			fakeResourceTypes []db.ResourceType
-			fromVersion       atc.Version
+			fromVersion       types.Version
 			manuallyTriggered bool
 		)
 
 		BeforeEach(func() {
-			fromVersion = atc.Version{"from": "version"}
+			fromVersion = types.Version{"from": "version"}
 
 			fakeResource = new(dbfakes.FakeResource)
 			fakeResource.NameReturns("some-name")
 			fakeResource.TagsReturns([]string{"tag-a", "tag-b"})
-			fakeResource.SourceReturns(atc.Source{"some": "source"})
+			fakeResource.SourceReturns(types.Source{"some": "source"})
 			fakeResource.PipelineIDReturns(defaultPipeline.ID())
 			fakeResource.PipelineNameReturns(defaultPipeline.Name())
 			fakeResource.PipelineReturns(defaultPipeline, true, nil)
@@ -102,7 +103,7 @@ var _ = Describe("CheckFactory", func() {
 			fakeResourceType.NameReturns("some-type")
 			fakeResourceType.TypeReturns("some-base-type")
 			fakeResourceType.TagsReturns([]string{"some-tag"})
-			fakeResourceType.SourceReturns(atc.Source{"some": "type-source"})
+			fakeResourceType.SourceReturns(types.Source{"some": "type-source"})
 			fakeResourceType.PipelineIDReturns(defaultPipeline.ID())
 			fakeResourceType.PipelineNameReturns(defaultPipeline.Name())
 			fakeResourceType.PipelineReturns(defaultPipeline, true, nil)
@@ -137,7 +138,7 @@ var _ = Describe("CheckFactory", func() {
 
 				Context("when evaluating the source fails", func() {
 					BeforeEach(func() {
-						fakeResource.SourceReturns(atc.Source{"some": "((secret))"})
+						fakeResource.SourceReturns(types.Source{"some": "((secret))"})
 						fakeSecrets.GetReturns("", nil, false, nil)
 					})
 
@@ -148,13 +149,13 @@ var _ = Describe("CheckFactory", func() {
 
 				Context("when evaluating the source succeeds", func() {
 					BeforeEach(func() {
-						fakeResource.SourceReturns(atc.Source{"some": "((secret))"})
+						fakeResource.SourceReturns(types.Source{"some": "((secret))"})
 						fakeSecrets.GetReturns("source", nil, true, nil)
 					})
 
 					Context("when evaluating the resource types source fails", func() {
 						BeforeEach(func() {
-							fakeResourceType.SourceReturns(atc.Source{"some": "((other-secret))"})
+							fakeResourceType.SourceReturns(types.Source{"some": "((other-secret))"})
 							fakeSecrets.GetReturns("", nil, false, nil)
 						})
 
@@ -165,7 +166,7 @@ var _ = Describe("CheckFactory", func() {
 
 					Context("when evaluating the resource types source succeeds", func() {
 						BeforeEach(func() {
-							fakeResourceType.SourceReturns(atc.Source{"some": "((other-secret))"})
+							fakeResourceType.SourceReturns(types.Source{"some": "((other-secret))"})
 							fakeSecrets.GetReturns("source", nil, true, nil)
 						})
 
@@ -186,7 +187,7 @@ var _ = Describe("CheckFactory", func() {
 
 							Context("when fromVersion is not nil", func() {
 								BeforeEach(func() {
-									fromVersion = atc.Version{"version": "a"}
+									fromVersion = types.Version{"version": "a"}
 								})
 
 								It("creates a check", func() {
@@ -196,10 +197,10 @@ var _ = Describe("CheckFactory", func() {
 								})
 
 								It("creates a plan with a version", func() {
-									Expect(check.Plan().Check.FromVersion).To(Equal(atc.Version{"version": "a"}))
+									Expect(check.Plan().Check.FromVersion).To(Equal(types.Version{"version": "a"}))
 									Expect(check.Plan().Check.Name).To(Equal("some-name"))
 									Expect(check.Plan().Check.Type).To(Equal("base-type"))
-									Expect(check.Plan().Check.Source).To(Equal(atc.Source{"some": "((secret))"}))
+									Expect(check.Plan().Check.Source).To(Equal(types.Source{"some": "((secret))"}))
 									Expect(check.Plan().Check.Tags).To(ConsistOf("tag-a", "tag-b"))
 									Expect(check.Plan().Check.Timeout).To(Equal("10s"))
 								})
@@ -226,7 +227,7 @@ var _ = Describe("CheckFactory", func() {
 										Expect(check.Plan().Check.FromVersion).To(BeNil())
 										Expect(check.Plan().Check.Name).To(Equal("some-name"))
 										Expect(check.Plan().Check.Type).To(Equal("base-type"))
-										Expect(check.Plan().Check.Source).To(Equal(atc.Source{"some": "((secret))"}))
+										Expect(check.Plan().Check.Source).To(Equal(types.Source{"some": "((secret))"}))
 										Expect(check.Plan().Check.Tags).To(ConsistOf("tag-a", "tag-b"))
 										Expect(check.Plan().Check.Timeout).To(Equal("10s"))
 									})
@@ -235,7 +236,7 @@ var _ = Describe("CheckFactory", func() {
 								Context("when fetching the latest version returns a version", func() {
 
 									BeforeEach(func() {
-										err = resourceConfigScope.SaveVersions(nil, []atc.Version{{"some": "version"}})
+										err = resourceConfigScope.SaveVersions(nil, []types.Version{{"some": "version"}})
 										Expect(err).NotTo(HaveOccurred())
 									})
 
@@ -246,10 +247,10 @@ var _ = Describe("CheckFactory", func() {
 									})
 
 									It("creates a plan with a version", func() {
-										Expect(check.Plan().Check.FromVersion).To(Equal(atc.Version{"some": "version"}))
+										Expect(check.Plan().Check.FromVersion).To(Equal(types.Version{"some": "version"}))
 										Expect(check.Plan().Check.Name).To(Equal("some-name"))
 										Expect(check.Plan().Check.Type).To(Equal("base-type"))
-										Expect(check.Plan().Check.Source).To(Equal(atc.Source{"some": "((secret))"}))
+										Expect(check.Plan().Check.Source).To(Equal(types.Source{"some": "((secret))"}))
 										Expect(check.Plan().Check.Tags).To(ConsistOf("tag-a", "tag-b"))
 										Expect(check.Plan().Check.Timeout).To(Equal("10s"))
 									})
@@ -290,7 +291,7 @@ var _ = Describe("CheckFactory", func() {
 
 				Context("when the parent type has a version", func() {
 					BeforeEach(func() {
-						fakeResourceType.VersionReturns(atc.Version{"some": "version"})
+						fakeResourceType.VersionReturns(types.Version{"some": "version"})
 					})
 
 					It("creates a check", func() {
@@ -300,10 +301,10 @@ var _ = Describe("CheckFactory", func() {
 					})
 
 					It("creates a plan for the resource", func() {
-						Expect(check.Plan().Check.FromVersion).To(Equal(atc.Version{"from": "version"}))
+						Expect(check.Plan().Check.FromVersion).To(Equal(types.Version{"from": "version"}))
 						Expect(check.Plan().Check.Name).To(Equal("some-name"))
 						Expect(check.Plan().Check.Type).To(Equal("custom-type"))
-						Expect(check.Plan().Check.Source).To(Equal(atc.Source{"some": "source"}))
+						Expect(check.Plan().Check.Source).To(Equal(types.Source{"some": "source"}))
 						Expect(check.Plan().Check.Tags).To(ConsistOf("tag-a", "tag-b"))
 						Expect(check.Plan().Check.Timeout).To(Equal("1m0s"))
 					})
@@ -429,19 +430,19 @@ var _ = Describe("CheckFactory", func() {
 			var nonManuallyTriggeredCheck, manuallyTriggeredCheck db.Check
 
 			BeforeEach(func() {
-				defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", atc.Config{
-					Resources: atc.ResourceConfigs{
+				defaultPipeline, _, err = defaultTeam.SavePipeline("default-pipeline", types.Config{
+					Resources: types.ResourceConfigs{
 						{
 							Name: "some-resource",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some": "source",
 							},
 						},
 						{
 							Name: "some-other-resource",
 							Type: "some-base-resource-type",
-							Source: atc.Source{
+							Source: types.Source{
 								"some": "other-source",
 							},
 						},
@@ -457,10 +458,10 @@ var _ = Describe("CheckFactory", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(found).To(BeTrue())
 
-				resourceConfigScope, err := resource.SetResourceConfig(atc.Source{"some": "source"}, atc.VersionedResourceTypes{})
+				resourceConfigScope, err := resource.SetResourceConfig(types.Source{"some": "source"}, types.VersionedResourceTypes{})
 				Expect(err).NotTo(HaveOccurred())
 
-				otherResourceConfigScope, err := otherResource.SetResourceConfig(atc.Source{"some": "other-source"}, atc.VersionedResourceTypes{})
+				otherResourceConfigScope, err := otherResource.SetResourceConfig(types.Source{"some": "other-source"}, types.VersionedResourceTypes{})
 				Expect(err).NotTo(HaveOccurred())
 
 				var created bool

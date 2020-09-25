@@ -3,9 +3,9 @@ package gc_test
 import (
 	"context"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -43,12 +43,12 @@ var _ = Describe("ResourceCacheCollector", func() {
 				oneOffCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 					db.ForBuild(oneOffBuild.ID()),
 					"some-base-type",
-					atc.Version{"some": "version"},
-					atc.Source{
+					types.Version{"some": "version"},
+					types.Source{
 						"some": "source",
 					},
 					nil,
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -58,12 +58,12 @@ var _ = Describe("ResourceCacheCollector", func() {
 				jobCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 					db.ForBuild(jobBuild.ID()),
 					"some-base-type",
-					atc.Version{"some": "version"},
-					atc.Source{
+					types.Version{"some": "version"},
+					types.Source{
 						"some": "source",
 					},
 					nil,
-					atc.VersionedResourceTypes{},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -73,10 +73,10 @@ var _ = Describe("ResourceCacheCollector", func() {
 				Expect(found).To(BeTrue())
 
 				_, err = resource.SetResourceConfig(
-					atc.Source{
+					types.Source{
 						"some": "source",
 					},
-					atc.VersionedResourceTypes{})
+					types.VersionedResourceTypes{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -174,12 +174,12 @@ var _ = Describe("ResourceCacheCollector", func() {
 							secondJobCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 								db.ForBuild(secondJobBuild.ID()),
 								"some-base-type",
-								atc.Version{"some": "new-version"},
-								atc.Source{
+								types.Version{"some": "new-version"},
+								types.Source{
 									"some": "source",
 								},
 								nil,
-								atc.VersionedResourceTypes{},
+								types.VersionedResourceTypes{},
 							)
 							Expect(err).NotTo(HaveOccurred())
 
@@ -224,12 +224,12 @@ var _ = Describe("ResourceCacheCollector", func() {
 							secondJobCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 								db.ForBuild(secondJobBuild.ID()),
 								"some-base-type",
-								atc.Version{"some": "new-version"},
-								atc.Source{
+								types.Version{"some": "new-version"},
+								types.Source{
 									"some": "source",
 								},
 								nil,
-								atc.VersionedResourceTypes{},
+								types.VersionedResourceTypes{},
 							)
 							Expect(err).NotTo(HaveOccurred())
 

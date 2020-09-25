@@ -2,9 +2,9 @@ package topgun_test
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"golang.org/x/oauth2"
 
 	_ "github.com/lib/pq"
@@ -62,7 +62,7 @@ var _ = Describe("Multiple ATCs Login Session Test", func() {
 				response, err := client.Do(request)
 				Expect(err).NotTo(HaveOccurred())
 
-				var workers []atc.Worker
+				var workers []types.Worker
 				err = json.NewDecoder(response.Body).Decode(&workers)
 				Expect(err).NotTo(HaveOccurred())
 			})

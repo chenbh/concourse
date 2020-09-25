@@ -3,12 +3,12 @@ package api_test
 import (
 	"bytes"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
 	. "github.com/concourse/concourse/atc/testhelpers"
@@ -84,9 +84,9 @@ var _ = Describe("Volumes API", func() {
 										Name:    "some-base-resource-type",
 										Version: "some-base-version",
 									},
-									Version: atc.Version{"custom": "version"},
+									Version: types.Version{"custom": "version"},
 								},
-								Version: atc.Version{"some": "version"},
+								Version: types.Version{"some": "version"},
 							}, nil)
 							volume2 := new(dbfakes.FakeCreatedVolume)
 							volume2.HandleReturns("some-import-handle")

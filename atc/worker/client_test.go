@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"path"
 	"time"
 
@@ -242,7 +243,7 @@ var _ = Describe("Client", func() {
 			containerSpec := worker.ContainerSpec{}
 			fakeStrategy := new(workerfakes.FakeContainerPlacementStrategy)
 			workerSpec := worker.WorkerSpec{}
-			fakeResourceTypes := atc.VersionedResourceTypes{}
+			fakeResourceTypes := types.VersionedResourceTypes{}
 
 			imageSpec := worker.ImageFetcherSpec{
 				Delegate:      fakeDelegate,
@@ -337,14 +338,14 @@ var _ = Describe("Client", func() {
 
 				Context("succeeding", func() {
 					BeforeEach(func() {
-						fakeResource.CheckReturns([]atc.Version{
+						fakeResource.CheckReturns([]types.Version{
 							{"version": "1"},
 						}, nil)
 					})
 
 					It("returns the versions", func() {
 						Expect(result.Versions).To(HaveLen(1))
-						Expect(result.Versions[0]).To(Equal(atc.Version{"version": "1"}))
+						Expect(result.Versions[0]).To(Equal(types.Version{"version": "1"}))
 					})
 				})
 			})
@@ -365,7 +366,7 @@ var _ = Describe("Client", func() {
 			fakeStrategy          *workerfakes.FakeContainerPlacementStrategy
 			fakeDelegate          *workerfakes.FakeImageFetchingDelegate
 			fakeEventDelegate     *runtimefakes.FakeStartingEventDelegate
-			fakeResourceTypes     atc.VersionedResourceTypes
+			fakeResourceTypes     types.VersionedResourceTypes
 			fakeContainer         *workerfakes.FakeContainer
 			fakeProcessSpec       runtime.ProcessSpec
 			fakeResource          *resourcefakes.FakeResource
@@ -387,7 +388,7 @@ var _ = Describe("Client", func() {
 			fakeChosenWorker = new(workerfakes.FakeWorker)
 			fakeDelegate = new(workerfakes.FakeImageFetchingDelegate)
 			fakeEventDelegate = new(runtimefakes.FakeStartingEventDelegate)
-			fakeResourceTypes = atc.VersionedResourceTypes{}
+			fakeResourceTypes = types.VersionedResourceTypes{}
 			imageSpec = worker.ImageFetcherSpec{
 				Delegate:      fakeDelegate,
 				ResourceTypes: fakeResourceTypes,
@@ -497,8 +498,8 @@ var _ = Describe("Client", func() {
 				someGetResult = worker.GetResult{
 					ExitStatus: 0,
 					VersionResult: runtime.VersionResult{
-						atc.Version{"some-version": "some-value"},
-						[]atc.MetadataField{{"foo", "bar"}},
+						types.Version{"some-version": "some-value"},
+						[]types.MetadataField{{"foo", "bar"}},
 					},
 				}
 				someError = errors.New("some-foo-error")
@@ -557,9 +558,9 @@ var _ = Describe("Client", func() {
 				ImageSpec: worker.ImageSpec{
 					ImageResource: &worker.ImageResource{
 						Type:    "docker",
-						Source:  atc.Source{"some": "secret-source-param"},
-						Params:  atc.Params{"some": "params"},
-						Version: atc.Version{"some": "version"},
+						Source:  types.Source{"some": "secret-source-param"},
+						Params:  types.Params{"some": "params"},
+						Version: types.Version{"some": "version"},
 					},
 					Privileged: false,
 				},
@@ -581,7 +582,7 @@ var _ = Describe("Client", func() {
 			}
 			fakeImageFetcherSpec = worker.ImageFetcherSpec{
 				Delegate:      fakeDelegate,
-				ResourceTypes: atc.VersionedResourceTypes{},
+				ResourceTypes: types.VersionedResourceTypes{},
 			}
 			fakeTaskProcessSpec = runtime.ProcessSpec{
 				Path:         "/some/path",
@@ -1298,7 +1299,7 @@ var _ = Describe("Client", func() {
 			fakeStrategy      *workerfakes.FakeContainerPlacementStrategy
 			fakeDelegate      *workerfakes.FakeImageFetchingDelegate
 			fakeEventDelegate *runtimefakes.FakeStartingEventDelegate
-			fakeResourceTypes atc.VersionedResourceTypes
+			fakeResourceTypes types.VersionedResourceTypes
 			fakeContainer     *workerfakes.FakeContainer
 			fakeProcessSpec   runtime.ProcessSpec
 			fakeResource      *resourcefakes.FakeResource
@@ -1320,7 +1321,7 @@ var _ = Describe("Client", func() {
 			fakeChosenWorker = new(workerfakes.FakeWorker)
 			fakeDelegate = new(workerfakes.FakeImageFetchingDelegate)
 			fakeEventDelegate = new(runtimefakes.FakeStartingEventDelegate)
-			fakeResourceTypes = atc.VersionedResourceTypes{}
+			fakeResourceTypes = types.VersionedResourceTypes{}
 			imageSpec = worker.ImageFetcherSpec{
 				Delegate:      fakeDelegate,
 				ResourceTypes: fakeResourceTypes,
@@ -1487,7 +1488,7 @@ var _ = Describe("Client", func() {
 				var expectedVersionResult runtime.VersionResult
 				BeforeEach(func() {
 					expectedVersionResult = runtime.VersionResult{
-						Version:  atc.Version(map[string]string{"foo": "bar"}),
+						Version:  types.Version(map[string]string{"foo": "bar"}),
 						Metadata: nil,
 					}
 

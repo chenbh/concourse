@@ -1,6 +1,8 @@
 package event
 
-import "github.com/concourse/concourse/atc"
+import (
+	"github.com/concourse/concourse/atc/types"
+)
 
 // move events here as they cease to be emitted by new code.
 //
@@ -22,8 +24,8 @@ type LegacyTurbineInput struct {
 	ConfigPath string `json:"config_path"`
 }
 
-func (InputV10) EventType() atc.EventType  { return "input" }
-func (InputV10) Version() atc.EventVersion { return "1.0" }
+func (InputV10) EventType() types.EventType  { return "input" }
+func (InputV10) Version() types.EventVersion { return "1.0" }
 
 type OutputV10 struct {
 	Output LegacyTurbineOutput `json:"output"`
@@ -40,32 +42,32 @@ type LegacyTurbineOutput struct {
 	} `json:"metadata,omitempty"`
 }
 
-func (OutputV10) EventType() atc.EventType  { return "output" }
-func (OutputV10) Version() atc.EventVersion { return "1.0" }
+func (OutputV10) EventType() types.EventType  { return "output" }
+func (OutputV10) Version() types.EventVersion { return "1.0" }
 
 type LogV10 struct {
 	Origin  OriginV10 `json:"origin"`
 	Payload string    `json:"payload"`
 }
 
-func (LogV10) EventType() atc.EventType  { return "log" }
-func (LogV10) Version() atc.EventVersion { return "1.0" }
+func (LogV10) EventType() types.EventType  { return "log" }
+func (LogV10) Version() types.EventVersion { return "1.0" }
 
 type LogV20 struct {
 	Origin  OriginV20 `json:"origin"`
 	Payload string    `json:"payload"`
 }
 
-func (LogV20) EventType() atc.EventType  { return "log" }
-func (LogV20) Version() atc.EventVersion { return "2.0" }
+func (LogV20) EventType() types.EventType  { return "log" }
+func (LogV20) Version() types.EventVersion { return "2.0" }
 
 type LogV30 struct {
 	Origin  OriginV30 `json:"origin"`
 	Payload string    `json:"payload"`
 }
 
-func (LogV30) EventType() atc.EventType  { return "log" }
-func (LogV30) Version() atc.EventVersion { return "3.0" }
+func (LogV30) EventType() types.EventType  { return "log" }
+func (LogV30) Version() types.EventVersion { return "3.0" }
 
 type OriginV10 struct {
 	Type OriginV10Type `json:"type"`
@@ -159,8 +161,8 @@ type FinishV10 struct {
 	ExitStatus int   `json:"exit_status"`
 }
 
-func (FinishV10) EventType() atc.EventType  { return "finish" }
-func (FinishV10) Version() atc.EventVersion { return "1.0" }
+func (FinishV10) EventType() types.EventType  { return "finish" }
+func (FinishV10) Version() types.EventVersion { return "1.0" }
 
 type FinishTaskV10 struct {
 	Time       int64     `json:"time"`
@@ -168,8 +170,8 @@ type FinishTaskV10 struct {
 	Origin     OriginV20 `json:"origin"`
 }
 
-func (FinishTaskV10) EventType() atc.EventType  { return "finish-task" }
-func (FinishTaskV10) Version() atc.EventVersion { return "1.0" }
+func (FinishTaskV10) EventType() types.EventType  { return "finish-task" }
+func (FinishTaskV10) Version() types.EventVersion { return "1.0" }
 
 type FinishTaskV20 struct {
 	Time       int64     `json:"time"`
@@ -177,116 +179,116 @@ type FinishTaskV20 struct {
 	Origin     OriginV30 `json:"origin"`
 }
 
-func (FinishTaskV20) EventType() atc.EventType  { return "finish-task" }
-func (FinishTaskV20) Version() atc.EventVersion { return "2.0" }
+func (FinishTaskV20) EventType() types.EventType  { return "finish-task" }
+func (FinishTaskV20) Version() types.EventVersion { return "2.0" }
 
 type StartV10 struct {
 	Time int64 `json:"time"`
 }
 
 type FinishGetV10 struct {
-	Origin          OriginV20           `json:"origin"`
-	Plan            GetPlanV40          `json:"plan"`
-	ExitStatus      int                 `json:"exit_status"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          OriginV20             `json:"origin"`
+	Plan            GetPlanV40            `json:"plan"`
+	ExitStatus      int                   `json:"exit_status"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishGetV10) EventType() atc.EventType  { return "finish-get" }
-func (FinishGetV10) Version() atc.EventVersion { return "1.0" }
+func (FinishGetV10) EventType() types.EventType  { return "finish-get" }
+func (FinishGetV10) Version() types.EventVersion { return "1.0" }
 
 type FinishGetV20 struct {
-	Origin          OriginV30           `json:"origin"`
-	Plan            GetPlanV40          `json:"plan"`
-	ExitStatus      int                 `json:"exit_status"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          OriginV30             `json:"origin"`
+	Plan            GetPlanV40            `json:"plan"`
+	ExitStatus      int                   `json:"exit_status"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishGetV20) EventType() atc.EventType  { return "finish-get" }
-func (FinishGetV20) Version() atc.EventVersion { return "2.0" }
+func (FinishGetV20) EventType() types.EventType  { return "finish-get" }
+func (FinishGetV20) Version() types.EventVersion { return "2.0" }
 
 type FinishPutV10 struct {
-	Origin          OriginV20           `json:"origin"`
-	Plan            PutPlanV40          `json:"plan"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
-	ExitStatus      int                 `json:"exit_status"`
+	Origin          OriginV20             `json:"origin"`
+	Plan            PutPlanV40            `json:"plan"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
+	ExitStatus      int                   `json:"exit_status"`
 }
 
-func (FinishPutV10) EventType() atc.EventType  { return "finish-put" }
-func (FinishPutV10) Version() atc.EventVersion { return "1.0" }
+func (FinishPutV10) EventType() types.EventType  { return "finish-put" }
+func (FinishPutV10) Version() types.EventVersion { return "1.0" }
 
 type FinishPutV20 struct {
-	Origin          OriginV30           `json:"origin"`
-	Plan            PutPlanV40          `json:"plan"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
-	ExitStatus      int                 `json:"exit_status"`
+	Origin          OriginV30             `json:"origin"`
+	Plan            PutPlanV40            `json:"plan"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
+	ExitStatus      int                   `json:"exit_status"`
 }
 
-func (FinishPutV20) EventType() atc.EventType  { return "finish-put" }
-func (FinishPutV20) Version() atc.EventVersion { return "2.0" }
+func (FinishPutV20) EventType() types.EventType  { return "finish-put" }
+func (FinishPutV20) Version() types.EventVersion { return "2.0" }
 
-func (StartV10) EventType() atc.EventType  { return "start" }
-func (StartV10) Version() atc.EventVersion { return "1.0" }
+func (StartV10) EventType() types.EventType  { return "start" }
+func (StartV10) Version() types.EventVersion { return "1.0" }
 
 type StartTaskV10 struct {
 	Time   int64     `json:"time"`
 	Origin OriginV20 `json:"origin"`
 }
 
-func (StartTaskV10) EventType() atc.EventType  { return "start-task" }
-func (StartTaskV10) Version() atc.EventVersion { return "1.0" }
+func (StartTaskV10) EventType() types.EventType  { return "start-task" }
+func (StartTaskV10) Version() types.EventVersion { return "1.0" }
 
 type StartTaskV20 struct {
 	Time   int64     `json:"time"`
 	Origin OriginV30 `json:"origin"`
 }
 
-func (StartTaskV20) EventType() atc.EventType  { return "start-task" }
-func (StartTaskV20) Version() atc.EventVersion { return "2.0" }
+func (StartTaskV20) EventType() types.EventType  { return "start-task" }
+func (StartTaskV20) Version() types.EventVersion { return "2.0" }
 
 type InitializeV10 struct {
 	TaskConfig TaskConfig `json:"config"`
 }
 
-func (InitializeV10) EventType() atc.EventType  { return "initialize" }
-func (InitializeV10) Version() atc.EventVersion { return "1.0" }
+func (InitializeV10) EventType() types.EventType  { return "initialize" }
+func (InitializeV10) Version() types.EventVersion { return "1.0" }
 
 type InitializeTaskV10 struct {
 	TaskConfig TaskConfig `json:"config"`
 	Origin     OriginV20  `json:"origin"`
 }
 
-func (InitializeTaskV10) EventType() atc.EventType  { return "initialize-task" }
-func (InitializeTaskV10) Version() atc.EventVersion { return "1.0" }
+func (InitializeTaskV10) EventType() types.EventType  { return "initialize-task" }
+func (InitializeTaskV10) Version() types.EventVersion { return "1.0" }
 
 type InitializeTaskV20 struct {
 	TaskConfig TaskConfig `json:"config"`
 	Origin     OriginV30  `json:"origin"`
 }
 
-func (InitializeTaskV20) EventType() atc.EventType  { return "initialize-task" }
-func (InitializeTaskV20) Version() atc.EventVersion { return "2.0" }
+func (InitializeTaskV20) EventType() types.EventType  { return "initialize-task" }
+func (InitializeTaskV20) Version() types.EventVersion { return "2.0" }
 
 type InputV20 struct {
-	Plan            InputV20InputPlan   `json:"plan"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Plan            InputV20InputPlan     `json:"plan"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (InputV20) EventType() atc.EventType  { return "input" }
-func (InputV20) Version() atc.EventVersion { return "2.0" }
+func (InputV20) EventType() types.EventType  { return "input" }
+func (InputV20) Version() types.EventVersion { return "2.0" }
 
 type OutputV20 struct {
-	Plan            OutputV20OutputPlan `json:"plan"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Plan            OutputV20OutputPlan   `json:"plan"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (OutputV20) EventType() atc.EventType  { return "output" }
-func (OutputV20) Version() atc.EventVersion { return "2.0" }
+func (OutputV20) EventType() types.EventType  { return "output" }
+func (OutputV20) Version() types.EventVersion { return "2.0" }
 
 type InputV20InputPlan struct {
 	// logical name of the input with respect to the task's config
@@ -299,7 +301,7 @@ type InputV20InputPlan struct {
 	Type string `json:"type"`
 
 	// e.g. sha
-	Version atc.Version `json:"version,omitempty"`
+	Version types.Version `json:"version,omitempty"`
 }
 
 type OutputV20OutputPlan struct {
@@ -316,16 +318,16 @@ type ErrorV10 struct {
 	Origin  OriginV20 `json:"origin,omitempty"`
 }
 
-func (ErrorV10) EventType() atc.EventType  { return "error" }
-func (ErrorV10) Version() atc.EventVersion { return "1.0" }
+func (ErrorV10) EventType() types.EventType  { return "error" }
+func (ErrorV10) Version() types.EventVersion { return "1.0" }
 
 type ErrorV20 struct {
 	Message string    `json:"message"`
 	Origin  OriginV30 `json:"origin,omitempty"`
 }
 
-func (ErrorV20) EventType() atc.EventType  { return "error" }
-func (ErrorV20) Version() atc.EventVersion { return "2.0" }
+func (ErrorV20) EventType() types.EventType  { return "error" }
+func (ErrorV20) Version() types.EventVersion { return "2.0" }
 
 // [Tracker: #97774988] Location -> PlanID changed Origin, which changes a bunch of stuff
 
@@ -334,8 +336,8 @@ type ErrorV30 struct {
 	Origin  OriginV40 `json:"origin,omitempty"`
 }
 
-func (ErrorV30) EventType() atc.EventType  { return "error" }
-func (ErrorV30) Version() atc.EventVersion { return "3.0" }
+func (ErrorV30) EventType() types.EventType  { return "error" }
+func (ErrorV30) Version() types.EventVersion { return "3.0" }
 
 type FinishTaskV30 struct {
 	Time       int64     `json:"time"`
@@ -343,32 +345,32 @@ type FinishTaskV30 struct {
 	Origin     OriginV40 `json:"origin"`
 }
 
-func (FinishTaskV30) EventType() atc.EventType  { return "finish-task" }
-func (FinishTaskV30) Version() atc.EventVersion { return "3.0" }
+func (FinishTaskV30) EventType() types.EventType  { return "finish-task" }
+func (FinishTaskV30) Version() types.EventVersion { return "3.0" }
 
 type InitializeTaskV30 struct {
 	TaskConfig TaskConfig `json:"config"`
 	Origin     OriginV40  `json:"origin"`
 }
 
-func (InitializeTaskV30) EventType() atc.EventType  { return "initialize-task" }
-func (InitializeTaskV30) Version() atc.EventVersion { return "3.0" }
+func (InitializeTaskV30) EventType() types.EventType  { return "initialize-task" }
+func (InitializeTaskV30) Version() types.EventVersion { return "3.0" }
 
 type StartTaskV30 struct {
 	Time   int64     `json:"time"`
 	Origin OriginV40 `json:"origin"`
 }
 
-func (StartTaskV30) EventType() atc.EventType  { return "start-task" }
-func (StartTaskV30) Version() atc.EventVersion { return "3.0" }
+func (StartTaskV30) EventType() types.EventType  { return "start-task" }
+func (StartTaskV30) Version() types.EventVersion { return "3.0" }
 
 type LogV40 struct {
 	Origin  OriginV40 `json:"origin"`
 	Payload string    `json:"payload"`
 }
 
-func (LogV40) EventType() atc.EventType  { return "log" }
-func (LogV40) Version() atc.EventVersion { return "4.0" }
+func (LogV40) EventType() types.EventType  { return "log" }
+func (LogV40) Version() types.EventVersion { return "4.0" }
 
 type OriginV40 struct {
 	Name     string            `json:"name"`
@@ -412,54 +414,54 @@ const (
 )
 
 type FinishGetV30 struct {
-	Origin          OriginV40           `json:"origin"`
-	Plan            GetPlanV40          `json:"plan"`
-	ExitStatus      int                 `json:"exit_status"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          OriginV40             `json:"origin"`
+	Plan            GetPlanV40            `json:"plan"`
+	ExitStatus      int                   `json:"exit_status"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishGetV30) EventType() atc.EventType  { return "finish-get" }
-func (FinishGetV30) Version() atc.EventVersion { return "3.0" }
+func (FinishGetV30) EventType() types.EventType  { return "finish-get" }
+func (FinishGetV30) Version() types.EventVersion { return "3.0" }
 
 type FinishPutV30 struct {
-	Origin          OriginV40           `json:"origin"`
-	Plan            PutPlanV40          `json:"plan"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
-	ExitStatus      int                 `json:"exit_status"`
+	Origin          OriginV40             `json:"origin"`
+	Plan            PutPlanV40            `json:"plan"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
+	ExitStatus      int                   `json:"exit_status"`
 }
 
-func (FinishPutV30) EventType() atc.EventType  { return "finish-put" }
-func (FinishPutV30) Version() atc.EventVersion { return "3.0" }
+func (FinishPutV30) EventType() types.EventType  { return "finish-put" }
+func (FinishPutV30) Version() types.EventVersion { return "3.0" }
 
 type InitializeGetV10 struct {
 	Origin Origin `json:"origin"`
 }
 
-func (InitializeGetV10) EventType() atc.EventType  { return "initialize-get" }
-func (InitializeGetV10) Version() atc.EventVersion { return "1.0" }
+func (InitializeGetV10) EventType() types.EventType  { return "initialize-get" }
+func (InitializeGetV10) Version() types.EventVersion { return "1.0" }
 
 type InitializePutV10 struct {
 	Origin Origin `json:"origin"`
 }
 
-func (InitializePutV10) EventType() atc.EventType  { return "initialize-put" }
-func (InitializePutV10) Version() atc.EventVersion { return "1.0" }
+func (InitializePutV10) EventType() types.EventType  { return "initialize-put" }
+func (InitializePutV10) Version() types.EventVersion { return "1.0" }
 
 type StartTaskV40 struct {
 	Time   int64  `json:"time"`
 	Origin Origin `json:"origin"`
 }
 
-func (StartTaskV40) EventType() atc.EventType  { return "start-task" }
-func (StartTaskV40) Version() atc.EventVersion { return "4.0" }
+func (StartTaskV40) EventType() types.EventType  { return "start-task" }
+func (StartTaskV40) Version() types.EventVersion { return "4.0" }
 
 type GetPlanV40 struct {
-	Name     string      `json:"name"`
-	Resource string      `json:"resource"`
-	Type     string      `json:"type"`
-	Version  atc.Version `json:"version"`
+	Name     string        `json:"name"`
+	Resource string        `json:"resource"`
+	Type     string        `json:"type"`
+	Version  types.Version `json:"version"`
 }
 
 type PutPlanV40 struct {
@@ -469,23 +471,23 @@ type PutPlanV40 struct {
 }
 
 type FinishGetV40 struct {
-	Origin          Origin              `json:"origin"`
-	Plan            GetPlanV40          `json:"plan"`
-	ExitStatus      int                 `json:"exit_status"`
-	FetchedVersion  atc.Version         `json:"version"`
-	FetchedMetadata []atc.MetadataField `json:"metadata,omitempty"`
+	Origin          Origin                `json:"origin"`
+	Plan            GetPlanV40            `json:"plan"`
+	ExitStatus      int                   `json:"exit_status"`
+	FetchedVersion  types.Version         `json:"version"`
+	FetchedMetadata []types.MetadataField `json:"metadata,omitempty"`
 }
 
-func (FinishGetV40) EventType() atc.EventType  { return EventTypeFinishGet }
-func (FinishGetV40) Version() atc.EventVersion { return "4.0" }
+func (FinishGetV40) EventType() types.EventType  { return EventTypeFinishGet }
+func (FinishGetV40) Version() types.EventVersion { return "4.0" }
 
 type FinishPutV40 struct {
-	Origin          Origin              `json:"origin"`
-	Plan            PutPlanV40          `json:"plan"`
-	CreatedVersion  atc.Version         `json:"version"`
-	CreatedMetadata []atc.MetadataField `json:"metadata,omitempty"`
-	ExitStatus      int                 `json:"exit_status"`
+	Origin          Origin                `json:"origin"`
+	Plan            PutPlanV40            `json:"plan"`
+	CreatedVersion  types.Version         `json:"version"`
+	CreatedMetadata []types.MetadataField `json:"metadata,omitempty"`
+	ExitStatus      int                   `json:"exit_status"`
 }
 
-func (FinishPutV40) EventType() atc.EventType  { return EventTypeFinishPut }
-func (FinishPutV40) Version() atc.EventVersion { return "4.0" }
+func (FinishPutV40) EventType() types.EventType  { return EventTypeFinishPut }
+func (FinishPutV40) Version() types.EventVersion { return "4.0" }

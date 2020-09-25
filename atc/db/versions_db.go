@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 	"strconv"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/tracing"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel/api/key"
@@ -230,7 +230,7 @@ func (versions VersionsDB) VersionExists(ctx context.Context, resourceID int, ve
 	return exists, nil
 }
 
-func (versions VersionsDB) FindVersionOfResource(ctx context.Context, resourceID int, v atc.Version) (ResourceVersion, bool, error) {
+func (versions VersionsDB) FindVersionOfResource(ctx context.Context, resourceID int, v types.Version) (ResourceVersion, bool, error) {
 	versionJSON, err := json.Marshal(v)
 	if err != nil {
 		return "", false, nil

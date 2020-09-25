@@ -1,11 +1,11 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func Resource(resource db.Resource, showCheckError bool, teamName string) atc.Resource {
+func Resource(resource db.Resource, showCheckError bool, teamName string) types.Resource {
 	var checkErrString, rcCheckErrString string
 	var failingToCheck bool
 	if resource.CheckSetupError() != nil && showCheckError {
@@ -20,7 +20,7 @@ func Resource(resource db.Resource, showCheckError bool, teamName string) atc.Re
 		failingToCheck = true
 	}
 
-	atcResource := atc.Resource{
+	atcResource := types.Resource{
 		Name:         resource.Name(),
 		PipelineName: resource.PipelineName(),
 		TeamName:     teamName,

@@ -2,8 +2,8 @@ package migration_test
 
 import (
 	"database/sql"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -128,7 +128,7 @@ var _ = Describe("Migrate existing job configs into job pipes", func() {
 				resourceID int
 				passedJob  int
 				trigger    bool
-				version    *atc.VersionConfig
+				version    *types.VersionConfig
 			}
 
 			var jobInputs []jobInput
@@ -141,7 +141,7 @@ var _ = Describe("Migrate existing job configs into job pipes", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				if versionString.Valid {
-					version := &atc.VersionConfig{}
+					version := &types.VersionConfig{}
 					err = version.UnmarshalJSON([]byte(versionString.String))
 					Expect(err).NotTo(HaveOccurred())
 
@@ -167,7 +167,7 @@ var _ = Describe("Migrate existing job configs into job pipes", func() {
 					resourceID: resource1ID,
 					passedJob:  1,
 					trigger:    true,
-					version:    &atc.VersionConfig{Latest: true},
+					version:    &types.VersionConfig{Latest: true},
 				},
 				{
 					name:       "resource-2",
@@ -179,14 +179,14 @@ var _ = Describe("Migrate existing job configs into job pipes", func() {
 					jobID:      3,
 					resourceID: resource1ID,
 					passedJob:  1,
-					version:    &atc.VersionConfig{Pinned: atc.Version{"ver": "1"}},
+					version:    &types.VersionConfig{Pinned: types.Version{"ver": "1"}},
 				},
 				{
 					name:       "res1",
 					jobID:      3,
 					resourceID: resource1ID,
 					passedJob:  2,
-					version:    &atc.VersionConfig{Pinned: atc.Version{"ver": "1"}},
+					version:    &types.VersionConfig{Pinned: types.Version{"ver": "1"}},
 				},
 				{
 					name:       "resource-2",
@@ -199,7 +199,7 @@ var _ = Describe("Migrate existing job configs into job pipes", func() {
 					name:       "resource-1",
 					jobID:      5,
 					resourceID: resource4ID,
-					version:    &atc.VersionConfig{Every: true},
+					version:    &types.VersionConfig{Every: true},
 				},
 			}
 

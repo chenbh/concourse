@@ -3,6 +3,7 @@ package exec_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -87,7 +88,7 @@ var _ = Describe("CheckStep", func() {
 	Context("having credentials in the config", func() {
 		BeforeEach(func() {
 			checkPlan = atc.CheckPlan{
-				Source: atc.Source{"some": "((super-secret-source))"},
+				Source: types.Source{"some": "((super-secret-source))"},
 			}
 		})
 
@@ -112,10 +113,10 @@ var _ = Describe("CheckStep", func() {
 
 	Context("having credentials in a resource type", func() {
 		BeforeEach(func() {
-			resTypes := atc.VersionedResourceTypes{
+			resTypes := types.VersionedResourceTypes{
 				{
-					ResourceType: atc.ResourceType{
-						Source: atc.Source{
+					ResourceType: types.ResourceType{
+						Source: types.Source{
 							"some-custom": "((super-secret-source))",
 						},
 					},
@@ -123,7 +124,7 @@ var _ = Describe("CheckStep", func() {
 			}
 
 			checkPlan = atc.CheckPlan{
-				Source:                 atc.Source{"some": "super-secret-source"},
+				Source:                 types.Source{"some": "super-secret-source"},
 				VersionedResourceTypes: resTypes,
 			}
 		})
@@ -162,10 +163,10 @@ var _ = Describe("CheckStep", func() {
 
 	Context("with a reasonable configuration", func() {
 		BeforeEach(func() {
-			resTypes := atc.VersionedResourceTypes{
+			resTypes := types.VersionedResourceTypes{
 				{
-					ResourceType: atc.ResourceType{
-						Source: atc.Source{
+					ResourceType: types.ResourceType{
+						Source: types.Source{
 							"foo": "((bar))",
 						},
 					},
@@ -280,7 +281,7 @@ var _ = Describe("CheckStep", func() {
 				Expect(workerSpec.ResourceTypes).To(HaveLen(1))
 				interpolatedResourceType := workerSpec.ResourceTypes[0]
 
-				Expect(interpolatedResourceType.Source).To(Equal(atc.Source{"foo": "caz"}))
+				Expect(interpolatedResourceType.Source).To(Equal(types.Source{"foo": "caz"}))
 			})
 
 			It("with teamid", func() {
@@ -304,7 +305,7 @@ var _ = Describe("CheckStep", func() {
 			Expect(imageSpec.ResourceTypes).To(HaveLen(1))
 			interpolatedResourceType := imageSpec.ResourceTypes[0]
 
-			Expect(interpolatedResourceType.Source).To(Equal(atc.Source{"foo": "caz"}))
+			Expect(interpolatedResourceType.Source).To(Equal(types.Source{"foo": "caz"}))
 		})
 
 		It("uses the timeout parsed", func() {

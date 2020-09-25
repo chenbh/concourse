@@ -3,12 +3,12 @@ package containerserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/creds"
 	"github.com/concourse/concourse/atc/db"
@@ -41,7 +41,7 @@ func (s *Server) ListContainers(team db.Team) http.Handler {
 
 		hLog.Debug("listed", lager.Data{"container-count": len(containers)})
 
-		presentedContainers := make([]atc.Container, len(containers))
+		presentedContainers := make([]types.Container, len(containers))
 		for i := 0; i < len(containers); i++ {
 			container := containers[i]
 			presentedContainers[i] = present.Container(container, checkContainersExpiresAt[container.ID()])

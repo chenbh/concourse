@@ -1,9 +1,8 @@
 package workercmd
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
-
-	"github.com/concourse/concourse/atc"
 )
 
 type WorkerConfig struct {
@@ -20,8 +19,8 @@ type WorkerConfig struct {
 	Version string `long:"version" hidden:"true" description:"Version of the worker. This is normally baked in to the binary, so this flag is hidden."`
 }
 
-func (c WorkerConfig) Worker() atc.Worker {
-	return atc.Worker{
+func (c WorkerConfig) Worker() types.Worker {
+	return types.Worker{
 		Tags:          c.Tags,
 		Team:          c.TeamName,
 		Name:          c.Name,

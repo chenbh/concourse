@@ -2,11 +2,11 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -15,7 +15,7 @@ import (
 
 type CheckResourceTypeCommand struct {
 	ResourceType flaghelpers.ResourceFlag `short:"r" long:"resource-type" required:"true" value-name:"PIPELINE/RESOURCE-TYPE" description:"Name of a resource-type to check"`
-	Version      *atc.Version             `short:"f" long:"from"                     value-name:"VERSION"           description:"Version of the resource type to check from, e.g. digest:sha256@..."`
+	Version      *types.Version           `short:"f" long:"from"                     value-name:"VERSION"           description:"Version of the resource type to check from, e.g. digest:sha256@..."`
 	Async        bool                     `short:"a" long:"async"                    value-name:"ASYNC"             description:"Return the check without waiting for its result"`
 	Shallow      bool                     `long:"shallow"                          value-name:"SHALLOW"         description:"Check the resource type itself only"`
 }
@@ -32,7 +32,7 @@ func (command *CheckResourceTypeCommand) Execute(args []string) error {
 		return err
 	}
 
-	var version atc.Version
+	var version types.Version
 	if command.Version != nil {
 		version = *command.Version
 	}
@@ -127,11 +127,11 @@ func (command *CheckResourceTypeCommand) checkParent(target rc.Target) error {
 	return cmd.Execute(nil)
 }
 
-func (command *CheckResourceTypeCommand) findParent(resourceType atc.ResourceType, resourceTypes atc.VersionedResourceTypes) (atc.VersionedResourceType, bool) {
+func (command *CheckResourceTypeCommand) findParent(resourceType types.ResourceType, resourceTypes types.VersionedResourceTypes) (types.VersionedResourceType, bool) {
 	for _, t := range resourceTypes {
 		if t.Name != resourceType.Name && t.Name == resourceType.Type {
 			return t, true
 		}
 	}
-	return atc.VersionedResourceType{}, false
+	return types.VersionedResourceType{}, false
 }

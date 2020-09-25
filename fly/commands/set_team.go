@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"sort"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
@@ -33,7 +33,7 @@ type SetTeamCommand struct {
 
 func (command *SetTeamCommand) Validate() ([]concourse.ConfigWarning, error) {
 	var warnings []concourse.ConfigWarning
-	if warning := atc.ValidateIdentifier(command.Team.Name(), "team"); warning != nil {
+	if warning := types.ValidateIdentifier(command.Team.Name(), "team"); warning != nil {
 		warnings = append(warnings, concourse.ConfigWarning{
 			Type:    warning.Type,
 			Message: warning.Message,
@@ -116,7 +116,7 @@ func (command *SetTeamCommand) Execute([]string) error {
 		displayhelpers.Failf("bailing out")
 	}
 
-	team := atc.Team{Auth: authRoles}
+	team := types.Team{Auth: authRoles}
 
 	_, created, updated, warnings, err := target.Client().Team(teamName).CreateOrUpdate(team)
 	if err != nil {

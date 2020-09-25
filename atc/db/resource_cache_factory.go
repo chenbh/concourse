@@ -3,9 +3,9 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db/lock"
 )
 
@@ -15,17 +15,17 @@ type ResourceCacheFactory interface {
 	FindOrCreateResourceCache(
 		resourceCacheUser ResourceCacheUser,
 		resourceTypeName string,
-		version atc.Version,
-		source atc.Source,
-		params atc.Params,
-		resourceTypes atc.VersionedResourceTypes,
+		version types.Version,
+		source types.Source,
+		params types.Params,
+		resourceTypes types.VersionedResourceTypes,
 	) (UsedResourceCache, error)
 
 	// changing resource cache to interface to allow updates on object is not feasible.
 	// Since we need to pass it recursively in ResourceConfig.
 	// Also, metadata will be available to us before we create resource cache so this
 	// method can be removed at that point. See  https://github.com/concourse/concourse/issues/534
-	UpdateResourceCacheMetadata(UsedResourceCache, []atc.MetadataField) error
+	UpdateResourceCacheMetadata(UsedResourceCache, []types.MetadataField) error
 	ResourceCacheMetadata(UsedResourceCache) (ResourceConfigMetadataFields, error)
 
 	FindResourceCacheByID(id int) (UsedResourceCache, bool, error)
@@ -46,10 +46,10 @@ func NewResourceCacheFactory(conn Conn, lockFactory lock.LockFactory) ResourceCa
 func (f *resourceCacheFactory) FindOrCreateResourceCache(
 	resourceCacheUser ResourceCacheUser,
 	resourceTypeName string,
-	version atc.Version,
-	source atc.Source,
-	params atc.Params,
-	resourceTypes atc.VersionedResourceTypes,
+	version types.Version,
+	source types.Source,
+	params types.Params,
+	resourceTypes types.VersionedResourceTypes,
 ) (UsedResourceCache, error) {
 	resourceConfigDescriptor, err := constructResourceConfigDescriptor(resourceTypeName, source, resourceTypes)
 	if err != nil {
@@ -87,7 +87,7 @@ func (f *resourceCacheFactory) FindOrCreateResourceCache(
 	return usedResourceCache, nil
 }
 
-func (f *resourceCacheFactory) UpdateResourceCacheMetadata(resourceCache UsedResourceCache, metadata []atc.MetadataField) error {
+func (f *resourceCacheFactory) UpdateResourceCacheMetadata(resourceCache UsedResourceCache, metadata []types.MetadataField) error {
 	metadataJSON, err := json.Marshal(metadata)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func findResourceCacheByID(tx Tx, resourceCacheID int, lock lock.LockFactory, co
 		return nil, false, err
 	}
 
-	var version atc.Version
+	var version types.Version
 	err = json.Unmarshal([]byte(versionBytes), &version)
 	if err != nil {
 		return nil, false, err

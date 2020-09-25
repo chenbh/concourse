@@ -1,16 +1,16 @@
 package present
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
-func Container(container db.Container, expiresAt time.Time) atc.Container {
+func Container(container db.Container, expiresAt time.Time) types.Container {
 	meta := container.Metadata()
 
-	atcContainer := atc.Container{
+	atcContainer := types.Container{
 		ID:         container.Handle(),
 		WorkerName: container.WorkerName(),
 

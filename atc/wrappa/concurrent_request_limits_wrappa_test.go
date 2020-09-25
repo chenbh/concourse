@@ -1,12 +1,12 @@
 package wrappa_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/http/httptest"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/metric"
 	"github.com/concourse/concourse/atc/wrappa"
 	"github.com/concourse/concourse/atc/wrappa/wrappafakes"
@@ -44,8 +44,8 @@ var _ = Describe("Concurrent Request Limits Wrappa", func() {
 
 		handler = wrappa.NewConcurrentRequestLimitsWrappa(testLogger, fakePolicy).
 			Wrap(map[string]http.Handler{
-				atc.ListAllJobs: fakeHandler,
-			})[atc.ListAllJobs]
+				types.ListAllJobs: fakeHandler,
+			})[types.ListAllJobs]
 	}
 
 	Context("when the limit is reached", func() {
@@ -76,7 +76,7 @@ var _ = Describe("Concurrent Request Limits Wrappa", func() {
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 
-			Expect(metric.Metrics.ConcurrentRequestsLimitHit[atc.ListAllJobs].Delta()).To(Equal(float64(2)))
+			Expect(metric.Metrics.ConcurrentRequestsLimitHit[types.ListAllJobs].Delta()).To(Equal(float64(2)))
 		})
 	})
 
@@ -102,7 +102,7 @@ var _ = Describe("Concurrent Request Limits Wrappa", func() {
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 
-			Expect(metric.Metrics.ConcurrentRequests[atc.ListAllJobs].Max()).To(Equal(float64(1)))
+			Expect(metric.Metrics.ConcurrentRequests[types.ListAllJobs].Max()).To(Equal(float64(1)))
 		})
 	})
 
@@ -133,7 +133,7 @@ var _ = Describe("Concurrent Request Limits Wrappa", func() {
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 			handler.ServeHTTP(httptest.NewRecorder(), request)
 
-			Expect(metric.Metrics.ConcurrentRequestsLimitHit[atc.ListAllJobs].Delta()).To(Equal(float64(2)))
+			Expect(metric.Metrics.ConcurrentRequestsLimitHit[types.ListAllJobs].Delta()).To(Equal(float64(2)))
 		})
 	})
 })

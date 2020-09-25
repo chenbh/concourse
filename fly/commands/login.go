@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"io/ioutil"
 	"net"
@@ -56,7 +57,7 @@ func (command *LoginCommand) Execute(args []string) error {
 
 	if command.ATCURL != "" {
 		if command.TeamName == "" {
-			command.TeamName = atc.DefaultTeamName
+			command.TeamName = types.DefaultTeamName
 		}
 
 		target, err = rc.NewUnauthenticatedTarget(

@@ -3,9 +3,9 @@ package teamserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/present"
 )
@@ -29,7 +29,7 @@ func (s *Server) GetTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	acc := accessor.GetAccessor(r)
-	var presentedTeam atc.Team
+	var presentedTeam types.Team
 
 	if acc.IsAdmin() || acc.IsAuthorized(team.Name()) {
 		presentedTeam = present.Team(team)

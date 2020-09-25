@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/url"
 
@@ -14,7 +15,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
-	"github.com/concourse/concourse/atc"
 	"github.com/tedsuo/rata"
 )
 
@@ -25,7 +25,7 @@ type WorkerStatus struct {
 	VolumeHandles    []string
 }
 
-func (l *WorkerStatus) WorkerStatus(ctx context.Context, worker atc.Worker, resourceAction string) error {
+func (l *WorkerStatus) WorkerStatus(ctx context.Context, worker types.Worker, resourceAction string) error {
 	logger := lagerctx.FromContext(ctx)
 
 	logger.Debug("start")
@@ -45,7 +45,7 @@ func (l *WorkerStatus) WorkerStatus(ctx context.Context, worker atc.Worker, reso
 			return err
 		}
 
-		request, err = l.ATCEndpoint.CreateRequest(atc.ReportWorkerContainers, nil, bytes.NewBuffer(handlesBytes))
+		request, err = l.ATCEndpoint.CreateRequest(types.ReportWorkerContainers, nil, bytes.NewBuffer(handlesBytes))
 
 		if err != nil {
 			logger.Error("failed-to-construct-request", err)
@@ -58,7 +58,7 @@ func (l *WorkerStatus) WorkerStatus(ctx context.Context, worker atc.Worker, reso
 			return err
 		}
 
-		request, err = l.ATCEndpoint.CreateRequest(atc.ReportWorkerVolumes, nil, bytes.NewBuffer(handlesBytes))
+		request, err = l.ATCEndpoint.CreateRequest(types.ReportWorkerVolumes, nil, bytes.NewBuffer(handlesBytes))
 
 		if err != nil {
 			logger.Error("failed-to-construct-request", err)

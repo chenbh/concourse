@@ -2,7 +2,7 @@ package integration_test
 
 import (
 	"fmt"
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -366,7 +366,7 @@ var _ = Describe("Fly CLI", func() {
 								}
 							}
 						}`),
-						ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.Team{
+						ghttp.RespondWithJSONEncoded(http.StatusCreated, types.Team{
 							Name: "venture",
 							ID:   8,
 						}),
@@ -680,7 +680,7 @@ var _ = Describe("Fly CLI", func() {
 								}
 							}
 						}`),
-						ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.Team{
+						ghttp.RespondWithJSONEncoded(http.StatusCreated, types.Team{
 							Name: "venture",
 							ID:   8,
 						}),
@@ -765,7 +765,7 @@ func confirmHandlers() {
 	atcServer.AppendHandlers(
 		ghttp.CombineHandlers(
 			ghttp.VerifyRequest("PUT", "/api/v1/teams/venture"),
-			ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.Team{
+			ghttp.RespondWithJSONEncoded(http.StatusCreated, types.Team{
 				Name: "venture",
 				ID:   8,
 			}),

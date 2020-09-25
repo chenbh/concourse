@@ -2,10 +2,10 @@ package db
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/lib/pq"
 )
 
@@ -122,7 +122,7 @@ func (repository *containerRepository) UpdateContainersMissingSince(workerName s
 		Set("missing_since", sq.Expr("now()")).
 		Where(sq.And{
 			sq.Eq{"handle": handles},
-			sq.NotEq{"state": atc.ContainerStateCreating},
+			sq.NotEq{"state": types.ContainerStateCreating},
 		}).ToSql()
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (repository *containerRepository) FindDestroyingContainers(workerName strin
 	destroyingContainers, err := repository.queryContainerHandles(
 		tx,
 		sq.Eq{
-			"state":       atc.ContainerStateDestroying,
+			"state":       types.ContainerStateDestroying,
 			"worker_name": workerName,
 		},
 	)
@@ -170,7 +170,7 @@ func (repository *containerRepository) RemoveMissingContainers(gracePeriod time.
 		Where(sq.Expr("c.worker_name = w.name")).
 		Where(
 			sq.And{
-				sq.Expr(fmt.Sprintf("c.state='%s'", atc.ContainerStateCreated)),
+				sq.Expr(fmt.Sprintf("c.state='%s'", types.ContainerStateCreated)),
 				sq.Expr(fmt.Sprintf("w.state!='%s'", WorkerStateStalled)),
 				sq.Expr(fmt.Sprintf("NOW() - missing_since > '%s'", fmt.Sprintf("%.0f seconds", gracePeriod.Seconds()))),
 			},
@@ -200,7 +200,7 @@ func (repository *containerRepository) RemoveDestroyingContainers(workerName str
 					"handle": handlesToIgnore,
 				},
 				sq.Eq{
-					"state": atc.ContainerStateDestroying,
+					"state": types.ContainerStateDestroying,
 				},
 			},
 		).RunWith(repository.conn).
@@ -236,11 +236,11 @@ func (repository *containerRepository) FindOrphanedContainers() ([]CreatingConta
 			},
 			sq.And{
 				sq.NotEq{"c.image_check_container_id": nil},
-				sq.NotEq{"icc.state": atc.ContainerStateCreating},
+				sq.NotEq{"icc.state": types.ContainerStateCreating},
 			},
 			sq.And{
 				sq.NotEq{"c.image_get_container_id": nil},
-				sq.NotEq{"igc.state": atc.ContainerStateCreating},
+				sq.NotEq{"igc.state": types.ContainerStateCreating},
 			},
 		}).
 		ToSql()
@@ -329,7 +329,7 @@ func scanContainer(row sq.RowScanner, conn Conn) (CreatingContainer, CreatedCont
 	}
 
 	switch state {
-	case atc.ContainerStateCreating:
+	case types.ContainerStateCreating:
 		return newCreatingContainer(
 			id,
 			handle,
@@ -337,7 +337,7 @@ func scanContainer(row sq.RowScanner, conn Conn) (CreatingContainer, CreatedCont
 			metadata,
 			conn,
 		), nil, nil, nil, nil
-	case atc.ContainerStateCreated:
+	case types.ContainerStateCreated:
 		return nil, newCreatedContainer(
 			id,
 			handle,
@@ -346,7 +346,7 @@ func scanContainer(row sq.RowScanner, conn Conn) (CreatingContainer, CreatedCont
 			lastHijack.Time,
 			conn,
 		), nil, nil, nil
-	case atc.ContainerStateDestroying:
+	case types.ContainerStateDestroying:
 		return nil, nil, newDestroyingContainer(
 			id,
 			handle,
@@ -354,7 +354,7 @@ func scanContainer(row sq.RowScanner, conn Conn) (CreatingContainer, CreatedCont
 			metadata,
 			conn,
 		), nil, nil
-	case atc.ContainerStateFailed:
+	case types.ContainerStateFailed:
 		return nil, nil, nil, newFailedContainer(
 			id,
 			handle,
@@ -369,8 +369,8 @@ func scanContainer(row sq.RowScanner, conn Conn) (CreatingContainer, CreatedCont
 
 func (repository *containerRepository) DestroyFailedContainers() (int, error) {
 	result, err := psql.Update("containers").
-		Set("state", atc.ContainerStateDestroying).
-		Where(sq.Eq{"state": string(atc.ContainerStateFailed)}).
+		Set("state", types.ContainerStateDestroying).
+		Where(sq.Eq{"state": string(types.ContainerStateFailed)}).
 		RunWith(repository.conn).
 		Exec()
 
@@ -416,7 +416,7 @@ func (repository *containerRepository) DestroyUnknownContainers(workerName strin
 		insertBuilder = insertBuilder.Values(
 			unknownHandle,
 			workerName,
-			atc.ContainerStateDestroying,
+			types.ContainerStateDestroying,
 		)
 	}
 	_, err = insertBuilder.RunWith(tx).Exec()

@@ -2,9 +2,9 @@ package accessor
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -88,7 +88,7 @@ func contains(arr []string, val string) bool {
 	return false
 }
 
-func (a *access) rolesForTeam(auth atc.TeamAuth) []string {
+func (a *access) rolesForTeam(auth types.TeamAuth) []string {
 	roleSet := map[string]bool{}
 
 	groups := a.groups()

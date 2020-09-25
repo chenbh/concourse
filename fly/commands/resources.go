@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/fly/ui"
@@ -29,7 +29,7 @@ func (command *ResourcesCommand) Execute([]string) error {
 	}
 
 	var headers []string
-	var resources []atc.Resource
+	var resources []types.Resource
 
 	resources, err = target.Team().ListResources(pipelineName)
 	if err != nil {

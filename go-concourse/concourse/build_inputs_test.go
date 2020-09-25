@@ -1,9 +1,8 @@
 package concourse_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
-
-	"github.com/concourse/concourse/atc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,10 +14,10 @@ var _ = Describe("ATC Handler Build Inputs", func() {
 		expectedURL := "/api/v1/teams/some-team/pipelines/mypipeline/jobs/myjob/inputs"
 
 		Context("when pipeline/job exists", func() {
-			var expectedBuildInputs []atc.BuildInput
+			var expectedBuildInputs []types.BuildInput
 
 			BeforeEach(func() {
-				expectedBuildInputs = []atc.BuildInput{
+				expectedBuildInputs = []types.BuildInput{
 					{
 						Name:     "myfirstinput",
 						Resource: "myfirstinput",
@@ -66,14 +65,14 @@ var _ = Describe("ATC Handler Build Inputs", func() {
 	Describe("BuildsWithVersionAsInput", func() {
 		expectedURL := "/api/v1/teams/some-team/pipelines/some-pipeline/resources/myresource/versions/2/input_to"
 
-		var expectedBuilds []atc.Build
+		var expectedBuilds []types.Build
 
-		var actualBuilds []atc.Build
+		var actualBuilds []types.Build
 		var found bool
 		var clientErr error
 
 		BeforeEach(func() {
-			expectedBuilds = []atc.Build{
+			expectedBuilds = []types.Build{
 				{
 					ID:     2,
 					Name:   "some-build",

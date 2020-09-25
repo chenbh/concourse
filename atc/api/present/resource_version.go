@@ -1,11 +1,11 @@
 package present
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 )
 
-func ResourceVersions(hideMetadata bool, resourceVersions []atc.ResourceVersion) []atc.ResourceVersion {
-	presented := []atc.ResourceVersion{}
+func ResourceVersions(hideMetadata bool, resourceVersions []types.ResourceVersion) []types.ResourceVersion {
+	presented := []types.ResourceVersion{}
 
 	for _, resourceVersion := range resourceVersions {
 		if hideMetadata {

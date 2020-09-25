@@ -1,10 +1,10 @@
 package resource_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	. "github.com/concourse/concourse/atc/resource"
 )
 
@@ -18,15 +18,15 @@ var _ = Describe("Resource", func() {
 	Describe("Signature", func() {
 		var (
 			resource Resource
-			source   atc.Source
-			params   atc.Params
-			version  atc.Version
+			source   types.Source
+			params   types.Params
+			version  types.Version
 		)
 
 		BeforeEach(func() {
-			source = atc.Source{"some-source-key": "some-source-value"}
-			params = atc.Params{"some-params-key": "some-params-value"}
-			version = atc.Version{"some-version-key": "some-version-value"}
+			source = types.Source{"some-source-key": "some-source-value"}
+			params = types.Params{"some-params-key": "some-params-value"}
+			version = types.Version{"some-version-key": "some-version-value"}
 
 			resource = NewResourceFactory().NewResource(source, params, version)
 		})

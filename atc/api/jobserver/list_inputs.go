@@ -2,9 +2,9 @@ package jobserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -55,10 +55,10 @@ func (s *Server) ListJobInputs(pipeline db.Pipeline) http.Handler {
 
 		jobInputs := jobConfig.Inputs()
 
-		inputs := make([]atc.BuildInput, len(buildInputs))
+		inputs := make([]types.BuildInput, len(buildInputs))
 
 		for i, input := range buildInputs {
-			var config atc.JobInputParams
+			var config types.JobInputParams
 			for _, jobInput := range jobInputs {
 				if jobInput.Name == input.Name {
 					config = jobInput

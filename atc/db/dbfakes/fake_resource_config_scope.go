@@ -2,11 +2,11 @@
 package dbfakes
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/lock"
 )
@@ -37,10 +37,10 @@ type FakeResourceConfigScope struct {
 	checkErrorReturnsOnCall map[int]struct {
 		result1 error
 	}
-	FindVersionStub        func(atc.Version) (db.ResourceConfigVersion, bool, error)
+	FindVersionStub        func(types.Version) (db.ResourceConfigVersion, bool, error)
 	findVersionMutex       sync.RWMutex
 	findVersionArgsForCall []struct {
-		arg1 atc.Version
+		arg1 types.Version
 	}
 	findVersionReturns struct {
 		result1 db.ResourceConfigVersion
@@ -96,11 +96,11 @@ type FakeResourceConfigScope struct {
 	resourceConfigReturnsOnCall map[int]struct {
 		result1 db.ResourceConfig
 	}
-	SaveVersionsStub        func(db.SpanContext, []atc.Version) error
+	SaveVersionsStub        func(db.SpanContext, []types.Version) error
 	saveVersionsMutex       sync.RWMutex
 	saveVersionsArgsForCall []struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}
 	saveVersionsReturns struct {
 		result1 error
@@ -267,11 +267,11 @@ func (fake *FakeResourceConfigScope) CheckErrorReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeResourceConfigScope) FindVersion(arg1 atc.Version) (db.ResourceConfigVersion, bool, error) {
+func (fake *FakeResourceConfigScope) FindVersion(arg1 types.Version) (db.ResourceConfigVersion, bool, error) {
 	fake.findVersionMutex.Lock()
 	ret, specificReturn := fake.findVersionReturnsOnCall[len(fake.findVersionArgsForCall)]
 	fake.findVersionArgsForCall = append(fake.findVersionArgsForCall, struct {
-		arg1 atc.Version
+		arg1 types.Version
 	}{arg1})
 	fake.recordInvocation("FindVersion", []interface{}{arg1})
 	fake.findVersionMutex.Unlock()
@@ -291,13 +291,13 @@ func (fake *FakeResourceConfigScope) FindVersionCallCount() int {
 	return len(fake.findVersionArgsForCall)
 }
 
-func (fake *FakeResourceConfigScope) FindVersionCalls(stub func(atc.Version) (db.ResourceConfigVersion, bool, error)) {
+func (fake *FakeResourceConfigScope) FindVersionCalls(stub func(types.Version) (db.ResourceConfigVersion, bool, error)) {
 	fake.findVersionMutex.Lock()
 	defer fake.findVersionMutex.Unlock()
 	fake.FindVersionStub = stub
 }
 
-func (fake *FakeResourceConfigScope) FindVersionArgsForCall(i int) atc.Version {
+func (fake *FakeResourceConfigScope) FindVersionArgsForCall(i int) types.Version {
 	fake.findVersionMutex.RLock()
 	defer fake.findVersionMutex.RUnlock()
 	argsForCall := fake.findVersionArgsForCall[i]
@@ -547,17 +547,17 @@ func (fake *FakeResourceConfigScope) ResourceConfigReturnsOnCall(i int, result1 
 	}{result1}
 }
 
-func (fake *FakeResourceConfigScope) SaveVersions(arg1 db.SpanContext, arg2 []atc.Version) error {
-	var arg2Copy []atc.Version
+func (fake *FakeResourceConfigScope) SaveVersions(arg1 db.SpanContext, arg2 []types.Version) error {
+	var arg2Copy []types.Version
 	if arg2 != nil {
-		arg2Copy = make([]atc.Version, len(arg2))
+		arg2Copy = make([]types.Version, len(arg2))
 		copy(arg2Copy, arg2)
 	}
 	fake.saveVersionsMutex.Lock()
 	ret, specificReturn := fake.saveVersionsReturnsOnCall[len(fake.saveVersionsArgsForCall)]
 	fake.saveVersionsArgsForCall = append(fake.saveVersionsArgsForCall, struct {
 		arg1 db.SpanContext
-		arg2 []atc.Version
+		arg2 []types.Version
 	}{arg1, arg2Copy})
 	fake.recordInvocation("SaveVersions", []interface{}{arg1, arg2Copy})
 	fake.saveVersionsMutex.Unlock()
@@ -577,13 +577,13 @@ func (fake *FakeResourceConfigScope) SaveVersionsCallCount() int {
 	return len(fake.saveVersionsArgsForCall)
 }
 
-func (fake *FakeResourceConfigScope) SaveVersionsCalls(stub func(db.SpanContext, []atc.Version) error) {
+func (fake *FakeResourceConfigScope) SaveVersionsCalls(stub func(db.SpanContext, []types.Version) error) {
 	fake.saveVersionsMutex.Lock()
 	defer fake.saveVersionsMutex.Unlock()
 	fake.SaveVersionsStub = stub
 }
 
-func (fake *FakeResourceConfigScope) SaveVersionsArgsForCall(i int) (db.SpanContext, []atc.Version) {
+func (fake *FakeResourceConfigScope) SaveVersionsArgsForCall(i int) (db.SpanContext, []types.Version) {
 	fake.saveVersionsMutex.RLock()
 	defer fake.saveVersionsMutex.RUnlock()
 	argsForCall := fake.saveVersionsArgsForCall[i]

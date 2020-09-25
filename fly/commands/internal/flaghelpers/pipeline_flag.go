@@ -2,11 +2,11 @@ package flaghelpers
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/rc"
 	"github.com/concourse/concourse/go-concourse/concourse"
 )
@@ -19,7 +19,7 @@ func (flag *PipelineFlag) Validate() ([]concourse.ConfigWarning, error) {
 	}
 
 	var warnings []concourse.ConfigWarning
-	if warning := atc.ValidateIdentifier(string(*flag), "pipeline"); warning != nil {
+	if warning := types.ValidateIdentifier(string(*flag), "pipeline"); warning != nil {
 		warnings = append(warnings, concourse.ConfigWarning{
 			Type:    warning.Type,
 			Message: warning.Message,

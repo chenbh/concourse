@@ -1,15 +1,14 @@
 package config
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"syscall"
-
-	"github.com/concourse/concourse/atc"
 )
 
-func OverrideTaskParams(configFile []byte, args []string) (atc.TaskConfig, error) {
-	config, err := atc.NewTaskConfig(configFile)
+func OverrideTaskParams(configFile []byte, args []string) (types.TaskConfig, error) {
+	config, err := types.NewTaskConfig(configFile)
 	if err != nil {
-		return atc.TaskConfig{}, err
+		return types.TaskConfig{}, err
 	}
 
 	config.Run.Args = append(config.Run.Args, args...)

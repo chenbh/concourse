@@ -1,7 +1,7 @@
 package integration_test
 
 import (
-	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/atc/types"
 	concourse "github.com/concourse/concourse/go-concourse/concourse"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -89,13 +89,13 @@ func whenIArchiveIt(client concourse.Client, pipelineName string) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func getPipeline(client concourse.Client, pipelineName string) atc.Pipeline {
+func getPipeline(client concourse.Client, pipelineName string) types.Pipeline {
 	pipeline, _, err := client.Team("main").Pipeline(pipelineName)
 	Expect(err).ToNot(HaveOccurred())
 	return pipeline
 }
 
-func getPipelineConfig(client concourse.Client, pipelineName string) (atc.Config, bool) {
+func getPipelineConfig(client concourse.Client, pipelineName string) (types.Config, bool) {
 	config, _, ok, err := client.Team("main").PipelineConfig(pipelineName)
 	Expect(err).ToNot(HaveOccurred())
 	return config, ok

@@ -3,9 +3,9 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"go.opentelemetry.io/otel/api/propagators"
 )
 
@@ -31,7 +31,7 @@ type ResourceConfigMetadataField struct {
 
 type ResourceConfigMetadataFields []ResourceConfigMetadataField
 
-func NewResourceConfigMetadataFields(atcm []atc.MetadataField) ResourceConfigMetadataFields {
+func NewResourceConfigMetadataFields(atcm []types.MetadataField) ResourceConfigMetadataFields {
 	metadata := make([]ResourceConfigMetadataField, len(atcm))
 	for i, md := range atcm {
 		metadata[i] = ResourceConfigMetadataField{
@@ -43,10 +43,10 @@ func NewResourceConfigMetadataFields(atcm []atc.MetadataField) ResourceConfigMet
 	return metadata
 }
 
-func (rmf ResourceConfigMetadataFields) ToATCMetadata() []atc.MetadataField {
-	metadata := make([]atc.MetadataField, len(rmf))
+func (rmf ResourceConfigMetadataFields) ToATCMetadata() []types.MetadataField {
+	metadata := make([]types.MetadataField, len(rmf))
 	for i, md := range rmf {
-		metadata[i] = atc.MetadataField{
+		metadata[i] = types.MetadataField{
 			Name:  md.Name,
 			Value: md.Value,
 		}

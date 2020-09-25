@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -44,12 +45,12 @@ var _ = Describe("ATC Connection", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", expectedURL),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{}),
 				),
 			)
-			var build atc.Build
+			var build types.Build
 			err := badConnection.Send(Request{
-				RequestName: atc.GetBuild,
+				RequestName: types.GetBuild,
 				Params:      rata.Params{"build_id": "foo"},
 			}, &Response{
 				Result: &build,
@@ -66,12 +67,12 @@ var _ = Describe("ATC Connection", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", expectedURL),
-					ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.Build{}),
+					ghttp.RespondWithJSONEncoded(http.StatusCreated, types.Build{}),
 				),
 			)
 
 			err := badConnection.Send(Request{
-				RequestName: atc.GetBuild,
+				RequestName: types.GetBuild,
 				Params:      rata.Params{"build_id": "foo"},
 			}, nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -96,12 +97,12 @@ var _ = Describe("ATC Connection", func() {
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", expectedURL),
 					ghttp.VerifyBasicAuth("some username", "some password"),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{}),
 				),
 			)
-			var build atc.Build
+			var build types.Build
 			err := basicAuthConnection.Send(Request{
-				RequestName: atc.GetBuild,
+				RequestName: types.GetBuild,
 				Params:      rata.Params{"build_id": "foo"},
 			}, &Response{
 				Result: &build,
@@ -116,12 +117,12 @@ var _ = Describe("ATC Connection", func() {
 			atcServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", expectedURL),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{}),
+					ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{}),
 				),
 			)
-			var build atc.Build
+			var build types.Build
 			err := connection.Send(Request{
-				RequestName: atc.GetBuild,
+				RequestName: types.GetBuild,
 				Params:      rata.Params{"build_id": "foo"},
 			}, &Response{
 				Result: &build,
@@ -133,7 +134,7 @@ var _ = Describe("ATC Connection", func() {
 
 		It("makes a request with the given parameters to the given route", func() {
 			expectedURL := "/api/v1/teams/some-team/containers"
-			expectedResponse := []atc.Container{
+			expectedResponse := []types.Container{
 				{
 					ID:           "first-container",
 					PipelineName: "my-special-pipeline",
@@ -157,9 +158,9 @@ var _ = Describe("ATC Connection", func() {
 					ghttp.RespondWithJSONEncoded(http.StatusOK, expectedResponse),
 				),
 			)
-			var containers []atc.Container
+			var containers []types.Container
 			err := connection.Send(Request{
-				RequestName: atc.ListContainers,
+				RequestName: types.ListContainers,
 				Params:      rata.Params{"team_name": "some-team"},
 				Query:       url.Values{"pipeline_name": {"my-special-pipeline"}},
 			}, &Response{
@@ -191,7 +192,7 @@ var _ = Describe("ATC Connection", func() {
 			It("does not close the request body, and returns the body back through the response object", func() {
 				response := Response{}
 				err := connection.Send(Request{
-					RequestName:        atc.DownloadCLI,
+					RequestName:        types.DownloadCLI,
 					ReturnResponseBody: true,
 				},
 					&response,
@@ -217,21 +218,21 @@ var _ = Describe("ATC Connection", func() {
 						ghttp.VerifyRequest("GET", "/api/v1/builds/foo"),
 						ghttp.VerifyHeaderKV("Accept-Encoding", "application/banana"),
 						ghttp.VerifyHeaderKV("foo", "bar", "baz"),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{}),
 					),
 				)
 			})
 
 			It("sets the header and it's values on the request", func() {
 				err := connection.Send(Request{
-					RequestName: atc.GetBuild,
+					RequestName: types.GetBuild,
 					Params:      rata.Params{"build_id": "foo"},
 					Header: http.Header{
 						"Accept-Encoding": {"application/banana"},
 						"Foo":             {"bar", "baz"},
 					},
 				}, &Response{
-					Result: &atc.Build{},
+					Result: &types.Build{},
 				})
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -246,7 +247,7 @@ var _ = Describe("ATC Connection", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/builds/foo"),
-						ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Build{}, http.Header{atc.ConfigVersionHeader: {"42"}}),
+						ghttp.RespondWithJSONEncoded(http.StatusOK, types.Build{}, http.Header{types.ConfigVersionHeader: {"42"}}),
 					),
 				)
 			})
@@ -255,15 +256,15 @@ var _ = Describe("ATC Connection", func() {
 				responseHeaders := http.Header{}
 
 				err := connection.Send(Request{
-					RequestName:        atc.GetBuild,
+					RequestName:        types.GetBuild,
 					Params:             rata.Params{"build_id": "foo"},
 					ReturnResponseBody: true,
 				}, &Response{
-					Result:  &atc.Build{},
+					Result:  &types.Build{},
 					Headers: &responseHeaders,
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(responseHeaders.Get(atc.ConfigVersionHeader)).To(Equal("42"))
+				Expect(responseHeaders.Get(types.ConfigVersionHeader)).To(Equal("42"))
 			})
 		})
 
@@ -284,10 +285,10 @@ var _ = Describe("ATC Connection", func() {
 
 				It("sets the username and password if given", func() {
 					err := connection.Send(Request{
-						RequestName: atc.DeletePipeline,
+						RequestName: types.DeletePipeline,
 						Params: rata.Params{
 							"pipeline_name": "foo",
-							"team_name":     atc.DefaultTeamName,
+							"team_name":     types.DefaultTeamName,
 						},
 					}, nil)
 
@@ -311,10 +312,10 @@ var _ = Describe("ATC Connection", func() {
 
 				It("returns back UnexpectedResponseError", func() {
 					err := connection.Send(Request{
-						RequestName: atc.DeletePipeline,
+						RequestName: types.DeletePipeline,
 						Params: rata.Params{
 							"pipeline_name": "foo",
-							"team_name":     atc.DefaultTeamName,
+							"team_name":     types.DefaultTeamName,
 						},
 					}, nil)
 
@@ -342,10 +343,10 @@ var _ = Describe("ATC Connection", func() {
 
 				It("returns back ErrUnauthorized", func() {
 					err := connection.Send(Request{
-						RequestName: atc.DeletePipeline,
+						RequestName: types.DeletePipeline,
 						Params: rata.Params{
 							"pipeline_name": "foo",
-							"team_name":     atc.DefaultTeamName,
+							"team_name":     types.DefaultTeamName,
 						},
 					}, nil)
 
@@ -369,10 +370,10 @@ var _ = Describe("ATC Connection", func() {
 
 				It("returns back 403", func() {
 					resp, err := agent.Send(Request{
-						RequestName: atc.DeletePipeline,
+						RequestName: types.DeletePipeline,
 						Params: rata.Params{
 							"pipeline_name": "foo",
-							"team_name":     atc.DefaultTeamName,
+							"team_name":     types.DefaultTeamName,
 						},
 					})
 
@@ -398,10 +399,10 @@ var _ = Describe("ATC Connection", func() {
 
 					It("returns back ResourceNotFoundError", func() {
 						err := connection.Send(Request{
-							RequestName: atc.DeletePipeline,
+							RequestName: types.DeletePipeline,
 							Params: rata.Params{
 								"pipeline_name": "foo",
-								"team_name":     atc.DefaultTeamName,
+								"team_name":     types.DefaultTeamName,
 							},
 						}, nil)
 
@@ -431,10 +432,10 @@ var _ = Describe("ATC Connection", func() {
 
 					It("returns back a ResourceNotFoundError with the given error details", func() {
 						err := connection.Send(Request{
-							RequestName: atc.DeletePipeline,
+							RequestName: types.DeletePipeline,
 							Params: rata.Params{
 								"pipeline_name": "foo",
-								"team_name":     atc.DefaultTeamName,
+								"team_name":     types.DefaultTeamName,
 							},
 						}, nil)
 
@@ -462,7 +463,7 @@ var _ = Describe("ATC Connection", func() {
 							Task: &atc.TaskPlan{
 								Name:       "one-off",
 								Privileged: true,
-								Config:     &atc.TaskConfig{},
+								Config:     &types.TaskConfig{},
 							},
 						},
 					},
@@ -474,7 +475,7 @@ var _ = Describe("ATC Connection", func() {
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", expectedURL),
 						ghttp.VerifyJSONRepresenting(plan),
-						ghttp.RespondWithJSONEncoded(http.StatusCreated, atc.Config{}),
+						ghttp.RespondWithJSONEncoded(http.StatusCreated, types.Config{}),
 					),
 				)
 			})
@@ -487,10 +488,10 @@ var _ = Describe("ATC Connection", func() {
 				}
 
 				response := Response{
-					Result: &atc.Config{},
+					Result: &types.Config{},
 				}
 				err = connection.Send(Request{
-					RequestName: atc.CreateBuild,
+					RequestName: types.CreateBuild,
 					Body:        buffer,
 					Params:      rata.Params{"team_name": "some-team"},
 					Header: http.Header{
@@ -509,11 +510,11 @@ var _ = Describe("ATC Connection", func() {
 	Describe("#ConnectToEventStream", func() {
 		buildID := "3"
 		var streaming chan struct{}
-		var eventsChan chan atc.Event
+		var eventsChan chan types.Event
 
 		BeforeEach(func() {
 			streaming = make(chan struct{})
-			eventsChan = make(chan atc.Event)
+			eventsChan = make(chan types.Event)
 
 			eventsHandler := func() http.HandlerFunc {
 				return ghttp.CombineHandlers(
@@ -567,7 +568,7 @@ var _ = Describe("ATC Connection", func() {
 		It("returns an EventSource that can stream events", func() {
 			eventSource, err := connection.ConnectToEventStream(
 				Request{
-					RequestName: atc.BuildEvents,
+					RequestName: types.BuildEvents,
 					Params:      rata.Params{"build_id": buildID},
 				})
 			Expect(err).NotTo(HaveOccurred())

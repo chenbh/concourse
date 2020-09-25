@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerctx"
 	bclient "github.com/concourse/baggageclaim/client"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/worker/gclient"
 	"github.com/concourse/concourse/tsa"
 	"golang.org/x/crypto/ssh"
@@ -31,7 +31,7 @@ type forwardWorkerRequest struct {
 func (req forwardWorkerRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
 	logger := lagerctx.FromContext(ctx)
 
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ type landWorkerRequest struct {
 	server *server
 }
 
-func checkTeam(state ConnState, worker atc.Worker) error {
+func checkTeam(state ConnState, worker types.Worker) error {
 	if state.Team == "" {
 		// global keys can be used for all teams
 		return nil
@@ -157,7 +157,7 @@ func checkTeam(state ConnState, worker atc.Worker) error {
 }
 
 func (req landWorkerRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ type retireWorkerRequest struct {
 }
 
 func (req retireWorkerRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ type deleteWorkerRequest struct {
 }
 
 func (req deleteWorkerRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ type sweepContainersRequest struct {
 }
 
 func (req sweepContainersRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -254,7 +254,7 @@ type reportContainersRequest struct {
 }
 
 func (req reportContainersRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -276,7 +276,7 @@ type sweepVolumesRequest struct {
 }
 
 func (req sweepVolumesRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err
@@ -310,7 +310,7 @@ type reportVolumesRequest struct {
 }
 
 func (req reportVolumesRequest) Handle(ctx context.Context, state ConnState, channel ssh.Channel) error {
-	var worker atc.Worker
+	var worker types.Worker
 	err := json.NewDecoder(channel).Decode(&worker)
 	if err != nil {
 		return err

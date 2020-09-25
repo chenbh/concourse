@@ -3,6 +3,7 @@ package scheduler_test
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
@@ -264,7 +265,7 @@ func (example Example) Run() {
 	buildStarter := scheduler.NewBuildStarter(fakePlanner, fakeAlgorithm)
 
 	fakeJob := new(dbfakes.FakeJob)
-	fakeJob.ConfigReturns(atc.JobConfig{}, nil)
+	fakeJob.ConfigReturns(types.JobConfig{}, nil)
 	fakeJob.SaveNextInputMappingReturns(nil)
 
 	var expectedScheduledBuilds []*dbfakes.FakeBuild
@@ -328,7 +329,7 @@ func (example Example) Run() {
 			{
 				Name: "fake-resource",
 				Type: "fake-resource-type",
-				Source: atc.Source{
+				Source: types.Source{
 					"some": "source",
 				},
 			},

@@ -2,10 +2,10 @@ package auth_test
 
 import (
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/accessor"
 	"github.com/concourse/concourse/atc/api/accessor/accessorfakes"
 	"github.com/concourse/concourse/atc/api/auth"
@@ -53,20 +53,20 @@ var _ = Describe("CheckWorkerTeamAccessHandler", func() {
 	JustBeforeEach(func() {
 		fakeAccessor.CreateReturns(fakeaccess, nil)
 		routes := rata.Routes{}
-		for _, route := range atc.Routes {
-			if route.Name == atc.RetireWorker {
+		for _, route := range types.Routes {
+			if route.Name == types.RetireWorker {
 				routes = append(routes, route)
 			}
 		}
 
 		router, err := rata.NewRouter(routes, map[string]http.Handler{
-			atc.RetireWorker: handler,
+			types.RetireWorker: handler,
 		})
 		Expect(err).NotTo(HaveOccurred())
 		server = httptest.NewServer(router)
 
-		requestGenerator := rata.NewRequestGenerator(server.URL, atc.Routes)
-		request, err := requestGenerator.CreateRequest(atc.RetireWorker, rata.Params{
+		requestGenerator := rata.NewRequestGenerator(server.URL, types.Routes)
+		request, err := requestGenerator.CreateRequest(types.RetireWorker, rata.Params{
 			"worker_name": "some-worker",
 			"team_name":   "some-team",
 		}, nil)

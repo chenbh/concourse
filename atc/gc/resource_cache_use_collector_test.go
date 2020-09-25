@@ -2,8 +2,8 @@ package gc_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -23,7 +23,7 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 	Describe("Run", func() {
 		Describe("cache uses", func() {
 			var (
-				versionedResourceType atc.VersionedResourceType
+				versionedResourceType types.VersionedResourceType
 			)
 
 			countResourceCacheUses := func() int {
@@ -45,15 +45,15 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 			}
 
 			BeforeEach(func() {
-				versionedResourceType = atc.VersionedResourceType{
-					ResourceType: atc.ResourceType{
+				versionedResourceType = types.VersionedResourceType{
+					ResourceType: types.ResourceType{
 						Name: "some-type",
 						Type: "some-base-type",
-						Source: atc.Source{
+						Source: types.Source{
 							"some-type": "source-param",
 						},
 					},
-					Version: atc.Version{"some-type": "version"},
+					Version: types.Version{"some-type": "version"},
 				}
 			})
 
@@ -62,12 +62,12 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
 						db.ForBuild(defaultBuild.ID()),
 						"some-type",
-						atc.Version{"some": "version"},
-						atc.Source{
+						types.Version{"some": "version"},
+						types.Source{
 							"some": "source",
 						},
-						atc.Params{"some": "params"},
-						atc.VersionedResourceTypes{
+						types.Params{"some": "params"},
+						types.VersionedResourceTypes{
 							versionedResourceType,
 						},
 					)
@@ -126,12 +126,12 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
 						db.ForBuild(jobBuild.ID()),
 						"some-type",
-						atc.Version{"some": "version"},
-						atc.Source{
+						types.Version{"some": "version"},
+						types.Source{
 							"some": "source",
 						},
-						atc.Params{"some": "params"},
-						atc.VersionedResourceTypes{
+						types.Params{"some": "params"},
+						types.VersionedResourceTypes{
 							versionedResourceType,
 						},
 					)
@@ -159,12 +159,12 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 						_, err = resourceCacheFactory.FindOrCreateResourceCache(
 							db.ForBuild(secondJobBuild.ID()),
 							"some-type",
-							atc.Version{"some": "version"},
-							atc.Source{
+							types.Version{"some": "version"},
+							types.Source{
 								"some": "source",
 							},
-							atc.Params{"some": "params"},
-							atc.VersionedResourceTypes{
+							types.Params{"some": "params"},
+							types.VersionedResourceTypes{
 								versionedResourceType,
 							},
 						)
@@ -191,7 +191,7 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 				var container db.CreatingContainer
 
 				BeforeEach(func() {
-					worker, err := defaultTeam.SaveWorker(atc.Worker{
+					worker, err := defaultTeam.SaveWorker(types.Worker{
 						Name: "some-worker",
 					}, 0)
 					Expect(err).ToNot(HaveOccurred())
@@ -205,12 +205,12 @@ var _ = Describe("ResourceCacheUseCollector", func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
 						db.ForContainer(container.ID()),
 						"some-type",
-						atc.Version{"some-type": "version"},
-						atc.Source{
+						types.Version{"some-type": "version"},
+						types.Source{
 							"cache": "source",
 						},
-						atc.Params{"some": "params"},
-						atc.VersionedResourceTypes{
+						types.Params{"some": "params"},
+						types.VersionedResourceTypes{
 							versionedResourceType,
 						},
 					)

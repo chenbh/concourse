@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net"
 	"net/http"
 
@@ -119,7 +120,7 @@ var _ = Describe("DBProvider", func() {
 		fakeWorker1.BaggageclaimURLReturns(&baggageclaimURL)
 		fakeWorker1.StateReturns(db.WorkerStateRunning)
 		fakeWorker1.ActiveContainersReturns(2)
-		fakeWorker1.ResourceTypesReturns([]atc.WorkerResourceType{
+		fakeWorker1.ResourceTypesReturns([]types.WorkerResourceType{
 			{Type: "some-resource-a", Image: "some-image-a"}})
 
 		fakeWorker1.VersionReturns(&worker1Version)
@@ -132,7 +133,7 @@ var _ = Describe("DBProvider", func() {
 		fakeWorker2.BaggageclaimURLReturns(&baggageclaimURL)
 		fakeWorker2.StateReturns(db.WorkerStateRunning)
 		fakeWorker2.ActiveContainersReturns(2)
-		fakeWorker2.ResourceTypesReturns([]atc.WorkerResourceType{
+		fakeWorker2.ResourceTypesReturns([]types.WorkerResourceType{
 			{Type: "some-resource-b", Image: "some-image-b"}})
 
 		fakeWorker2.VersionReturns(&worker2Version)
@@ -237,7 +238,7 @@ var _ = Describe("DBProvider", func() {
 					landingWorker.BaggageclaimURLReturns(&baggageclaimURL)
 					landingWorker.StateReturns(db.WorkerStateLanding)
 					landingWorker.ActiveContainersReturns(5)
-					landingWorker.ResourceTypesReturns([]atc.WorkerResourceType{
+					landingWorker.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 
 					stalledWorker := new(dbfakes.FakeWorker)
@@ -246,7 +247,7 @@ var _ = Describe("DBProvider", func() {
 					stalledWorker.BaggageclaimURLReturns(&baggageclaimURL)
 					stalledWorker.StateReturns(db.WorkerStateStalled)
 					stalledWorker.ActiveContainersReturns(0)
-					stalledWorker.ResourceTypesReturns([]atc.WorkerResourceType{
+					stalledWorker.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 
 					fakeDBWorkerFactory.WorkersReturns(
@@ -271,7 +272,7 @@ var _ = Describe("DBProvider", func() {
 					worker1.BaggageclaimURLReturns(&baggageclaimURL)
 					worker1.StateReturns(db.WorkerStateRunning)
 					worker1.ActiveContainersReturns(5)
-					worker1.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker1.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version1 := "1.1.0"
 					worker1.VersionReturns(&version1)
@@ -282,7 +283,7 @@ var _ = Describe("DBProvider", func() {
 					worker2.BaggageclaimURLReturns(&baggageclaimURL)
 					worker2.StateReturns(db.WorkerStateRunning)
 					worker2.ActiveContainersReturns(0)
-					worker2.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker2.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version2 := "2.0.0"
 					worker2.VersionReturns(&version2)
@@ -293,7 +294,7 @@ var _ = Describe("DBProvider", func() {
 					worker3.BaggageclaimURLReturns(&baggageclaimURL)
 					worker3.StateReturns(db.WorkerStateRunning)
 					worker3.ActiveContainersReturns(0)
-					worker3.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker3.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version3 := "0.0.0"
 					worker3.VersionReturns(&version3)
@@ -321,7 +322,7 @@ var _ = Describe("DBProvider", func() {
 					worker1.BaggageclaimURLReturns(&baggageclaimURL)
 					worker1.StateReturns(db.WorkerStateRunning)
 					worker1.ActiveContainersReturns(5)
-					worker1.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker1.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version1 := "1.1.0"
 					worker1.VersionReturns(&version1)
@@ -332,7 +333,7 @@ var _ = Describe("DBProvider", func() {
 					worker2.BaggageclaimURLReturns(&baggageclaimURL)
 					worker2.StateReturns(db.WorkerStateRunning)
 					worker2.ActiveContainersReturns(0)
-					worker2.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker2.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version2 := "1.2.0"
 					worker2.VersionReturns(&version2)
@@ -343,7 +344,7 @@ var _ = Describe("DBProvider", func() {
 					worker3.BaggageclaimURLReturns(&baggageclaimURL)
 					worker3.StateReturns(db.WorkerStateRunning)
 					worker3.ActiveContainersReturns(0)
-					worker3.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker3.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version3 := "1.0.0"
 					worker3.VersionReturns(&version3)
@@ -372,7 +373,7 @@ var _ = Describe("DBProvider", func() {
 					worker1.BaggageclaimURLReturns(&baggageclaimURL)
 					worker1.StateReturns(db.WorkerStateRunning)
 					worker1.ActiveContainersReturns(5)
-					worker1.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker1.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 
 					fakeDBWorkerFactory.WorkersReturns(
@@ -395,7 +396,7 @@ var _ = Describe("DBProvider", func() {
 					worker1.BaggageclaimURLReturns(&baggageclaimURL)
 					worker1.StateReturns(db.WorkerStateRunning)
 					worker1.ActiveContainersReturns(5)
-					worker1.ResourceTypesReturns([]atc.WorkerResourceType{
+					worker1.ResourceTypesReturns([]types.WorkerResourceType{
 						{Type: "some-resource-b", Image: "some-image-b"}})
 					version1 := "1.1..0.2-bogus=version"
 					worker1.VersionReturns(&version1)

@@ -3,11 +3,11 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/displayhelpers"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
@@ -33,7 +33,7 @@ type BuildsCommand struct {
 
 func (command *BuildsCommand) Execute([]string) error {
 	var (
-		builds = make([]atc.Build, 0)
+		builds = make([]types.Build, 0)
 		teams  = make([]concourse.Team, 0)
 
 		timeSince time.Time
@@ -70,7 +70,7 @@ func (command *BuildsCommand) Execute([]string) error {
 	return command.displayBuilds(builds)
 }
 
-func (command *BuildsCommand) getBuilds(builds []atc.Build, currentTeam concourse.Team, page concourse.Page, client concourse.Client, teams []concourse.Team) ([]atc.Build, error) {
+func (command *BuildsCommand) getBuilds(builds []types.Build, currentTeam concourse.Team, page concourse.Page, client concourse.Client, teams []concourse.Team) ([]types.Build, error) {
 	var err error
 	if command.pipelineFlag() {
 		builds, err = command.validatePipelineBuilds(builds, currentTeam, page)
@@ -129,7 +129,7 @@ func (command *BuildsCommand) validateCurrentTeam(teams []concourse.Team, curren
 	return teams
 }
 
-func (command *BuildsCommand) validateJobBuilds(builds []atc.Build, currentTeam concourse.Team, page concourse.Page) ([]atc.Build, error) {
+func (command *BuildsCommand) validateJobBuilds(builds []types.Build, currentTeam concourse.Team, page concourse.Page) ([]types.Build, error) {
 	var (
 		err   error
 		found bool
@@ -149,7 +149,7 @@ func (command *BuildsCommand) validateJobBuilds(builds []atc.Build, currentTeam 
 	return builds, err
 }
 
-func (command *BuildsCommand) validatePipelineBuilds(builds []atc.Build, currentTeam concourse.Team, page concourse.Page) ([]atc.Build, error) {
+func (command *BuildsCommand) validatePipelineBuilds(builds []types.Build, currentTeam concourse.Team, page concourse.Page) ([]types.Build, error) {
 	_, err := command.Pipeline.Validate()
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (command *BuildsCommand) validatePipelineBuilds(builds []atc.Build, current
 	return builds, err
 }
 
-func (command *BuildsCommand) displayBuilds(builds []atc.Build) error {
+func (command *BuildsCommand) displayBuilds(builds []types.Build) error {
 	var err error
 	if command.Json {
 		err = displayhelpers.JsonPrint(builds)
@@ -316,7 +316,7 @@ func (command *BuildsCommand) pipelineFlag() bool {
 	return command.Pipeline != ""
 }
 
-func (command *BuildsCommand) buildCap(builds []atc.Build) int {
+func (command *BuildsCommand) buildCap(builds []types.Build) int {
 	if command.Count < len(builds) {
 		return command.Count
 	}

@@ -1,5 +1,7 @@
 package atc
 
+import "github.com/concourse/concourse/atc/types"
+
 type Plan struct {
 	ID       PlanID `json:"id"`
 	Attempts []int  `json:"attempts,omitempty"`
@@ -181,56 +183,56 @@ type DoPlan []Plan
 type GetPlan struct {
 	Name string `json:"name,omitempty"`
 
-	Type        string   `json:"type"`
-	Resource    string   `json:"resource"`
-	Source      Source   `json:"source"`
-	Params      Params   `json:"params,omitempty"`
-	Version     *Version `json:"version,omitempty"`
-	VersionFrom *PlanID  `json:"version_from,omitempty"`
-	Tags        Tags     `json:"tags,omitempty"`
+	Type        string         `json:"type"`
+	Resource    string         `json:"resource"`
+	Source      types.Source   `json:"source"`
+	Params      types.Params   `json:"params,omitempty"`
+	Version     *types.Version `json:"version,omitempty"`
+	VersionFrom *PlanID        `json:"version_from,omitempty"`
+	Tags        types.Tags     `json:"tags,omitempty"`
 
-	VersionedResourceTypes VersionedResourceTypes `json:"resource_types,omitempty"`
+	VersionedResourceTypes types.VersionedResourceTypes `json:"resource_types,omitempty"`
 }
 
 type PutPlan struct {
-	Type     string        `json:"type"`
-	Name     string        `json:"name,omitempty"`
-	Resource string        `json:"resource"`
-	Source   Source        `json:"source"`
-	Params   Params        `json:"params,omitempty"`
-	Tags     Tags          `json:"tags,omitempty"`
-	Inputs   *InputsConfig `json:"inputs,omitempty"`
+	Type     string              `json:"type"`
+	Name     string              `json:"name,omitempty"`
+	Resource string              `json:"resource"`
+	Source   types.Source        `json:"source"`
+	Params   types.Params        `json:"params,omitempty"`
+	Tags     types.Tags          `json:"tags,omitempty"`
+	Inputs   *types.InputsConfig `json:"inputs,omitempty"`
 
-	VersionedResourceTypes VersionedResourceTypes `json:"resource_types,omitempty"`
+	VersionedResourceTypes types.VersionedResourceTypes `json:"resource_types,omitempty"`
 }
 
 type CheckPlan struct {
-	Type        string  `json:"type"`
-	Name        string  `json:"name,omitempty"`
-	Source      Source  `json:"source"`
-	Tags        Tags    `json:"tags,omitempty"`
-	Timeout     string  `json:"timeout,omitempty"`
-	FromVersion Version `json:"from_version,omitempty"`
+	Type        string        `json:"type"`
+	Name        string        `json:"name,omitempty"`
+	Source      types.Source  `json:"source"`
+	Tags        types.Tags    `json:"tags,omitempty"`
+	Timeout     string        `json:"timeout,omitempty"`
+	FromVersion types.Version `json:"from_version,omitempty"`
 
-	VersionedResourceTypes VersionedResourceTypes `json:"resource_types,omitempty"`
+	VersionedResourceTypes types.VersionedResourceTypes `json:"resource_types,omitempty"`
 }
 
 type TaskPlan struct {
 	Name string `json:"name,omitempty"`
 
-	Privileged bool `json:"privileged"`
-	Tags       Tags `json:"tags,omitempty"`
+	Privileged bool       `json:"privileged"`
+	Tags       types.Tags `json:"tags,omitempty"`
 
-	ConfigPath string      `json:"config_path,omitempty"`
-	Config     *TaskConfig `json:"config,omitempty"`
-	Vars       Params      `json:"vars,omitempty"`
+	ConfigPath string            `json:"config_path,omitempty"`
+	Config     *types.TaskConfig `json:"config,omitempty"`
+	Vars       types.Params      `json:"vars,omitempty"`
 
-	Params            TaskEnv           `json:"params,omitempty"`
+	Params            types.TaskEnv     `json:"params,omitempty"`
 	InputMapping      map[string]string `json:"input_mapping,omitempty"`
 	OutputMapping     map[string]string `json:"output_mapping,omitempty"`
 	ImageArtifactName string            `json:"image,omitempty"`
 
-	VersionedResourceTypes VersionedResourceTypes `json:"resource_types,omitempty"`
+	VersionedResourceTypes types.VersionedResourceTypes `json:"resource_types,omitempty"`
 }
 
 type SetPipelinePlan struct {

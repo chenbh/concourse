@@ -1,13 +1,13 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -22,7 +22,7 @@ var _ = Describe("Fly CLI", func() {
 				err  error
 			)
 			BeforeEach(func() {
-				path, err = atc.Routes.CreatePathForRoute(atc.HidePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
+				path, err = types.Routes.CreatePathForRoute(types.HidePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -88,7 +88,7 @@ var _ = Describe("Fly CLI", func() {
 				err  error
 			)
 			BeforeEach(func() {
-				path, err = atc.Routes.CreatePathForRoute(atc.HidePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
+				path, err = types.Routes.CreatePathForRoute(types.HidePipeline, rata.Params{"pipeline_name": "awesome-pipeline", "team_name": teamName})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -97,7 +97,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+teamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: teamName,
 							}),
 						),
@@ -130,7 +130,7 @@ var _ = Describe("Fly CLI", func() {
 					atcServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("GET", "/api/v1/teams/"+teamName),
-							ghttp.RespondWithJSONEncoded(http.StatusOK, atc.Team{
+							ghttp.RespondWithJSONEncoded(http.StatusOK, types.Team{
 								Name: teamName,
 							}),
 						),

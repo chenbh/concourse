@@ -2,10 +2,10 @@ package volumeserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/api/present"
 	"github.com/concourse/concourse/atc/db"
 )
@@ -25,7 +25,7 @@ func (s *Server) ListVolumes(team db.Team) http.Handler {
 
 		hLog.Debug("listed", lager.Data{"volume-count": len(volumes)})
 
-		presentedVolumes := []atc.Volume{}
+		presentedVolumes := []types.Volume{}
 		for i := 0; i < len(volumes); i++ {
 			volume := volumes[i]
 			if vol, err := present.Volume(volume); err != nil {

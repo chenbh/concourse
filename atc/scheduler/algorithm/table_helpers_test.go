@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"os"
 	"strconv"
 	"time"
@@ -121,10 +122,10 @@ func (example Example) Run() {
 		versionIDs:  StringMapping{},
 	}
 
-	team, err := teamFactory.CreateTeam(atc.Team{Name: "algorithm"})
+	team, err := teamFactory.CreateTeam(types.Team{Name: "algorithm"})
 	Expect(err).NotTo(HaveOccurred())
 
-	pipeline, _, err := team.SavePipeline("algorithm", atc.Config{}, db.ConfigVersion(0), false)
+	pipeline, _, err := team.SavePipeline("algorithm", types.Config{}, db.ConfigVersion(0), false)
 	Expect(err).NotTo(HaveOccurred())
 
 	setupTx, err := dbConn.Begin()
@@ -138,7 +139,7 @@ func (example Example) Run() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(setupTx.Commit()).To(Succeed())
 
-	resources := map[string]atc.ResourceConfig{}
+	resources := map[string]types.ResourceConfig{}
 
 	cache := gocache.New(10*time.Second, 10*time.Second)
 
@@ -170,9 +171,9 @@ func (example Example) Run() {
 		}
 
 		if len(input.Version.Pinned) != 0 {
-			inputConfigs[i].PinnedVersion = atc.Version{"ver": input.Version.Pinned}
+			inputConfigs[i].PinnedVersion = types.Version{"ver": input.Version.Pinned}
 
-			setup.insertPinned(setup.resourceIDs.ID(input.Resource), atc.Version{"ver": input.Version.Pinned})
+			setup.insertPinned(setup.resourceIDs.ID(input.Resource), types.Version{"ver": input.Version.Pinned})
 		}
 	}
 
@@ -195,7 +196,7 @@ func (example Example) Run() {
 	}
 }
 
-func (example Example) importVersionsDB(ctx context.Context, setup setupDB, cache *gocache.Cache, resources map[string]atc.ResourceConfig) db.VersionsDB {
+func (example Example) importVersionsDB(ctx context.Context, setup setupDB, cache *gocache.Cache, resources map[string]types.ResourceConfig) db.VersionsDB {
 	ctx, span := tracing.StartSpan(ctx, "importVersionsDB", tracing.Attrs{
 		"db": example.LoadDB,
 	})
@@ -238,10 +239,10 @@ func (example Example) importVersionsDB(ctx context.Context, setup setupDB, cach
 		setup.resourceIDs[name] = id
 
 		setup.insertResource(name, &id)
-		resources[name] = atc.ResourceConfig{
+		resources[name] = types.ResourceConfig{
 			Name: name,
 			Type: "some-base-type",
-			Source: atc.Source{
+			Source: types.Source{
 				name: "source",
 			},
 		}
@@ -257,10 +258,10 @@ func (example Example) importVersionsDB(ctx context.Context, setup setupDB, cach
 		setup.resourceIDs[resource.Name] = resource.ID
 
 		setup.insertResource(resource.Name, resource.ScopeID)
-		resources[resource.Name] = atc.ResourceConfig{
+		resources[resource.Name] = types.ResourceConfig{
 			Name: resource.Name,
 			Type: "some-base-type",
-			Source: atc.Source{
+			Source: types.Source{
 				resource.Name: "source",
 			},
 		}
@@ -421,7 +422,7 @@ func (example Example) importVersionsDB(ctx context.Context, setup setupDB, cach
 	return versionsDB
 }
 
-func (example Example) setupVersionsDB(ctx context.Context, setup setupDB, cache *gocache.Cache, resources map[string]atc.ResourceConfig) db.VersionsDB {
+func (example Example) setupVersionsDB(ctx context.Context, setup setupDB, cache *gocache.Cache, resources map[string]types.ResourceConfig) db.VersionsDB {
 	ctx, span := tracing.StartSpan(ctx, "setupVersionsDB", tracing.Attrs{})
 	defer span.End()
 
@@ -440,7 +441,7 @@ func (example Example) setupVersionsDB(ctx context.Context, setup setupDB, cache
 
 		resourceID := setup.resourceIDs.ID(row.Resource)
 
-		versionJSON, err := json.Marshal(atc.Version{"ver": row.Version})
+		versionJSON, err := json.Marshal(types.Version{"ver": row.Version})
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = setup.psql.Insert("build_resource_config_version_outputs").
@@ -473,7 +474,7 @@ func (example Example) setupVersionsDB(ctx context.Context, setup setupDB, cache
 
 		resourceID := setup.resourceIDs.ID(row.Resource)
 
-		versionJSON, err := json.Marshal(atc.Version{"ver": row.Version})
+		versionJSON, err := json.Marshal(types.Version{"ver": row.Version})
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = setup.psql.Insert("build_resource_config_version_inputs").
@@ -531,10 +532,10 @@ func (example Example) setupVersionsDB(ctx context.Context, setup setupDB, cache
 
 		setup.insertResource(input.Resource, scope)
 
-		resources[input.Resource] = atc.ResourceConfig{
+		resources[input.Resource] = types.ResourceConfig{
 			Name: input.Resource,
 			Type: "some-base-type",
-			Source: atc.Source{
+			Source: types.Source{
 				input.Resource: "source",
 			},
 		}
@@ -710,7 +711,7 @@ func (s setupDB) insertResource(name string, scope *int) int {
 	// just make them one-to-one
 	resourceConfigID := resourceID
 
-	j, err := json.Marshal(atc.Source{name: "source"})
+	j, err := json.Marshal(types.Source{name: "source"})
 	Expect(err).ToNot(HaveOccurred())
 
 	_, err = s.psql.Insert("resource_configs").
@@ -745,7 +746,7 @@ func (s setupDB) insertResource(name string, scope *int) int {
 	return resourceID
 }
 
-func (s setupDB) insertRowVersion(resources map[string]atc.ResourceConfig, row DBRow) {
+func (s setupDB) insertRowVersion(resources map[string]types.ResourceConfig, row DBRow) {
 	resourceID := s.resourceIDs.ID(row.Resource)
 	versionID := s.versionIDs.ID(row.Version)
 
@@ -755,10 +756,10 @@ func (s setupDB) insertRowVersion(resources map[string]atc.ResourceConfig, row D
 	}
 
 	s.insertResource(row.Resource, scope)
-	resources[row.Resource] = atc.ResourceConfig{
+	resources[row.Resource] = types.ResourceConfig{
 		Name: row.Resource,
 		Type: "some-base-type",
-		Source: atc.Source{
+		Source: types.Source{
 			row.Resource: "source",
 		},
 	}
@@ -768,7 +769,7 @@ func (s setupDB) insertRowVersion(resources map[string]atc.ResourceConfig, row D
 		return
 	}
 
-	versionJSON, err := json.Marshal(atc.Version{"ver": row.Version})
+	versionJSON, err := json.Marshal(types.Version{"ver": row.Version})
 	Expect(err).ToNot(HaveOccurred())
 
 	_, err = s.psql.Insert("resource_config_versions").
@@ -831,7 +832,7 @@ func (s setupDB) insertBuildPipe(row DBRow) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func (s setupDB) insertPinned(resourceID int, version atc.Version) {
+func (s setupDB) insertPinned(resourceID int, version types.Version) {
 	versionJSON, err := json.Marshal(version)
 	Expect(err).ToNot(HaveOccurred())
 

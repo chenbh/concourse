@@ -2,9 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"sort"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/commands/internal/flaghelpers"
 	"github.com/concourse/concourse/fly/rc"
 )
@@ -46,7 +46,7 @@ func (command *ChecklistCommand) Execute([]string) error {
 	return nil
 }
 
-func printCheckfile(teamName, pipelineName string, config atc.Config, url string) {
+func printCheckfile(teamName, pipelineName string, config types.Config, url string) {
 	orphanHeaderName := "misc"
 	if len(config.Groups) == 0 {
 		orphanHeaderName = pipelineName
@@ -58,11 +58,11 @@ func printCheckfile(teamName, pipelineName string, config atc.Config, url string
 
 	miscJobs := orphanedJobs(config)
 	if len(miscJobs) > 0 {
-		printGroup(teamName, pipelineName, atc.GroupConfig{Name: orphanHeaderName, Jobs: miscJobs}, url)
+		printGroup(teamName, pipelineName, types.GroupConfig{Name: orphanHeaderName, Jobs: miscJobs}, url)
 	}
 }
 
-func printGroup(teamName, pipelineName string, group atc.GroupConfig, url string) {
+func printGroup(teamName, pipelineName string, group types.GroupConfig, url string) {
 	fmt.Printf("#- %s\n", group.Name)
 	for _, job := range group.Jobs {
 		fmt.Printf("%s: concourse.check %s %s %s %s\n", job, url, teamName, pipelineName, job)
@@ -70,7 +70,7 @@ func printGroup(teamName, pipelineName string, group atc.GroupConfig, url string
 	fmt.Println("")
 }
 
-func orphanedJobs(config atc.Config) []string {
+func orphanedJobs(config types.Config) []string {
 	allJobNames := map[string]struct{}{}
 	for _, jobConfig := range config.Jobs {
 		allJobNames[jobConfig.Name] = struct{}{}

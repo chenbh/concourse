@@ -2,8 +2,8 @@ package db_test
 
 import (
 	sq "github.com/Masterminds/squirrel"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
+	"github.com/concourse/concourse/atc/types"
 	"github.com/lib/pq"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,12 +42,12 @@ var _ = Describe("ResourceCache", func() {
 			urc, err := resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForBuild(build.ID()),
 				"some-worker-resource-type",
-				atc.Version{"some": "version"},
-				atc.Source{
+				types.Version{"some": "version"},
+				types.Source{
 					"some": "source",
 				},
-				atc.Params{"some": "params"},
-				atc.VersionedResourceTypes{},
+				types.Params{"some": "params"},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(urc.ID()).ToNot(BeZero())
@@ -66,12 +66,12 @@ var _ = Describe("ResourceCache", func() {
 				existingResourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 					db.ForBuild(build.ID()),
 					"some-worker-resource-type",
-					atc.Version{"some": "version"},
-					atc.Source{
+					types.Version{"some": "version"},
+					types.Source{
 						"some": "source",
 					},
-					atc.Params{"some": "params"},
-					atc.VersionedResourceTypes{},
+					types.Params{"some": "params"},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -80,12 +80,12 @@ var _ = Describe("ResourceCache", func() {
 				urc, err := resourceCacheFactory.FindOrCreateResourceCache(
 					db.ForBuild(build.ID()),
 					"some-worker-resource-type",
-					atc.Version{"some": "version"},
-					atc.Source{
+					types.Version{"some": "version"},
+					types.Source{
 						"some": "source",
 					},
-					atc.Params{"some": "params"},
-					atc.VersionedResourceTypes{},
+					types.Params{"some": "params"},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(urc.ID()).To(Equal(existingResourceCache.ID()))
@@ -98,7 +98,7 @@ var _ = Describe("ResourceCache", func() {
 		var urc db.UsedResourceCache
 
 		BeforeEach(func() {
-			worker, err := defaultTeam.SaveWorker(atc.Worker{
+			worker, err := defaultTeam.SaveWorker(types.Worker{
 				Name: "some-worker",
 			}, 0)
 			Expect(err).ToNot(HaveOccurred())
@@ -115,12 +115,12 @@ var _ = Describe("ResourceCache", func() {
 			urc, err = resourceCacheFactory.FindOrCreateResourceCache(
 				db.ForContainer(container.ID()),
 				"some-worker-resource-type",
-				atc.Version{"some-type": "version"},
-				atc.Source{
+				types.Version{"some-type": "version"},
+				types.Source{
 					"cache": "source",
 				},
-				atc.Params{"some": "params"},
-				atc.VersionedResourceTypes{},
+				types.Params{"some": "params"},
+				types.VersionedResourceTypes{},
 			)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -141,12 +141,12 @@ var _ = Describe("ResourceCache", func() {
 				existingResourceCache, err = resourceCacheFactory.FindOrCreateResourceCache(
 					db.ForContainer(container.ID()),
 					"some-worker-resource-type",
-					atc.Version{"some-type": "version"},
-					atc.Source{
+					types.Version{"some-type": "version"},
+					types.Source{
 						"cache": "source",
 					},
-					atc.Params{"some": "params"},
-					atc.VersionedResourceTypes{},
+					types.Params{"some": "params"},
+					types.VersionedResourceTypes{},
 				)
 				Expect(err).NotTo(HaveOccurred())
 			})

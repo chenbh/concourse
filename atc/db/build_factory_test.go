@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	types2 "github.com/concourse/concourse/atc/types"
 	"time"
 
 	"github.com/concourse/concourse/atc"
@@ -16,7 +17,7 @@ var _ = Describe("BuildFactory", func() {
 
 	BeforeEach(func() {
 		var err error
-		team, err = teamFactory.CreateTeam(atc.Team{Name: "some-team"})
+		team, err = teamFactory.CreateTeam(types2.Team{Name: "some-team"})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -116,8 +117,8 @@ var _ = Describe("BuildFactory", func() {
 				err = build2.Finish(db.BuildStatusErrored)
 				Expect(err).NotTo(HaveOccurred())
 
-				p, _, err := defaultTeam.SavePipeline("other-pipeline", atc.Config{
-					Jobs: atc.JobConfigs{
+				p, _, err := defaultTeam.SavePipeline("other-pipeline", types2.Config{
+					Jobs: types2.JobConfigs{
 						{
 							Name: "some-other-job",
 						},
@@ -250,7 +251,7 @@ var _ = Describe("BuildFactory", func() {
 			build1, err = team.CreateOneOffBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
+			config := types2.Config{Jobs: types2.JobConfigs{{Name: "some-job"}}}
 			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -273,7 +274,7 @@ var _ = Describe("BuildFactory", func() {
 			build3, err = publicJob.CreateBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			otherTeam, err := teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+			otherTeam, err := teamFactory.CreateTeam(types2.Team{Name: "some-other-team"})
 			Expect(err).NotTo(HaveOccurred())
 
 			build4, err = otherTeam.CreateOneOffBuild()
@@ -309,7 +310,7 @@ var _ = Describe("BuildFactory", func() {
 			build1, err = team.CreateOneOffBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
+			config := types2.Config{Jobs: types2.JobConfigs{{Name: "some-job"}}}
 			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -332,7 +333,7 @@ var _ = Describe("BuildFactory", func() {
 			build3, err = publicJob.CreateBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			otherTeam, err := teamFactory.CreateTeam(atc.Team{Name: "some-other-team"})
+			otherTeam, err := teamFactory.CreateTeam(types2.Team{Name: "some-other-team"})
 			Expect(err).NotTo(HaveOccurred())
 
 			build4, err = otherTeam.CreateOneOffBuild()
@@ -355,7 +356,7 @@ var _ = Describe("BuildFactory", func() {
 			_, err := team.CreateOneOffBuild()
 			Expect(err).NotTo(HaveOccurred())
 
-			config := atc.Config{Jobs: atc.JobConfigs{{Name: "some-job"}}}
+			config := types2.Config{Jobs: types2.JobConfigs{{Name: "some-job"}}}
 			privatePipeline, _, err := team.SavePipeline("private-pipeline", config, db.ConfigVersion(1), false)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -392,8 +393,8 @@ var _ = Describe("BuildFactory", func() {
 		var build2DB, build3DB, build4DB db.Build
 
 		BeforeEach(func() {
-			pipeline, _, err := team.SavePipeline("other-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err := team.SavePipeline("other-pipeline", types2.Config{
+				Jobs: types2.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -447,8 +448,8 @@ var _ = Describe("BuildFactory", func() {
 		var build2DB db.Build
 
 		BeforeEach(func() {
-			pipeline, _, err := team.SavePipeline("other-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err := team.SavePipeline("other-pipeline", types2.Config{
+				Jobs: types2.JobConfigs{
 					{
 						Name: "some-job",
 					},
@@ -496,8 +497,8 @@ var _ = Describe("BuildFactory", func() {
 		var build2DB db.Build
 
 		BeforeEach(func() {
-			pipeline, _, err := team.SavePipeline("other-pipeline", atc.Config{
-				Jobs: atc.JobConfigs{
+			pipeline, _, err := team.SavePipeline("other-pipeline", types2.Config{
+				Jobs: types2.JobConfigs{
 					{
 						Name: "some-job",
 					},

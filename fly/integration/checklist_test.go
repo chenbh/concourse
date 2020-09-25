@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,20 +12,18 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
-
-	"github.com/concourse/concourse/atc"
 )
 
 var _ = Describe("Fly CLI", func() {
 	Describe("checklist", func() {
 		var (
-			config atc.Config
+			config types.Config
 			home   string
 		)
 
 		BeforeEach(func() {
-			config = atc.Config{
-				Groups: atc.GroupConfigs{
+			config = types.Config{
+				Groups: types.GroupConfigs{
 					{
 						Name:      "some-group",
 						Jobs:      []string{"job-1", "job-2"},
@@ -37,7 +36,7 @@ var _ = Describe("Fly CLI", func() {
 					},
 				},
 
-				Jobs: atc.JobConfigs{
+				Jobs: types.JobConfigs{
 					{
 						Name: "some-orphaned-job",
 					},
@@ -81,7 +80,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/pipelines/some-pipeline/config"),
-						ghttp.RespondWithJSONEncoded(200, atc.ConfigResponse{Config: config}, http.Header{atc.ConfigVersionHeader: {"42"}}),
+						ghttp.RespondWithJSONEncoded(200, types.ConfigResponse{Config: config}, http.Header{types.ConfigVersionHeader: {"42"}}),
 					),
 				)
 			})
@@ -114,8 +113,8 @@ some-orphaned-job: concourse.check %s main some-pipeline some-orphaned-job
 
 			Context("when there are no groups", func() {
 				BeforeEach(func() {
-					config = atc.Config{
-						Jobs: atc.JobConfigs{
+					config = types.Config{
+						Jobs: types.JobConfigs{
 							{
 								Name: "job-1",
 							},

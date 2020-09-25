@@ -2,10 +2,10 @@ package resourceserver
 
 import (
 	"encoding/json"
+	"github.com/concourse/concourse/atc/types"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 )
 
@@ -25,7 +25,7 @@ func (s *Server) SetPinCommentOnResource(pipeline db.Pipeline) http.Handler {
 			return
 		}
 
-		var reqBody atc.SetPinCommentRequestBody
+		var reqBody types.SetPinCommentRequestBody
 		err = json.NewDecoder(r.Body).Decode(&reqBody)
 		if err != nil {
 			logger.Info("malformed-request", lager.Data{"error": err.Error()})

@@ -2,9 +2,9 @@ package gc_test
 
 import (
 	"context"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/gc"
 
@@ -46,17 +46,17 @@ var _ = Describe("ResourceConfigCollector", func() {
 				BeforeEach(func() {
 					resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
 						"some-base-type",
-						atc.Source{
+						types.Source{
 							"some": "source",
 						},
-						atc.VersionedResourceTypes{},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
 					workerFactory := db.NewWorkerFactory(dbConn)
-					defaultWorkerPayload := atc.Worker{
-						ResourceTypes: []atc.WorkerResourceType{
-							atc.WorkerResourceType{
+					defaultWorkerPayload := types.Worker{
+						ResourceTypes: []types.WorkerResourceType{
+							types.WorkerResourceType{
 								Type:    "some-base-type",
 								Image:   "/path/to/image",
 								Version: "some-brt-version",
@@ -89,17 +89,17 @@ var _ = Describe("ResourceConfigCollector", func() {
 				BeforeEach(func() {
 					resourceConfig, err := resourceConfigFactory.FindOrCreateResourceConfig(
 						"some-base-type",
-						atc.Source{
+						types.Source{
 							"some": "source",
 						},
-						atc.VersionedResourceTypes{},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
 					workerFactory := db.NewWorkerFactory(dbConn)
-					defaultWorkerPayload := atc.Worker{
-						ResourceTypes: []atc.WorkerResourceType{
-							atc.WorkerResourceType{
+					defaultWorkerPayload := types.Worker{
+						ResourceTypes: []types.WorkerResourceType{
+							types.WorkerResourceType{
 								Type:    "some-base-type",
 								Image:   "/path/to/image",
 								Version: "some-brt-version",
@@ -136,12 +136,12 @@ var _ = Describe("ResourceConfigCollector", func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
 						db.ForBuild(defaultBuild.ID()),
 						"some-base-type",
-						atc.Version{"some": "version"},
-						atc.Source{
+						types.Version{"some": "version"},
+						types.Source{
 							"some": "source",
 						},
 						nil,
-						atc.VersionedResourceTypes{},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -158,12 +158,12 @@ var _ = Describe("ResourceConfigCollector", func() {
 					_, err = resourceCacheFactory.FindOrCreateResourceCache(
 						db.ForBuild(defaultBuild.ID()),
 						"some-base-type",
-						atc.Version{"some": "version"},
-						atc.Source{
+						types.Version{"some": "version"},
+						types.Source{
 							"some": "source",
 						},
 						nil,
-						atc.VersionedResourceTypes{},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -188,8 +188,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is referenced in resources", func() {
 				BeforeEach(func() {
 					_, err := usedResource.SetResourceConfig(
-						atc.Source{"some": "source"},
-						atc.VersionedResourceTypes{},
+						types.Source{"some": "source"},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -205,8 +205,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 				BeforeEach(func() {
 					_, err := resourceConfigFactory.FindOrCreateResourceConfig(
 						"some-base-type",
-						atc.Source{"some": "source"},
-						atc.VersionedResourceTypes{},
+						types.Source{"some": "source"},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 					_, err = usedResource.Reload()
@@ -224,8 +224,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 			Context("when config is referenced in resource types", func() {
 				BeforeEach(func() {
 					_, err := usedResourceType.SetResourceConfig(
-						atc.Source{"some": "source-type"},
-						atc.VersionedResourceTypes{},
+						types.Source{"some": "source-type"},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -241,8 +241,8 @@ var _ = Describe("ResourceConfigCollector", func() {
 				BeforeEach(func() {
 					_, err := resourceConfigFactory.FindOrCreateResourceConfig(
 						"some-base-type",
-						atc.Source{"some": "source-type"},
-						atc.VersionedResourceTypes{},
+						types.Source{"some": "source-type"},
+						types.VersionedResourceTypes{},
 					)
 					Expect(err).NotTo(HaveOccurred())
 					_, err = usedResourceType.Reload()

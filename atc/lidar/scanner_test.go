@@ -3,10 +3,10 @@ package lidar_test
 import (
 	"context"
 	"errors"
+	"github.com/concourse/concourse/atc/types"
 	"time"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/creds/credsfakes"
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/db/dbfakes"
@@ -75,7 +75,7 @@ var _ = Describe("Scanner", func() {
 				fakeResource = new(dbfakes.FakeResource)
 				fakeResource.NameReturns("some-name")
 				fakeResource.TagsReturns([]string{"tag-a", "tag-b"})
-				fakeResource.SourceReturns(atc.Source{"some": "source"})
+				fakeResource.SourceReturns(types.Source{"some": "source"})
 
 				fakeCheckFactory.ResourcesReturns([]db.Resource{fakeResource}, nil)
 			})
@@ -98,7 +98,7 @@ var _ = Describe("Scanner", func() {
 					fakeResourceType.NameReturns("some-type")
 					fakeResourceType.TypeReturns("some-base-type")
 					fakeResourceType.TagsReturns([]string{"some-tag"})
-					fakeResourceType.SourceReturns(atc.Source{"some": "type-source"})
+					fakeResourceType.SourceReturns(types.Source{"some": "type-source"})
 
 					fakeCheckFactory.ResourceTypesReturns([]db.ResourceType{fakeResourceType}, nil)
 				})
@@ -149,7 +149,7 @@ var _ = Describe("Scanner", func() {
 
 							Context("when try creating a check panic", func() {
 								BeforeEach(func() {
-									fakeCheckFactory.TryCreateCheckStub = func(context.Context, db.Checkable, db.ResourceTypes, atc.Version, bool) (db.Check, bool, error) {
+									fakeCheckFactory.TryCreateCheckStub = func(context.Context, db.Checkable, db.ResourceTypes, types.Version, bool) (db.Check, bool, error) {
 										panic("something went wrong")
 									}
 								})
@@ -164,13 +164,13 @@ var _ = Describe("Scanner", func() {
 
 						Context("when the checkable has a pinned version", func() {
 							BeforeEach(func() {
-								fakeResource.CurrentPinnedVersionReturns(atc.Version{"some": "version"})
+								fakeResource.CurrentPinnedVersionReturns(types.Version{"some": "version"})
 							})
 
 							It("creates a check", func() {
 								Expect(fakeCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
 								_, _, _, fromVersion, _ := fakeCheckFactory.TryCreateCheckArgsForCall(0)
-								Expect(fromVersion).To(Equal(atc.Version{"some": "version"}))
+								Expect(fromVersion).To(Equal(types.Version{"some": "version"}))
 							})
 
 							It("clears the check error", func() {
@@ -239,7 +239,7 @@ var _ = Describe("Scanner", func() {
 
 						Context("when the parent type has a version", func() {
 							BeforeEach(func() {
-								fakeResourceType.VersionReturns(atc.Version{"some": "version"})
+								fakeResourceType.VersionReturns(types.Version{"some": "version"})
 							})
 
 							It("creates a check for both the parent and the resource", func() {
@@ -270,14 +270,14 @@ var _ = Describe("Scanner", func() {
 			BeforeEach(func() {
 				fakeResource1 = new(dbfakes.FakeResource)
 				fakeResource1.NameReturns("some-name")
-				fakeResource1.SourceReturns(atc.Source{"some": "source"})
+				fakeResource1.SourceReturns(types.Source{"some": "source"})
 				fakeResource1.TypeReturns("custom-type")
 				fakeResource1.PipelineIDReturns(1)
 				fakeResource1.LastCheckEndTimeReturns(time.Now().Add(-time.Hour))
 
 				fakeResource2 = new(dbfakes.FakeResource)
 				fakeResource2.NameReturns("some-name")
-				fakeResource2.SourceReturns(atc.Source{"some": "source"})
+				fakeResource2.SourceReturns(types.Source{"some": "source"})
 				fakeResource2.TypeReturns("custom-type")
 				fakeResource2.PipelineIDReturns(1)
 				fakeResource2.LastCheckEndTimeReturns(time.Now().Add(-time.Hour))
@@ -288,7 +288,7 @@ var _ = Describe("Scanner", func() {
 				fakeResourceType.NameReturns("custom-type")
 				fakeResourceType.PipelineIDReturns(1)
 				fakeResourceType.TypeReturns("some-base-type")
-				fakeResourceType.SourceReturns(atc.Source{"some": "type-source"})
+				fakeResourceType.SourceReturns(types.Source{"some": "type-source"})
 				fakeResourceType.LastCheckEndTimeReturns(time.Now().Add(-time.Hour))
 
 				fakeCheckFactory.ResourceTypesReturns([]db.ResourceType{fakeResourceType}, nil)
@@ -317,7 +317,7 @@ var _ = Describe("Scanner", func() {
 				fakeResource = new(dbfakes.FakeResource)
 				fakeResource.NameReturns("some-name")
 				fakeResource.TagsReturns([]string{"tag-a", "tag-b"})
-				fakeResource.SourceReturns(atc.Source{"some": "source"})
+				fakeResource.SourceReturns(types.Source{"some": "source"})
 				fakeResource.TypeReturns("base-type")
 				fakeResource.CheckEveryReturns("")
 				fakeCheckFactory.ResourcesReturns([]db.Resource{fakeResource}, nil)

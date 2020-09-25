@@ -1,8 +1,8 @@
 package event_test
 
 import (
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/atc/event"
+	"github.com/concourse/concourse/atc/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -13,8 +13,8 @@ type fakeEvent struct {
 	AddedField string `json:"added"`
 }
 
-func (fakeEvent) EventType() atc.EventType  { return "fake" }
-func (fakeEvent) Version() atc.EventVersion { return "5.1" }
+func (fakeEvent) EventType() types.EventType  { return "fake" }
+func (fakeEvent) Version() types.EventVersion { return "5.1" }
 
 var _ = Describe("ParseEvent", func() {
 	BeforeEach(func() {
@@ -50,7 +50,7 @@ var _ = Describe("ParseEvent", func() {
 	})
 
 	DescribeTable("should register all non-deprecated events successfully",
-		func(eventType atc.Event) {
+		func(eventType types.Event) {
 			parsedEvent, err := event.ParseEvent(eventType.Version(), eventType.EventType(), []byte("{}"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(parsedEvent).To(BeAssignableToTypeOf(eventType))

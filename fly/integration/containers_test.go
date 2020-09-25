@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"github.com/concourse/concourse/atc/types"
 	"os/exec"
 
-	"github.com/concourse/concourse/atc"
 	"github.com/concourse/concourse/fly/ui"
 	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
@@ -28,7 +28,7 @@ var _ = Describe("Fly CLI", func() {
 				atcServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/api/v1/teams/main/containers"),
-						ghttp.RespondWithJSONEncoded(200, []atc.Container{
+						ghttp.RespondWithJSONEncoded(200, []types.Container{
 							{
 								ID:           "handle-1",
 								WorkerName:   "worker-name-1",
